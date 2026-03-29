@@ -1012,3 +1012,7 @@ body.theme-glass .q-copy:hover{border-color:var(--accent);color:var(--accent)}
 
 /* Tech group label */
 body.theme-glass .tech-group-label{color:var(--text3)}
+
+.ai-key-row { display: none; align-items: center; gap: 8px; margin-top: 8px; }
+.ai-key-input { flex: 1; padding: 7px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: .82rem; outline: none; }
+.ai-key-input:focus { border-color: var(--accent); }

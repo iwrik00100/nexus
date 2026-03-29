@@ -367,12 +367,19 @@ function setAiProvider(provider) {
   document.getElementById('providerGemini').classList.toggle('active', provider === 'gemini');
   document.getElementById('providerHuggingFace').classList.toggle('active', provider === 'huggingface');
   const status = document.getElementById('aiProviderStatus');
+  const keyRow = document.getElementById('hfKeyRow');
   if (provider === 'gemini') {
     status.textContent = '⚡ Google Gemini 2.5 Flash';
     status.style.color = 'var(--l1)';
+    if (keyRow) keyRow.style.display = 'none';
   } else {
     status.textContent = '🤗 HuggingFace — Qwen2.5-72B';
     status.style.color = 'var(--accent)';
+    if (keyRow) {
+      keyRow.style.display = 'flex';
+      const saved = LS.get('pcy_hf_key', '');
+      if (saved) document.getElementById('hfKeyInput').value = saved;
+    }
   }
 }
 
@@ -481,7 +488,11 @@ async function _invokeViaGemini(pre, output) {
 }
 
 async function _invokeViaHuggingFace(pre, output) {
-  const HF_KEY = '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';
+  const HF_KEY = LS.get('pcy_hf_key', '');
+  if (!HF_KEY) {
+    pre.textContent = '⚠ No HuggingFace API key set. Enter your key in the field above and save it.';
+    return '';
+  }
   const HF_URL = 'https://router.huggingface.co/v1/chat/completions';
 
   const messages = [
@@ -522,7 +533,12 @@ async function _invokeViaHuggingFace(pre, output) {
   return text.trim();
 }
 
-function saveApiKey() {}
+function saveApiKey() {
+  const key = document.getElementById('hfKeyInput')?.value.trim();
+  if (!key) { showToast('Enter a key first.'); return; }
+  LS.set('pcy_hf_key', key);
+  showToast('HuggingFace key saved!');
+}
 
 // ─── User bubble helper (assistant bubbles built inline during streaming) ──────
 function _appendUserBubble(container, text) {
