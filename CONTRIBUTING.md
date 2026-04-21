@@ -186,9 +186,9 @@ Open the existing JSON file and add to the relevant array:
 
 ```bash
 # Validate JSON syntax (Python — no install needed)
-python3 -c "import json; json.load(open('domains/networking/dns_server.json'))"
+python3 -c "import json; json.load(open('domains/networking/dns_server.json', encoding='utf-8'))"
 
-# Validate all files at once
+# Validate all files at once (syntax only)
 python3 -c "
 import json, os, sys
 errors = []
@@ -197,7 +197,7 @@ for root, dirs, files in os.walk('domains'):
         if f.endswith('.json'):
             path = os.path.join(root, f)
             try:
-                json.load(open(path))
+                json.load(open(path, encoding='utf-8'))
             except json.JSONDecodeError as e:
                 errors.append(f'{path}: {e}')
 if errors:
@@ -205,10 +205,41 @@ if errors:
 print(f'All JSON files valid')
 "
 
+# Validate against JSON Schema (matches what CI uses)
+npm install -g ajv-cli ajv-formats
+
+# Validate a technology file against the schema contract
+ajv validate -s schema/technology.schema.json -d domains/networking/dns_server.json --spec=draft7 --strict=false
+
+# Validate a domain index file
+ajv validate -s schema/domain-index.schema.json -d domains/networking/_index.json --spec=draft7 --strict=false
+
 # Run app locally with Docker
 docker compose up
 # → http://localhost:8080/src/
 ```
+
+> **Note:** CI uses `ajv` against `schema/technology.schema.json` and `schema/domain-index.schema.json`. Run the ajv commands locally before opening a PR to avoid CI surprises.
+
+---
+
+## Branch Protection & Governance
+
+The `main` branch is protected. All changes must go through a Pull Request:
+
+```
+feature branch → PR → CI must pass → 1 approval → merge to main → auto-deploy
+```
+
+| Rule | Requirement |
+|---|---|
+| Pull request required | No direct pushes to `main` |
+| Status checks | All CI jobs must pass |
+| Approvals | At least 1 approving review |
+| Force push | Blocked |
+| Branch deletion | Blocked |
+
+Domain ownership is enforced via `CODEOWNERS` — your PR must be approved by your domain owner before it can merge.
 
 ---
 
