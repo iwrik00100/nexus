@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    container_name: netops-cockpit
+    container_name: nexus-app
     ports:
       - "8080:80"
     volumes:
@@ -20,12 +20,12 @@ services:
 
   grafana:
     image: grafana/grafana:10.4.0
-    container_name: netops-grafana
+    container_name: nexus-grafana
     ports:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=netops
+      - GF_SECURITY_ADMIN_PASSWORD=nexus
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
@@ -39,4 +39,4 @@ services:
 
 volumes:
   grafana-data:
-    name: netops-grafana-data
+    name: nexus-grafana-data

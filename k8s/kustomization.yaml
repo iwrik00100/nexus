@@ -12,5 +12,5 @@ resources:
 
 # Common labels applied to all resources
 commonLabels:
-  app: netops-cockpit
+  app: nexus
   managed-by: kustomize

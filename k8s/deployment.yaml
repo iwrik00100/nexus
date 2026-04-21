@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: netops-cockpit
+  name: nexus
   namespace: default
   labels:
-    app: netops-cockpit
+    app: nexus
     version: "2.0"
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: netops-cockpit
+      app: nexus
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -19,12 +19,12 @@ spec:
   template:
     metadata:
       labels:
-        app: netops-cockpit
+        app: nexus
         version: "2.0"
     spec:
       containers:
-        - name: netops-cockpit
-          image: netops-cockpit:latest
+        - name: nexus
+          image: nexus:latest
           imagePullPolicy: IfNotPresent   # Use local image (minikube / Docker Desktop)
           ports:
             - containerPort: 80
@@ -57,7 +57,7 @@ spec:
       volumes:
         - name: nginx-config
           configMap:
-            name: netops-nginx-config
+            name: nexus-nginx-config
       # Spread pods across nodes for HA
       topologySpreadConstraints:
         - maxSkew: 1
@@ -65,4 +65,4 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              app: netops-cockpit
+              app: nexus

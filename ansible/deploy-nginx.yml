@@ -1,18 +1,18 @@
 ---
 # ─────────────────────────────────────────────────────────────────
-#  NetOps Cockpit — Self-Hosted nginx Deploy
+#  Nexus — Self-Hosted nginx Deploy
 #  Usage: ansible-playbook -i ansible/inventory.ini ansible/deploy-nginx.yml
 #  Target: Linux server with nginx (alternative to GitHub Pages)
 # ─────────────────────────────────────────────────────────────────
-- name: NetOps Cockpit — Deploy to nginx server
+- name: Nexus — Deploy to nginx server
   hosts: prod
   become: true
   gather_facts: true
   vars:
-    app_name: netops-cockpit
-    deploy_path: /var/www/netops-cockpit
-    nginx_conf_path: /etc/nginx/sites-available/netops-cockpit
-    nginx_enabled_path: /etc/nginx/sites-enabled/netops-cockpit
+    app_name: nexus
+    deploy_path: /var/www/nexus
+    nginx_conf_path: /etc/nginx/sites-available/nexus
+    nginx_enabled_path: /etc/nginx/sites-enabled/nexus
     repo_path: "{{ playbook_dir | dirname }}"
 
   tasks:
@@ -127,7 +127,7 @@
 
     - name: Deployment complete
       debug:
-        msg: "✅ NetOps Cockpit deployed successfully — HTTP {{ health_check.status }}"
+        msg: "✅ Nexus deployed successfully — HTTP {{ health_check.status }}"
 
   handlers:
     - name: Reload nginx
