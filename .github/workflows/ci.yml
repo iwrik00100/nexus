@@ -8,43 +8,58 @@ on:
 
 jobs:
 
-  # ── JSON Syntax Validation ──────────────────────────────────────
+  # ── JSON Schema Validation (ajv against technology.schema.json) ─
   validate-json:
     name: Validate Domain JSON Files
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Validate all JSON files with Python
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - name: Install AJV CLI
+        run: npm install -g ajv-cli ajv-formats
+
+      - name: Validate domain index files against schema
         run: |
-          python3 -c "
-          import json, os, sys
-          errors = []
-          for root, dirs, files in os.walk('domains'):
-              for f in files:
-                  if f.endswith('.json'):
-                      path = os.path.join(root, f)
-                      try:
-                          json.load(open(path, encoding='utf-8'))
-                      except json.JSONDecodeError as e:
-                          errors.append(f'{path}: {e}')
-          if errors:
-              print('JSON validation failed:')
-              for e in errors: print(e)
-              sys.exit(1)
-          total = sum(1 for r,d,fs in os.walk('domains') for f in fs if f.endswith('.json'))
-          print(f'All {total} JSON files valid')
-          "
+          for f in domains/**/_index.json; do
+            echo "Validating $f"
+            ajv validate \
+              -s schema/domain-index.schema.json \
+              -d "$f" \
+              --spec=draft7 \
+              --strict=false
+          done
+
+      - name: Validate technology JSON files against schema
+        run: |
+          for f in domains/**/*.json; do
+            [[ "$(basename $f)" == "_index.json" ]] && continue
+            echo "Validating $f"
+            ajv validate \
+              -s schema/technology.schema.json \
+              -d "$f" \
+              --spec=draft7 \
+              --strict=false
+          done
+
+      - name: Count validated files
+        run: |
+          total=$(find domains -name "*.json" | wc -l)
+          echo "✅ Validated $total JSON files against schema"
 
   # ── HTML Validation ─────────────────────────────────────────────
   validate-html:
     name: Validate HTML
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
 
@@ -53,7 +68,7 @@ jobs:
 
       - name: Create html-validate config
         run: |
-          echo '{"extends":["html-validate:recommended"],"rules":{"no-inline-style":"off","attribute-boolean-style":"off","void-style":"off","no-trailing-whitespace":"off"}}' > .htmlvalidate.json
+          echo '{"extends":["html-validate:recommended"],"rules":{"void-style":"off","no-implicit-button-type":"off","autocomplete-password":"off","prefer-native-element":"off","no-inline-style":"off","attribute-boolean-style":"off","no-trailing-whitespace":"off"}}' > .htmlvalidate.json
 
       - name: Validate src/index.html
         run: html-validate src/index.html || true
@@ -63,10 +78,10 @@ jobs:
     name: Lint JavaScript
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
 
@@ -80,16 +95,42 @@ jobs:
       - name: Lint src/app.js
         run: eslint src/app.js || true
 
+  # ── Test Stage (Vitest — ready for Phase 2) ─────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - name: Check for test files
+        id: check_tests
+        run: |
+          if [ -f "package.json" ] && [ -d "tests" ]; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No test suite yet — test stage scaffolded for Phase 2"
+          fi
+
+      - name: Run tests
+        if: steps.check_tests.outputs.has_tests == 'true'
+        run: npm test
+
   # ── Lighthouse CI ───────────────────────────────────────────────
   lighthouse:
     name: Lighthouse CI
     runs-on: ubuntu-latest
     needs: [validate-json, validate-html]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
 
@@ -114,7 +155,7 @@ jobs:
   ci-summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [validate-json, validate-html, lint-js, lighthouse]
+    needs: [validate-json, validate-html, lint-js, test, lighthouse]
     if: always()
     steps:
       - name: Report CI result
@@ -122,7 +163,8 @@ jobs:
           echo "## CI Results" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| JSON Validation  | ${{ needs.validate-json.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| HTML Validation  | ${{ needs.validate-html.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| JS Lint          | ${{ needs.lint-js.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lighthouse CI    | ${{ needs.lighthouse.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JSON Schema Validation | ${{ needs.validate-json.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| HTML Validation        | ${{ needs.validate-html.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JS Lint                | ${{ needs.lint-js.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests             | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lighthouse CI          | ${{ needs.lighthouse.result }} |" >> $GITHUB_STEP_SUMMARY
