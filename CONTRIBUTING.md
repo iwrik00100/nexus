@@ -1,4 +1,4 @@
-# Contributing to NetOps Cockpit
+# Contributing to Nexus
 
 This guide is for **tech leads** adding questions, playbooks, and technologies to the platform. You do not need to know JavaScript — you only edit JSON files.
 
@@ -8,8 +8,8 @@ This guide is for **tech leads** adding questions, playbooks, and technologies t
 
 ```bash
 # 1. Fork and clone the repo
-git clone https://github.com/iwrik00100/test.git
-cd test
+git clone https://github.com/iwrik00100/nexus.git
+cd nexus
 git checkout ver1.8
 
 # 2. Create a feature branch for your domain

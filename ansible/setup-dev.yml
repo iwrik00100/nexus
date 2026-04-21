@@ -1,10 +1,10 @@
 ---
 # ─────────────────────────────────────────────────────────────────
-#  NetOps Cockpit — Dev Environment Setup
+#  Nexus — Dev Environment Setup
 #  Usage: ansible-playbook -i ansible/inventory.ini ansible/setup-dev.yml
 #  Installs: Docker Desktop check, Git, Node.js (optional), kubectl
 # ─────────────────────────────────────────────────────────────────
-- name: NetOps Cockpit — Dev Environment Setup
+- name: Nexus — Dev Environment Setup
   hosts: local
   gather_facts: true
   vars:
@@ -105,7 +105,7 @@
       debug:
         msg: |
           ─────────────────────────────────────────
-          NetOps Cockpit — Dev Environment Ready
+          Nexus — Dev Environment Ready
           ─────────────────────────────────────────
           Repo path   : {{ repo_path }}
           JSON files  : {{ json_files.files | length }} validated

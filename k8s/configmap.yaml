@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: netops-nginx-config
+  name: nexus-nginx-config
   namespace: default
   labels:
-    app: netops-cockpit
+    app: nexus
 data:
   default.conf: |
     server {

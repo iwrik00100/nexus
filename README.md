@@ -142,7 +142,7 @@ docker build -t nexus:latest -f docker/Dockerfile .
 kubectl apply -k k8s/
 
 # Access
-kubectl port-forward svc/netops-cockpit 8080:80
+kubectl port-forward svc/nexus 8080:80
 # → http://localhost:8080/src/
 ```
 
