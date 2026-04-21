@@ -1,28 +1,28 @@
 /* ── Variables ───────────────────────────────────────────────── */
 :root {
-  --bg:         #050810;
-  --bg2:        #0a0e1a;
-  --surface:    #0f1520;
-  --surface2:   #141c2e;
-  --surface3:   #1a2438;
-  --border:     #1e2a3e;
-  --border2:    #243248;
+  --bg:         #f3f5f9;
+  --bg2:        #eaecf2;
+  --surface:    rgba(255,255,255,0.60);
+  --surface2:   rgba(255,255,255,0.75);
+  --surface3:   rgba(255,255,255,0.90);
+  --border:     rgba(180,200,230,0.55);
+  --border2:    rgba(140,170,210,0.70);
   --accent:     #0078d4;
   --accent2:    #106ebe;
-  --accent-dim: rgba(0,120,212,0.12);
-  --accent-glow:rgba(0,120,212,0.28);
+  --accent-dim: rgba(0,120,212,0.08);
+  --accent-glow:rgba(0,120,212,0.18);
   --ms-red:     #f25022;
   --ms-green:   #7fba00;
   --ms-blue:    #00a4ef;
   --ms-yellow:  #ffb900;
-  --l1:         #22c55e;
-  --l2:         #f59e0b;
-  --l1-dim:     rgba(34,197,94,0.12);
-  --l2-dim:     rgba(245,158,11,0.12);
-  --text:       #e8eef8;
-  --text2:      #6b82a0;
-  --text3:      #2e3d52;
-  --red:        #ef4444;
+  --l1:         #107c10;
+  --l2:         #ca5010;
+  --l1-dim:     rgba(16,124,16,0.08);
+  --l2-dim:     rgba(202,80,16,0.08);
+  --text:       #1a1a2e;
+  --text2:      #5a6478;
+  --text3:      #9aa3b2;
+  --red:        #d13438;
   --head:       'Segoe UI', system-ui, sans-serif;
   --mono:       'JetBrains Mono', 'Cascadia Code', monospace;
   --r:          6px;
@@ -34,7 +34,7 @@
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; scroll-behavior: smooth; }
 body {
-  background: var(--bg);
+  background: #dce8f8;
   color: var(--text);
   font-family: var(--head);
   min-height: 100vh;
@@ -47,9 +47,11 @@ body {
 
 /* ── Microsoft Header ────────────────────────────────────────── */
 .ms-header {
-  background: rgba(5,8,16,0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
+  background: rgba(240,246,255,0.75);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border-bottom: 1px solid rgba(180,210,240,0.50);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset;
   padding: 0 2rem;
   flex-shrink: 0;
   position: sticky;
@@ -69,7 +71,15 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  text-decoration: none;
+  transition: opacity 0.18s;
 }
+.ms-logo:hover { opacity: 0.8; }
 .ms-logo-icon {
   width: 21px;
   height: 21px;
@@ -77,16 +87,16 @@ body {
 }
 .ms-logo-product {
   display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 .ms-logo-org {
   display: block;
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   color: var(--text2);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 .ms-header-actions {
@@ -98,8 +108,9 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 1px solid var(--border2);
-  background: var(--surface2);
+  border: 1px solid rgba(180,210,240,0.60);
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(8px);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -109,17 +120,18 @@ body {
 }
 .ms-theme-btn:hover {
   border-color: var(--accent);
-  background: var(--accent-dim);
+  background: rgba(255,255,255,0.80);
 }
 
 /* ── Tier Toggle ─────────────────────────────────────────────── */
 .tier-toggle {
   display: flex;
   gap: 2px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.50);
+  border: 1px solid rgba(180,210,240,0.55);
   border-radius: var(--r);
   padding: 3px;
+  backdrop-filter: blur(8px);
 }
 .tier-btn {
   background: none;
@@ -138,21 +150,20 @@ body {
 
 /* ── Landing Page ────────────────────────────────────────────── */
 .page-landing {
-  background: var(--bg);
+  background: transparent;
   position: relative;
   overflow: hidden;
 }
 
-/* Subtle background glow */
 .page-landing::before {
   content: '';
   position: fixed;
-  top: -20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 900px;
-  height: 600px;
-  background: radial-gradient(ellipse, rgba(0,120,212,0.08) 0%, transparent 70%);
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(180,210,255,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(200,180,255,0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 60% 30%, rgba(160,230,255,0.25) 0%, transparent 50%);
+  background-color: #dce8f8;
   pointer-events: none;
   z-index: 0;
 }
@@ -189,11 +200,11 @@ body {
   margin-bottom: 1.2rem;
 }
 .landing-hero-title {
-  font-size: clamp(2.4rem, 5vw, 3.8rem);
+  font-size: clamp(2.6rem, 5vw, 4rem);
   font-weight: 300;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  color: var(--text);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: #0f1c2e;
   margin-bottom: 1.2rem;
 }
 .landing-hero-title strong {
@@ -220,8 +231,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(180,210,240,0.55);
   border-radius: 16px;
   padding: 0;
   cursor: pointer;
@@ -229,11 +240,15 @@ body {
   transition: var(--transition);
   overflow: hidden;
   outline: none;
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 2px 12px rgba(100,150,220,0.08), 0 1px 0 rgba(255,255,255,0.80) inset;
 }
 .domain-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0,120,212,0.18), 0 0 0 1px rgba(0,120,212,0.15);
+  border-color: rgba(0,120,212,0.45);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 48px rgba(0,120,212,0.16), 0 1px 0 rgba(255,255,255,0.90) inset;
+  background: rgba(255,255,255,0.75);
 }
 .domain-card:focus-visible {
   outline: 2px solid var(--accent);
@@ -342,14 +357,14 @@ body {
 }
 
 /* ── Domain Page ─────────────────────────────────────────────── */
-.page-domain {
-  background: var(--bg);
-}
+.page-domain { background: #dce8f8; }
 
 /* Domain hero bar */
 .domain-hero-bar {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
+  background: rgba(240,246,255,0.70);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(180,210,240,0.50);
   padding: 0 2rem;
   flex-shrink: 0;
 }
@@ -1182,8 +1197,8 @@ input[type="date"].cn-input::-webkit-calendar-picker-indicator { filter: invert(
 .cn-preview-toggle:hover { color: var(--accent); }
 .cn-preview { background: var(--bg2); border: none; padding: 14px; font-family: var(--mono); font-size: 0.73rem; color: var(--text); line-height: 1.7; white-space: pre-wrap; word-break: break-word; max-height: 340px; overflow-y: auto; }
 
-/* ── Light Theme ─────────────────────────────────────────────── */
-body.theme-light {
+/* ── Glass Theme (DEFAULT) ──────────────────────────────────── */
+body, body.theme-glass {
   --bg:         #f3f5f9;
   --bg2:        #eaecf2;
   --surface:    #ffffff;
@@ -1205,26 +1220,60 @@ body.theme-light {
   --red:        #d13438;
 }
 
-body.theme-light .ms-header {
+body.theme-glass .ms-header {
   background: rgba(255,255,255,0.95);
   border-bottom-color: var(--border);
 }
-body.theme-light .page-landing::before {
+body.theme-glass .page-landing::before {
   background: radial-gradient(ellipse, rgba(0,120,212,0.06) 0%, transparent 70%);
 }
-body.theme-light .domain-card {
+body.theme-glass .domain-card {
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-body.theme-light .domain-card:hover {
+body.theme-glass .domain-card:hover {
   box-shadow: 0 8px 32px rgba(0,120,212,0.14);
 }
-body.theme-light .q-highlight { background: rgba(0,120,212,0.12); color: var(--accent); }
-body.theme-light .pb-action { color: var(--accent2); }
-body.theme-light .ai-bubble-text .md-h1 { color: var(--accent); }
-body.theme-light .ai-bubble-text .md-inline { color: var(--accent); }
-body.theme-light input[type="date"].cn-input::-webkit-calendar-picker-indicator { filter: none; opacity: 0.6; }
-body.theme-light ::-webkit-scrollbar-track { background: var(--bg2); }
-body.theme-light ::-webkit-scrollbar-thumb { background: var(--border2); }
+body.theme-glass .q-highlight { background: rgba(0,120,212,0.12); color: var(--accent); }
+body.theme-glass .pb-action { color: var(--accent2); }
+body.theme-glass .ai-bubble-text .md-h1 { color: var(--accent); }
+body.theme-glass .ai-bubble-text .md-inline { color: var(--accent); }
+body.theme-glass input[type="date"].cn-input::-webkit-calendar-picker-indicator { filter: none; opacity: 0.6; }
+body.theme-glass ::-webkit-scrollbar-track { background: var(--bg2); }
+body.theme-glass ::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ── Dark Theme (TOGGLE) ─────────────────────────────────────── */
+body.theme-dark {
+  --bg:         #050810;
+  --bg2:        #0a0e1a;
+  --surface:    #0f1520;
+  --surface2:   #141c2e;
+  --surface3:   #1a2438;
+  --border:     #1e2a3e;
+  --border2:    #243248;
+  --accent:     #0078d4;
+  --accent2:    #106ebe;
+  --accent-dim: rgba(0,120,212,0.12);
+  --accent-glow:rgba(0,120,212,0.28);
+  --l1:         #22c55e;
+  --l2:         #f59e0b;
+  --l1-dim:     rgba(34,197,94,0.12);
+  --l2-dim:     rgba(245,158,11,0.12);
+  --text:       #e8eef8;
+  --text2:      #6b82a0;
+  --text3:      #2e3d52;
+  --red:        #ef4444;
+}
+body.theme-dark .ms-header { background: rgba(5,8,16,0.95); }
+body.theme-dark .page-landing::before { background: radial-gradient(ellipse, rgba(0,120,212,0.08) 0%, transparent 70%); }
+body.theme-dark .domain-card { box-shadow: none; }
+body.theme-dark .domain-card:hover { box-shadow: 0 8px 32px rgba(0,120,212,0.18); }
+body.theme-dark .q-highlight { background: rgba(0,120,212,0.2); color: #60b0ff; }
+body.theme-dark .pb-action { color: #60b0ff; }
+body.theme-dark .ai-bubble-text .md-h1 { color: #60b0ff; }
+body.theme-dark .ai-bubble-text .md-inline { color: #60b0ff; }
+body.theme-dark input[type="date"].cn-input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
+body.theme-dark ::-webkit-scrollbar-track { background: var(--bg); }
+body.theme-dark ::-webkit-scrollbar-thumb { background: var(--border); }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {

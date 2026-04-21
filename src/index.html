@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NetOps Cockpit — Microsoft Unified Support</title>
-  <meta name="description" content="Structured incident command for Microsoft Unified Support engineers — scoping, probing, troubleshooting, playbooks and AI advisor.">
-  <meta name="theme-color" content="#050810">
+  <title>Nexus — Microsoft Unified Support</title>
+  <meta name="description" content="Nexus: structured incident command for Microsoft Unified Support engineers.">
+  <meta name="theme-color" content="#dce8f8">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='14' height='14' x='1' y='1' fill='%23f25022'/%3E%3Crect width='14' height='14' x='17' y='1' fill='%237fba00'/%3E%3Crect width='14' height='14' x='1' y='17' fill='%2300a4ef'/%3E%3Crect width='14' height='14' x='17' y='17' fill='%23ffb900'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css"/>
 </head>
-<body>
+<body class="theme-glass">
 
 <!-- ── Landing Page ─────────────────────────────────────────── -->
 <div id="landingPage" class="page page-landing active">
 
   <header class="ms-header">
     <div class="ms-header-inner">
-      <div class="ms-logo">
+      <button class="ms-logo" onclick="backToLanding()" aria-label="Go to home">
         <svg class="ms-logo-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
           <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
           <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
@@ -26,12 +26,12 @@
           <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
         </svg>
         <div class="ms-logo-text">
-          <span class="ms-logo-product">NetOps Cockpit</span>
+          <span class="ms-logo-product">Nexus</span>
           <span class="ms-logo-org">Microsoft Unified Support</span>
         </div>
-      </div>
+      </button>
       <div class="ms-header-actions">
-        <button class="ms-theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme">
+        <button class="ms-theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle dark mode">
           <span id="themeIcon">🌙</span>
         </button>
       </div>
@@ -40,16 +40,13 @@
 
   <main class="landing-main">
     <div class="landing-hero">
-      <div class="landing-hero-eyebrow">Incident Command Centre</div>
-      <h1 class="landing-hero-title">Select your<br>practice area</h1>
-      <p class="landing-hero-sub">Choose a domain to access structured scoping, probing, troubleshooting, data collection, and AI-powered guidance for your active incident.</p>
+      <h1 class="landing-hero-title">Incident Command</h1>
+      <p class="landing-hero-sub">Structured scoping, probing, troubleshooting, data collection and step-by-step playbooks for every Windows support scenario.</p>
     </div>
-
     <div class="domain-grid" id="domainGrid"></div>
-
     <div class="landing-footer">
-      <span>Microsoft Unified Support · PCY Practice</span>
-      <span>7 Practice Areas · 11+ Technologies · AI Advisor</span>
+      <span>Nexus · Microsoft Unified Support</span>
+      <span>7 Disciplines · 11+ Technologies</span>
     </div>
   </main>
 </div>
@@ -59,7 +56,7 @@
 
   <header class="ms-header">
     <div class="ms-header-inner">
-      <div class="ms-logo">
+      <button class="ms-logo" onclick="backToLanding()" aria-label="Go to home">
         <svg class="ms-logo-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
           <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
           <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
@@ -67,17 +64,17 @@
           <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
         </svg>
         <div class="ms-logo-text">
-          <span class="ms-logo-product">NetOps Cockpit</span>
+          <span class="ms-logo-product">Nexus</span>
           <span class="ms-logo-org">Microsoft Unified Support</span>
         </div>
-      </div>
+      </button>
       <div class="ms-header-actions">
         <div class="tier-toggle">
           <button class="tier-btn active" data-tier="l1" onclick="setTier('l1')">L1</button>
           <button class="tier-btn" data-tier="l2" onclick="setTier('l2')">L2</button>
           <button class="tier-btn" data-tier="both" onclick="setTier('both')">Both</button>
         </div>
-        <button class="ms-theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+        <button class="ms-theme-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle dark mode">
           <span id="themeIcon2">🌙</span>
         </button>
       </div>
@@ -87,9 +84,9 @@
   <!-- Domain hero bar -->
   <div class="domain-hero-bar" id="domainHeroBar">
     <div class="domain-hero-inner">
-      <button class="domain-back-btn" onclick="backToLanding()" aria-label="Back to practice areas">
+      <button class="domain-back-btn" onclick="backToLanding()" aria-label="Back to disciplines">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        All Practice Areas
+        All Disciplines
       </button>
       <div class="domain-hero-identity" id="domainHeroIdentity"></div>
     </div>
@@ -106,33 +103,27 @@
     <!-- Question type tabs -->
     <div class="qtype-tabs" id="questionTypeRow" style="display:none;">
       <button class="qtype-tab active" data-type="scoping" onclick="setQtype('scoping')">
-        <span class="qtype-icon">🔍</span>
-        <span class="qtype-label">Scoping</span>
+        <span class="qtype-icon">🔍</span><span class="qtype-label">Scoping</span>
         <span class="qtype-desc">Environment context</span>
       </button>
       <button class="qtype-tab" data-type="probing" onclick="setQtype('probing')">
-        <span class="qtype-icon">🧪</span>
-        <span class="qtype-label">Probing</span>
+        <span class="qtype-icon">🧪</span><span class="qtype-label">Probing</span>
         <span class="qtype-desc">Diagnostic commands</span>
       </button>
       <button class="qtype-tab" data-type="troubleshooting" onclick="setQtype('troubleshooting')">
-        <span class="qtype-icon">🛠</span>
-        <span class="qtype-label">Troubleshooting</span>
+        <span class="qtype-icon">🛠</span><span class="qtype-label">Troubleshooting</span>
         <span class="qtype-desc">Resolution steps</span>
       </button>
       <button class="qtype-tab" data-type="datacollection" onclick="setQtype('datacollection')">
-        <span class="qtype-icon">📦</span>
-        <span class="qtype-label">Data Collection</span>
+        <span class="qtype-icon">📦</span><span class="qtype-label">Data Collection</span>
         <span class="qtype-desc">Logs &amp; traces</span>
       </button>
       <button class="qtype-tab" data-type="all" onclick="setQtype('all')">
-        <span class="qtype-icon">📋</span>
-        <span class="qtype-label">All</span>
+        <span class="qtype-icon">📋</span><span class="qtype-label">All</span>
         <span class="qtype-desc">Complete set</span>
       </button>
       <button class="qtype-tab" data-type="playbook" onclick="setQtype('playbook')">
-        <span class="qtype-icon">🗺</span>
-        <span class="qtype-label">Playbook</span>
+        <span class="qtype-icon">🗺</span><span class="qtype-label">Playbook</span>
         <span class="qtype-desc">Step-by-step runbooks</span>
       </button>
     </div>
@@ -140,7 +131,7 @@
     <!-- Output area -->
     <div class="output-area" id="outputArea">
       <div class="empty-state" id="emptyState">
-        <div class="empty-icon">⬡</div>
+        <div class="empty-icon">◈</div>
         <div class="empty-title">Select a Technology</div>
         <div class="empty-desc">Choose a technology above to load questions and playbooks</div>
       </div>
@@ -179,14 +170,13 @@
       <div class="loading-text">Loading…</div>
     </div>
 
-    <!-- AI Section -->
-    <div class="ai-section" id="aiSection">
+    <!-- AI Section — hidden from UI, preserved for Phase 2 -->
+    <div class="ai-section" id="aiSection" style="display:none;">
       <div class="ai-header">
         <div class="ai-header-top">
           <div>
-            <span class="ai-badge">✦ AI Incident Advisor</span>
             <h2 class="ai-title">Incident Advisor</h2>
-            <p class="ai-desc">Describe the exact scenario, symptoms, or error. Goes beyond the question bank — root cause analysis, known bugs, registry fixes, KB articles, packet capture interpretation, advanced PowerShell.</p>
+            <p class="ai-desc">Describe the exact scenario, symptoms, or error for AI-powered analysis.</p>
           </div>
           <button class="action-btn" onclick="clearAiChat()" title="Clear chat (Ctrl+L)">🗑 Clear</button>
         </div>
@@ -208,7 +198,7 @@
         </div>
       </div>
       <div class="ai-input-row">
-        <textarea class="ai-input" id="aiInput" placeholder="Describe the incident — symptoms, error codes, what's been tried… (Enter to send, Shift+Enter for new line)" aria-label="Incident Advisor input"></textarea>
+        <textarea class="ai-input" id="aiInput" placeholder="Describe the incident…" aria-label="Incident Advisor input"></textarea>
         <button class="ai-btn" id="aiGenerateBtn" onclick="generateAiQuestions()">
           <span id="aiBtnText">Analyze</span>
           <span id="aiBtnSpinner" class="spinner" style="display:none">⟳</span>
@@ -220,8 +210,8 @@
   </main>
 
   <footer class="domain-footer">
-    <span>NetOps Cockpit · Microsoft Unified Support</span>
-    <span class="footer-shortcuts">Ctrl+F Search · Ctrl+L Clear Chat · Esc Back</span>
+    <span>Nexus · Microsoft Unified Support</span>
+    <span class="footer-shortcuts">Ctrl+F Search · Ctrl+L Clear · Esc Home</span>
   </footer>
 </div>
 
