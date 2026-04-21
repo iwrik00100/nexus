@@ -1,333 +1,278 @@
-# NetOps Cockpit — Windows Networking Incident Command
+# Nexus — Microsoft Unified Support · Incident Command
 
-A professional web application for L1 and L2 Microsoft Unified Support engineers supporting Windows Networking (PCY practice).
+A professional incident command platform for L1 and L2 Microsoft Unified Support engineers. Structured scoping, probing, troubleshooting, data collection and step-by-step playbooks for Windows Server and Azure support scenarios.
+
+**Live:** https://iwrik00100.github.io/test/src/
+
+---
 
 ## 🎯 Purpose
 
-Instantly surface structured **scoping**, **probing**, **troubleshooting**, **data collection**, and **step-by-step playbook** guidance for support cases across all major Windows Networking and Authentication technologies.
+Nexus instantly surfaces structured guidance for active support incidents across 7 disciplines and 11+ technologies — without needing to search documentation or recall commands under pressure.
 
 ---
 
-## 🔧 Technologies Covered
+## 🏛 Disciplines & Technologies
 
-| Category | Technology | Scope |
-|---|---|---|
-| **Core Networking** | **DNS Server** | Windows DNS Server service, zones, AD integration, forwarders |
-| **Core Networking** | **DNS Client** | Windows DNS resolver, cache, NRPT, suffix search |
-| **Core Networking** | **DHCP Server** | Scopes, failover, policies, leases, audit logs |
-| **Core Networking** | **DHCP Client** | IP acquisition, service state, relay path |
-| **Core Networking** | **TCP/IP** | Connectivity, routing, NIC offloads, firewall, IPv6 |
-| **Core Networking** | **SMB** | File share access, authentication, signing, Multichannel |
-| **Core Networking** | **DFS** | DFS Namespaces, DFS Replication, SYSVOL |
-| **Authentication** | **NPS (RADIUS)** | RADIUS auth, EAP-TLS, PEAP-MSCHAPv2, policies, proxy |
-| **Authentication** | **802.1x Wired** | Switchport auth, Wired AutoConfig, EAP, MAB fallback |
-| **Authentication** | **802.1x Wireless** | SSID auth, WLAN AutoConfig, EAP, WAP controller |
-| **Remote Access** | **VPN** | SSTP, IKEv2, L2TP/IPsec, Always On VPN (AOVPN) |
+| Discipline | Technologies |
+|---|---|
+| **Networking** | DNS Server, DNS Client, DHCP Server, DHCP Client, TCP/IP, SMB, DFS, NPS (RADIUS), 802.1x Wired, 802.1x Wireless, VPN |
+| **Directory Services** | AD DS, AD CS (PKI), AD FS, Azure AD / Entra ID, Kerberos, LDAP, Group Policy |
+| **Performance** | CPU, Memory, Disk I/O, Network Throughput, WPA / ETW Tracing, PerfMon |
+| **User Experience** | Logon & Authentication, User Profiles, App Compatibility, Azure Virtual Desktop, RDS, Printing |
+| **Device & Deployment** | Microsoft Intune, SCCM / ConfigMgr, Windows Autopilot, WSUS, WDS / MDT, Co-Management |
+| **Storage & High Availability** | Storage Spaces / S2D, Failover Clustering, Hyper-V, ReFS / NTFS, iSCSI / FC SAN, Windows Server Backup |
+| **Collaboration** | Exchange Online, Microsoft Teams, SharePoint Online, OneDrive for Business, M365 Connectivity, Hybrid Mail Flow |
+
+> Networking is fully populated. The remaining 6 disciplines are ready for tech lead contributions.
 
 ---
 
-## 🚀 Getting Started
+## ✨ Features
 
-### Open directly in browser
-Simply open `index.html` in any modern browser. No server required.
-
-```bash
-# Windows
-start index.html
-
-# macOS
-open index.html
-
-# Linux
-xdg-open index.html
-```
-
-### Serve locally (optional)
-```bash
-# Python 3
-python -m http.server 3000
-
-# Node.js (npx)
-npx serve .
-```
-Then open `http://localhost:3000`
+- **7 Disciplines** — click a discipline card to enter its technology workspace
+- **Scoping, Probing, Troubleshooting, Data Collection** — structured question sets per technology, per tier
+- **L1 / L2 / Both** — tier filter in the header
+- **Playbooks** — symptom-driven Verify → Isolate → Fix → Confirm runbooks with per-step checkboxes
+- **Search** — real-time keyword search with inline highlight (`Ctrl+F`)
+- **Export** — `.txt`, `.md`, `.html` exports of any question set
+- **Incident Log** — sliding panel for building structured ICM/SR case notes, auto-saved to localStorage
+- **Themes** — Liquid Glass (default) and Dark Cyberpunk toggle
+- **AI Advisor** — Phase 2 (hidden, code preserved)
 
 ---
 
 ## 📁 Repository Structure
 
 ```
-ms-support-question-generator/
-├── index.html      — Main application UI
-├── app.js          — Application logic, state management, AI integration
-├── questions.js    — Question bank and playbooks (all technologies, all tiers)
-├── styles.css      — UI styles (dark + liquid glass themes)
-└── README.md       — This file
+nexus/
+├── src/                        ← Application
+│   ├── index.html              — UI (landing page + domain page)
+│   ├── app.js                  — All application logic
+│   └── styles.css              — Glass + dark themes
+│
+├── domains/                    ← Data (owned by tech leads)
+│   ├── networking/
+│   │   ├── _index.json         — Lists all 11 networking technologies
+│   │   ├── dns_server.json
+│   │   ├── dns_client.json
+│   │   ├── dhcp_server.json
+│   │   ├── dhcp_client.json
+│   │   ├── tcpip.json
+│   │   ├── smb.json
+│   │   ├── dfs.json
+│   │   ├── nps.json
+│   │   ├── dot1x_wired.json
+│   │   ├── dot1x_wireless.json
+│   │   └── vpn.json
+│   ├── directory_services/     — _index.json (stub, ready for contributions)
+│   ├── performance/            — _index.json (stub)
+│   ├── user_experience/        — _index.json (stub)
+│   ├── device_deployment/      — _index.json (stub)
+│   ├── storage_ha/             — _index.json (stub)
+│   └── collaboration/          — _index.json (stub)
+│
+├── schema/                     ← JSON Schema contracts
+│   ├── technology.schema.json  — Validates every technology JSON file
+│   └── domain-index.schema.json — Validates every _index.json
+│
+├── docker/                     ← Containerization
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── docker-compose.yml
+│
+├── k8s/                        ← Kubernetes manifests
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── ingress.yaml
+│   ├── configmap.yaml
+│   └── kustomization.yaml
+│
+├── ansible/                    ← Automation
+│   ├── inventory.ini
+│   ├── setup-dev.yml
+│   └── deploy-nginx.yml
+│
+├── grafana/                    ← Observability
+│   ├── dashboards/
+│   └── provisioning/
+│
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml              — JSON validation, HTML lint, Lighthouse on every PR
+│   │   ├── deploy.yml          — Auto-deploy to GitHub Pages on merge to main
+│   │   └── codeql.yml          — Security scanning
+│   ├── CODEOWNERS              — Domain ownership enforcement
+│   ├── dependabot.yml
+│   └── PULL_REQUEST_TEMPLATE.md
+│
+├── CONTRIBUTING.md
+└── README.md
 ```
 
 ---
 
-## ✨ Features
+## 🚀 Getting Started
 
-### Question Bank
-- **Scoping Questions** — Gather environment, configuration, and impact context
-- **Probing Questions** — Specific diagnostic commands and data collection steps
-- **Troubleshooting Steps** — Resolution guidance and remediation actions
-- **Data Collection** — Logs, traces, and exports to attach to ICM/SR
-- **L1 Tier** — Foundational questions for first-level triage
-- **L2 Tier** — Advanced technical deep-dive questions
-- Filter by technology, tier (L1 / L2 / Both), and question type
+### GitHub Pages (live)
+```
+https://iwrik00100.github.io/test/src/
+```
 
-### Playbooks
-- Dedicated **Playbook** tab per technology with symptom-driven runbooks
-- Select a symptom from the picker to load a structured multi-phase runbook
-- Each playbook has phases (Verify → Isolate → Fix → Confirm) with numbered steps
-- Each step shows the exact command/action and the expected outcome
-- Severity badge (High / Medium / Low) on each playbook
-- Checkboxes on every step to track progress
-- **Copy Playbook** button exports the full runbook as plain text
-- Playbooks available for all 11 technologies
+### Local — Docker (recommended)
+```bash
+# App only
+docker compose up
+# → http://localhost:8080/src/
 
-### Question Search & Filter
-- Real-time keyword search across all visible questions
-- Matching keyword highlighted inline in cyan
-- Match count displayed (e.g. "7 matches")
-- Non-matching questions and empty sections hidden automatically
-- Search clears automatically when switching technology or question type
-- Shortcut: `Ctrl+F` focuses the search input
+# App + Grafana observability
+docker compose --profile monitoring up
+# → App:     http://localhost:8080/src/
+# → Grafana: http://localhost:3000  (admin / nexus)
+```
 
-### Question Completion Checkboxes
-- Checkbox on every question and playbook step to mark it as asked/done
-- Checked items are struck through with a green tint
-- Progress bar shows `X / Y checked` with animated fill
-- "Clear Checks" button resets all checkboxes in one click
+### Local — Kubernetes (Docker Desktop)
+```bash
+# Enable Kubernetes in Docker Desktop Settings → Kubernetes
 
-### Export & Copy
-- Copy individual questions with one click
-- Copy all visible questions to clipboard (respects active search filter)
-- **Export .txt** — plain text with metadata header
-- **Export .md** — Markdown with metadata table, renders in OneNote / Confluence / Azure DevOps
-- **Export .html** — self-contained styled HTML with L1/L2 colour-coded badges, print-ready
-- **Copy Playbook** — exports the active playbook as structured plain text
+# Build image
+docker build -t nexus:latest -f docker/Dockerfile .
 
-### AI-Powered Incident Advisor
-- Paste any customer scenario description or ask any technical question
-- Multi-turn conversational chat — context preserved across messages
-- **Streaming responses** — tokens render as they arrive, no waiting for full response
-- Automatically tailors advice to the currently selected technology and tier
-- Two AI provider options — switch between them with the provider toggle:
-  - ⚡ **Google Gemini 2.5 Flash** — fast, high quality (requires free API key)
-  - 🤗 **HuggingFace Qwen2.5-72B** — powerful open model (requires free API key)
-- API keys entered in-app and stored in `localStorage` — never hardcoded or committed
-- Goes beyond the question bank — root cause analysis, known bugs, KB articles, registry fixes, packet capture interpretation, advanced PowerShell
-- Clear Chat button resets conversation history (`Ctrl+L`)
+# Deploy
+kubectl apply -k k8s/
 
-### Theme Toggle
-- **Dark mode** (default) — deep navy/cyan engineering theme
-- **Light mode** — Apple liquid glass design with frosted panels and soft sky gradient
-- Toggle button in the header (🌙 / ☀️), tooltip shows "Light" or "Dark" on hover
-- Theme preference saved and restored across sessions
+# Access
+kubectl port-forward svc/netops-cockpit 8080:80
+# → http://localhost:8080/src/
+```
 
-### Incident Log (Case Notes Builder)
-Sliding panel (📝 **Incident Log** tab on the right edge) for building structured ICM/SR documentation:
-
-**Meta fields:**
-- SR / ICM Number, Date, Follow-up Date
-- Engineer, Customer, Technology
-- Severity (Sev A–D), Case Status, Contact Type
-
-**Content sections:**
-- 🔴 Issue — symptom, error messages, business impact
-- 🖥 Environment Details — OS, topology, roles, infrastructure
-- 🔍 Assessment / Troubleshooting Done — steps taken, findings, hypotheses
-- 📦 Data Collection — traces, logs, files collected or pending
-- 🔁 Repro Steps — baseline, actions, repro rate, workarounds
-- 🕐 Recent Changes — patches, GPO, network, certificates, hardware
-- 📋 Action Plan — split view: ⏳ Pending on Customer / 🔬 Pending on Microsoft
-- ✅ Resolution / Root Cause — fix applied, KB reference, verification steps
-- 🔗 KB / Escalation References — KB article, bug number, escalated-to, related SRs
-- 💬 Additional Notes — internal notes, customer sentiment, escalation context
-
-**Behaviour:**
-- All fields auto-saved to `localStorage` on every keystroke — "✓ Draft saved" indicator flashes
-- Fully restored on page reload — no data lost on refresh
-- "Copy Note" formats all filled fields into a clean structured text block ready to paste into ICM/SR
-- "Clear" resets all fields and clears saved draft
-- Collapsible **Formatted Note Preview** section at the bottom of the panel
-
-### Persistence (localStorage)
-All of the following survive page refresh:
-- Selected technology, tier, and question type
-- Theme preference (dark / glass)
-- AI provider selection
-- AI chat history (last 20 messages)
-- All Incident Log fields
-
-### Keyboard Shortcuts
-| Shortcut | Action |
-|---|---|
-| `Ctrl+F` | Focus question search input |
-| `Ctrl+L` | Clear AI chat history |
-| `Ctrl+Enter` | Send AI message |
-| `Esc` | Close the Incident Log panel |
-| `Enter` / `Space` | Open Incident Log panel (when tab is focused) |
+### Local — No Docker
+```bash
+# Python 3
+cd src
+python -m http.server 3000
+# → http://localhost:3000
+```
 
 ---
 
-## 🤖 AI Assistant Setup
+## 🏗️ Adding a New Technology
 
-No installation required. Just get a free API key for your preferred provider:
+Tech leads edit only JSON files — no JavaScript required.
 
-### Option A — Google Gemini (recommended)
-1. Go to [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-2. Create a free API key
-3. Open the app, select **⚡ Gemini 2.5 Flash**, paste the key, and click **💾 Save Key**
+### Step 1 — Create the technology JSON
 
-### Option B — HuggingFace Qwen2.5-72B
-1. Go to [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
-2. Create a new token (Read access is sufficient)
-3. Open the app, select **🤗 HuggingFace**, paste the key, and click **💾 Save Key**
+Create `domains/<discipline_key>/<tech_key>.json`:
 
-Keys are saved in your browser's `localStorage` and never leave your machine.
-
----
-
-## 🏗️ Adding Questions
-
-Edit `questions.js` to add new questions or technologies. Follow the existing structure:
-
-```javascript
-technology_key: {
-  label: "Display Name",
-  icon: "🔧",
-  category: "Category Name",
-  scoping: {
-    l1: ["Question 1...", "Question 2..."],
-    l2: ["Advanced question 1...", ...]
+```json
+{
+  "key": "ad_ds",
+  "label": "AD DS",
+  "icon": "🏛",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": ["Question 1 (min 10 chars)", "Question 2", "Question 3"],
+    "l2": ["Advanced question 1", "Advanced question 2", "Advanced question 3"]
   },
-  probing: {
-    l1: ["Run command X and share...", ...],
-    l2: ["Advanced diagnostic command...", ...]
-  },
-  troubleshooting: {
-    l1: ["Resolution step 1...", ...],
-    l2: ["Advanced fix...", ...]
-  },
-  datacollection: {
-    l1: ["Export log X...", ...],
-    l2: ["Capture trace Y...", ...]
+  "probing":         { "l1": ["...","...","..."], "l2": ["...","...","..."] },
+  "troubleshooting": { "l1": ["...","...","..."], "l2": ["...","...","..."] },
+  "datacollection":  { "l1": ["...","...","..."], "l2": ["...","...","..."] },
+  "playbooks": {
+    "symptom_slug": {
+      "title": "Short symptom description",
+      "severity": "high",
+      "phases": [
+        { "name": "Verify",  "icon": "✅", "steps": [{ "action": "Command", "expect": "Expected result" }] },
+        { "name": "Isolate", "icon": "🔍", "steps": [{ "action": "Command", "expect": "Expected result" }] },
+        { "name": "Fix",     "icon": "🛠",  "steps": [{ "action": "Command", "expect": "Expected result" }] },
+        { "name": "Confirm", "icon": "🎯", "steps": [{ "action": "Command", "expect": "Expected result" }] }
+      ]
+    }
   }
 }
 ```
 
-Also add the new key to `TECH_CATEGORIES` at the bottom of `questions.js`:
+### Step 2 — Register in `_index.json`
 
-```javascript
-const TECH_CATEGORIES = {
-  "Core Networking":  ["dns_server", "dns_client", ...],
-  "Authentication":   ["nps", "dot1x_wired", "dot1x_wireless"],
-  "Remote Access":    ["vpn", "your_new_key"]
-};
+Add your technology to `domains/<discipline_key>/_index.json`:
+
+```json
+{
+  "technologies": [
+    { "key": "ad_ds", "label": "AD DS", "icon": "🏛" }
+  ]
+}
 ```
 
----
+### Step 3 — Validate locally
 
-## 🗺️ Adding Playbooks
-
-Playbooks are attached to a technology after the `QUESTION_BANK` definition in `questions.js`:
-
-```javascript
-QUESTION_BANK.technology_key.playbooks = {
-  symptom_slug: {
-    title: "Short symptom description",
-    severity: "high",          // "high" | "medium" | "low"
-    phases: [
-      {
-        name: "Verify", icon: "✅",
-        steps: [
-          { action: "Command or action to run", expect: "What a good result looks like" },
-          ...
-        ]
-      },
-      { name: "Isolate", icon: "🔍", steps: [...] },
-      { name: "Fix",     icon: "🛠",  steps: [...] },
-      { name: "Confirm", icon: "🎯", steps: [...] }
-    ]
-  }
-};
+```bash
+python -c "import json,os; [json.load(open(os.path.join(r,f),encoding='utf-8')) for r,d,fs in os.walk('domains') for f in fs if f.endswith('.json')]; print('All valid')"
 ```
 
----
+### Step 4 — Open a Pull Request
 
-## 📋 Question Categories Explained
-
-### Scoping Questions
-Used to **understand the environment** before diagnosing:
-- What versions, roles, and topology are involved?
-- When did it start? What changed?
-- What is the blast radius (1 user vs. all users)?
-
-### Probing Questions
-Used to **gather diagnostic data**:
-- Specific PowerShell/CMD commands to run
-- Log files and event IDs to collect
-- Network traces and configuration exports
-
-### Troubleshooting Steps
-Used to **resolve the issue**:
-- Step-by-step remediation actions
-- Known fixes, registry changes, and service restarts
-- Workarounds and escalation triggers
-
-### Data Collection
-Used to **package evidence for escalation**:
-- ETL traces, event log exports, config exports
-- Commands to run and files to collect before escalating to L2/L3
-
-### Playbooks
-Used to **run a structured incident response**:
-- Symptom-driven runbooks with Verify → Isolate → Fix → Confirm phases
-- Each step has an exact command and expected outcome
-- Track progress with per-step checkboxes
+CI will automatically validate JSON schema, HTML, and run Lighthouse. Your domain owner must approve before merge.
 
 ---
 
-## 🛠️ Customization
+## 🔒 CI/CD Validation Rules
 
-- **Add new technologies**: Extend `QUESTION_BANK` and `TECH_CATEGORIES` in `questions.js`
-- **Add new playbooks**: Extend `QUESTION_BANK.<key>.playbooks` in `questions.js`
-- **Modify UI theme**: Edit CSS variables in `styles.css` (`:root` block)
-- **Change AI model**: Update `model` in `_invokeViaGemini()` or `_invokeViaHuggingFace()` in `app.js`
-- **Adjust AI prompt**: Edit `_SYSTEM_PROMPT` in `app.js` to change tone or focus area
+CI blocks a PR if any of these fail:
 
----
-
-## 📌 Usage Tips for Support Engineers
-
-1. **Start with Scoping (L1)** — Always gather environment basics first
-2. **Use Probing (L1) for initial data** — Get ipconfig, event logs, and service status
-3. **Use Troubleshooting (L1)** — Apply common fixes before escalating
-4. **Use Playbooks for known symptoms** — Select the matching symptom for a guided Verify → Fix → Confirm runbook
-5. **Escalate with Probing (L2) + Data Collection (L2)** — Collect traces and advanced cmdlets for L2 analysis
-6. **Use AI Advisor for complex cases** — Paste the customer's exact description for tailored expert guidance
-7. **Check off questions as you go** — Use checkboxes to track what's been asked; progress bar shows coverage
-8. **Search when you know what you need** — `Ctrl+F` to filter hundreds of questions instantly
-9. **Build case notes in parallel** — Open the 📝 Incident Log panel and fill sections as the call progresses; it auto-saves
-10. **Export to .md or .html** — Attach to ICM/SR or paste into OneNote/Confluence for documentation
+| Rule | Requirement |
+|---|---|
+| JSON syntax | Valid JSON — no trailing commas, no comments |
+| `key` format | Snake_case: `a-z`, `0-9`, `_` only |
+| `domain` field | Must match one of the 7 valid discipline keys |
+| Minimum questions | At least **3 items** per `l1` and `l2` array |
+| Question length | Each question at least **10 characters** |
+| Severity | Must be `"high"`, `"medium"`, or `"low"` |
 
 ---
 
-## 🤝 Contributing
+## 🗺️ DevOps Stack
 
-To add questions or improve coverage:
-1. Edit `questions.js` with your additions
-2. Follow the existing JSON structure
-3. Include all four sections (`scoping`, `probing`, `troubleshooting`, `datacollection`) with both `l1` and `l2` entries
-4. Optionally add a `playbooks` block for the technology
-5. Add the technology key to the correct category in `TECH_CATEGORIES`
-6. Prefer PowerShell cmdlets over legacy `cmd` tools where applicable
+| Layer | Tool | Purpose |
+|---|---|---|
+| Source control | GitHub | Branching, PRs, code review |
+| CI | GitHub Actions | JSON validation, lint, Lighthouse on every PR |
+| CD | GitHub Actions + Pages | Auto-deploy on merge to main |
+| Security | CodeQL + Dependabot | SAST scanning + dependency alerts |
+| Containerization | Docker + nginx | Local dev, reproducible environment |
+| Orchestration | Kubernetes (local) | Deployment manifests, rolling updates |
+| Config management | Ansible | Dev setup, self-hosted deploy |
+| Observability | Grafana | CI/CD pipeline health, Lighthouse score trends |
+| Governance | CODEOWNERS | Per-discipline ownership enforcement |
+
+**Total cost: $0** — everything runs free locally or on GitHub.
 
 ---
 
-*Built for Microsoft Unified Support — PCY Practice*
-*Technologies: Windows DNS · DHCP · TCP/IP · SMB · DFS · NPS · 802.1x · VPN*
+## 📌 Usage Tips
+
+1. **Click a discipline card** to enter its technology workspace
+2. **Select a technology** from the grid
+3. **Start with Scoping (L1)** — gather environment basics first
+4. **Use Probing (L1)** for initial diagnostic commands
+5. **Use Troubleshooting (L1)** before escalating
+6. **Use Playbooks** for known symptoms — guided Verify → Fix → Confirm runbook
+7. **Escalate with Probing (L2) + Data Collection (L2)** — advanced traces for L2 analysis
+8. **Check off questions** as you go — progress bar tracks coverage
+9. **Search with Ctrl+F** to filter instantly
+10. **Build case notes in parallel** — open 📝 Incident Log, it auto-saves every keystroke
+11. **Export to .md or .html** — attach to ICM/SR or paste into OneNote/Confluence
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+F` | Focus question search |
+| `Esc` | Back to disciplines / close Incident Log |
+| `Ctrl+L` | Clear AI chat (Phase 2) |
+
+---
+
+*Nexus · Microsoft Unified Support · Incident Command*
