@@ -1,0 +1,156 @@
+{
+  "key": "ad_ds",
+  "label": "AD DS",
+  "icon": "🏛",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Question 1 — Is the issue affecting one user/system or multiple users/systems?",
+      "Question 2 - Is the issue intermittent or constant?",
+      "Question 3 - What exact error message are you getting?",
+      "Question 4 - Can machine ping the Domain Controller?",
+      "Question 5 - Is issue occurring after password reset , patch/reboot, networki change or snapshot restore?",
+      "Question 6 - Was machine inactive for long time?"
+    ],
+    "l2": [
+      "Which Domain Controllers are impacted?",
+      "Is issue affecting:Single site?,Multiple sites?,Entire forest/domain?",
+      "Is issue replication related?",
+      "Is issue authentication related?",
+      "Which AD services are impacted?:DNS,Kerberos,Replication,SYSVOL,Netlogon,GPO processing"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - Is machine connected to domain network?",
+      "Question 2 - Can user login to another machine?",
+      "Question 3 - Can another user login to affected machine?",
+      "Question 4 - Are mapped drives/printers configured?"
+    ],
+    "l2": [
+      "What replication error code is observed?",
+      "Are DCs resolving each other correctly?",
+      "Is RPC communication working?",
+      "Any lingering objects present?",
+      "Is replication queue growing?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Verify client network settings and ensure DNS points to the Domain Controller.",
+      "Run 'ipconfig /flushdns' and 'ipconfig /registerdns' on the affected client machine.",
+      "Check if the Netlogon and Workstation services are running on the client computer."
+    ],
+    "l2": [
+      "Analyze the output of 'repadmin /showrepl' to identify replication errors between DCs.",
+      "Verify system time sync across DCs using 'w32tm /monitor' (Time skew must be less than 5 minutes).",
+      "Check the status of critical AD services (NTDS, DNS, KDC, RPC) on the target Domain Controller."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect 'ipconfig /all' and 'route print' outputs from the client machine.",
+      "Export the System and Application event logs from the client in .evtx format.",
+      "Run 'nltest /dsgetdc:yourdomain.com' to identify which DC the client is hitting."
+    ],
+    "l2": [
+      "Run 'dcdiag /v /q' on the affected Domain Controller and export to a text file.",
+      "Export the 'Directory Service' and 'DNS Server' Event Viewer logs from the impacted DCs.",
+      "Capture a network trace using Wireshark during a failed authentication or replication attempt."
+    ]
+  },
+  "playbooks": {
+    "ad_replication_failure": {
+      "title": "Active Directory Replication Failure",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'repadmin /showrepl * /csv > repl_status.csv' on a Domain Controller.",
+              "expect": "Look for any naming contexts returning errors or status messages other than 'Successful'."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Execute 'dcdiag /test:Connectivity' and check RPC port connectivity (TCP 135 and dynamic ports).",
+              "expect": "All connectivity tests should pass; look for firewall or routing blockages if it fails."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Force an immediate sync using 'repadmin /syncall /AeFd' on the destination Domain Controller.",
+              "expect": "The console should report that syncall terminated without errors."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Run 'repadmin /replsummary' to confirm all partner links show 0 fails.",
+              "expect": "The largest delta should be well within the standard replication interval, with zero failed items."
+            }
+          ]
+        }
+      ]
+    },
+    "user_account_lockout": {
+      "title": "Investigating Persistent User Account Lockouts",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check the user account status in Active Directory Users and Computers (ADUC) or via PowerShell 'Get-ADUser'.",
+              "expect": "The 'LockedOut' attribute value should return True."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Search Event ID 4740 in the Security Log on the PDC Emulator to identify the source computer name.",
+              "expect": "The log event details will specifically list the Caller Computer Name where the bad passwords originated."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Clear cached credentials, bad mapped drives, or stale scheduled tasks on the isolated source computer.",
+              "expect": "No new bad password attempts (Event ID 4771/4625) hitting the domain controller."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Unlock the account using 'Unlock-ADAccount' and monitor it for 10 minutes.",
+              "expect": "The account remains unlocked, and the user can log in cleanly."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
