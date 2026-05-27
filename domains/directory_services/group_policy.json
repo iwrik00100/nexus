@@ -1,0 +1,140 @@
+{
+  "key": "group_policy",
+  "label": "Group Policy",
+  "icon": "📒",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Question 1 — Is the issue affecting user policies, computer policies, or both?",
+      "Question 2 — Does the problem occur for all users or only specific OUs?",
+      "Question 3 — Is the GPO not applying at all, or applying incorrectly?",
+      "Question 4 — Is the issue limited to one site/domain or multiple?",
+      "Question 5 — Did the problem start after a recent GPO change or update?",
+      "Question 6 — Are permissions or security filtering restricting GPO application?"
+    ],
+    "l2": [
+      "Is the GPO linked correctly to the target OU/domain?",
+      "Are WMI filters or item-level targeting causing unexpected exclusions?",
+      "Is replication of SYSVOL/Policies folder consistent across Domain Controllers?",
+      "Are client machines processing policies within expected timeframes?",
+      "Are conflicting GPOs overriding intended settings?",
+      "Is loopback processing enabled and affecting results?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 — Does 'gpresult /r' show the expected GPOs applied?",
+      "Question 2 — Are there errors/warnings in Group Policy Operational logs?",
+      "Question 3 — Is the client connected to the domain during policy refresh?",
+      "Question 4 — Does forcing 'gpupdate /force' resolve the issue?",
+      "Question 5 — Are startup/logon scripts executing as expected?",
+      "Question 6 — Is the issue reproducible across multiple machines?"
+    ],
+    "l2": [
+      "Do Event IDs 1058 or 1030 indicate SYSVOL/Netlogon access issues?",
+      "Are DFS/SMB shares hosting policies accessible without delay?",
+      "Is Kerberos authentication succeeding during policy application?",
+      "Are DNS lookups resolving Domain Controllers correctly?",
+      "Is there time skew between client and DC affecting policy refresh?",
+      "Do conflicting GPO precedence rules explain unexpected results?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Run 'gpresult /h gp.html' to confirm applied/denied GPOs.",
+      "Force a policy refresh using 'gpupdate /force'.",
+      "Check Group Policy Operational logs for errors/warnings.",
+      "Verify OU linkage and security filtering of the GPO.",
+      "Test with a clean user/computer account to isolate scope."
+    ],
+    "l2": [
+      "Run 'dcdiag /test:frssysvol' to check SYSVOL health.",
+      "Use 'repadmin /replsummary' to confirm GPO replication status.",
+      "Enable Group Policy debug logging for detailed trace.",
+      "Check DFS/SMB performance for SYSVOL/Policies folder access.",
+      "Review Kerberos/DNS logs for authentication or resolution delays."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect 'gpresult /h gp.html' from affected clients.",
+      "Export Group Policy Operational logs (Microsoft-Windows-GroupPolicy/Operational).",
+      "Gather System and Application event logs in .evtx format.",
+      "Record timestamps of policy refresh attempts using Event Viewer."
+    ],
+    "l2": [
+      "Run 'dcdiag /v /q' on Domain Controllers and export results.",
+      "Collect 'repadmin /replsummary' outputs for replication status.",
+      "Capture network traces during 'gpupdate' to analyze DNS/auth delays.",
+      "Export SYSVOL/Policies folder health checks across DCs."
+    ]
+  },
+  "playbooks": {
+    "gp_troubleshooting": {
+      "title": "Group Policy Troubleshooting",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'gpresult /h gp.html' on affected clients.",
+              "expect": "Identify applied/denied GPOs."
+            },
+            {
+              "action": "Check Group Policy Operational logs for errors.",
+              "expect": "Confirm if policies are failing or delayed."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Test with a clean OU and no filters.",
+              "expect": "Policies apply correctly if filtering was the issue."
+            },
+            {
+              "action": "Force 'gpupdate /force' and monitor results.",
+              "expect": "Immediate refresh confirms client processing."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Correct OU linkage and security filtering.",
+              "expect": "Policies apply to intended users/computers."
+            },
+            {
+              "action": "Resolve SYSVOL/replication issues using 'repadmin'.",
+              "expect": "Policies replicate consistently across DCs."
+            },
+            {
+              "action": "Address DNS/Kerberos issues impacting policy refresh.",
+              "expect": "Authentication and policy application stabilize."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-run 'gpresult' and Event Viewer checks.",
+              "expect": "Policies apply correctly without errors."
+            },
+            {
+              "action": "Monitor user experience for 24 hours.",
+              "expect": "No recurring Group Policy complaints reported."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
