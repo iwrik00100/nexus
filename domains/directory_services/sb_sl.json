@@ -1,0 +1,140 @@
+{
+  "key": "sb_sl",
+  "label": "SBSL",
+  "icon": "💻",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Question 1 — Is the slowness affecting one user or multiple users?",
+      "Question 2 - Is the issue limited to one machine or several machines in the same OU/site?",
+      "Question 3 - Does the slow boot/logon happen every time or intermittently?",
+      "Question 4 - Does the delay occur during boot, after credential entry, or while applying Group Policy?",
+      "Question 5 - Is the machine connected via LAN, Wi-Fi, or VPN when the slowness occurs?",
+      "Question 6 - Did the issue start after a patch, GPO update, software deployment, or network change?"
+    ],
+    "l2": [
+      "Is the issue isolated to a single site or across multiple sites?",
+      "Are specific Group Policies (folder redirection, logon scripts, AppLocker) causing delays?",
+      "Is the delay linked to Kerberos/NTLM authentication or DNS resolution?",
+      "Is SYSVOL/Netlogon replication healthy across Domain Controllers?",
+      "Are AD services (DNS, Kerberos, Netlogon, GPO processing) impacted during logon?",
+      "Are roaming profiles or folder redirection contributing to the slowness?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - Does the slowness occur before credential entry (boot) or after (logon)?",
+      "Question 2 - Are logon scripts or startup scripts taking longer than expected?",
+      "Question 3 - Do mapped drives or printers delay logon completion?",
+      "Question 4 - Is the user profile local, roaming, or redirected?",
+      "Question 5 - Does disconnecting from the domain network improve boot/logon speed?",
+      "Question 6 - Are there warnings/errors in System or Application logs during boot/logon?"
+    ],
+    "l2": [
+      "Do Group Policy logs (Event ID 4016, 7016) indicate delays in policy application?",
+      "Are Kerberos/NTLM authentication requests taking longer than expected?",
+      "Is DNS resolving domain controllers quickly, or are there lookup failures/timeouts?",
+      "Is SYSVOL/Netlogon replication healthy across DCs, or are there replication errors?",
+      "Is there time skew between client and Domain Controllers affecting authentication?",
+      "Are DFS or SMB shares (SYSVOL, redirected folders) contributing to logon slowness?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Verify client DNS settings — ensure they point to AD DNS servers.",
+      "Run 'gpresult /h gp.html' to identify slow GPOs or scripts.",
+      "Check if unnecessary startup programs/services are delaying boot.",
+      "Confirm Netlogon and Workstation services are running on the client.",
+      "Test logon without mapped drives/printers to isolate slowness."
+    ],
+    "l2": [
+      "Analyze 'repadmin /showrepl' for replication or SYSVOL issues.",
+      "Verify system time sync across DCs using 'w32tm /monitor'.",
+      "Enable Group Policy debug logging to trace policy delays.",
+      "Check DFS/SMB performance for redirected folders or SYSVOL access.",
+      "Review Kerberos/NTLM authentication logs for timeout or retry patterns."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect 'ipconfig /all' and 'route print' outputs from the client.",
+      "Export System and Application event logs in .evtx format.",
+      "Run 'gpresult /h gp.html' to capture applied GPOs.",
+      "Record boot/logon timestamps using Event Viewer (Event IDs 6005, 6006, 6013)."
+    ],
+    "l2": [
+      "Run 'dcdiag /v /q' on affected Domain Controllers and export results.",
+      "Export Group Policy Operational logs (Microsoft-Windows-GroupPolicy/Operational).",
+      "Capture a network trace during logon to analyze DNS/authentication delays.",
+      "Collect 'repadmin /replsummary' and 'w32tm /monitor' outputs for replication/time sync status."
+    ]
+  },
+  "playbooks": {
+    "sbs_logon_delay": {
+      "title": "Slow Boot / Slow Logon Investigation",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'gpresult /h gp.html' on the affected client.",
+              "expect": "Identify GPOs or scripts taking excessive time."
+            },
+            {
+              "action": "Check Event Viewer for boot/logon timestamps (IDs 6005, 6006, 6013).",
+              "expect": "Confirm abnormal delays compared to baseline."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Disable mapped drives/printers temporarily.",
+              "expect": "Logon speed improves if these are the cause."
+            },
+            {
+              "action": "Test logon with a local profile vs roaming profile.",
+              "expect": "Roaming/redirected profiles may show longer delays."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Optimize GPOs by removing redundant scripts or policies.",
+              "expect": "Reduced Group Policy processing time."
+            },
+            {
+              "action": "Resolve DNS misconfigurations and ensure clients point to AD DNS.",
+              "expect": "Authentication and policy application speed improves."
+            },
+            {
+              "action": "Address replication/time sync issues using 'repadmin' and 'w32tm'.",
+              "expect": "SYSVOL/Netlogon access stabilizes, reducing logon delays."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-run 'gpresult' and Event Viewer checks after fixes.",
+              "expect": "Boot/logon times return to normal baseline."
+            },
+            {
+              "action": "Monitor user experience for 24 hours.",
+              "expect": "No recurring SBSL complaints reported."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
