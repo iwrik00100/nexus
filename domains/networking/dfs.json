@@ -84,7 +84,8 @@
       "Run 'repadmin /showrepl > C:\\repadmin_showrepl.txt'",
       "Run 'DFSRMIG /getmigrationstate > C:\\dfsrmig_state.txt'",
       "Export DFS Namespace Operational log: 'wevtutil epl Microsoft-Windows-DFSN-Server/Operational C:\\DFSN_Operational.evtx'",
-      "Run 'Get-DfsnServerConfiguration | Out-File C:\\dfsn_server_config.txt'"
+      "Run 'Get-DfsnServerConfiguration | Out-File C:\\dfsn_server_config.txt'",
+      "TSS full data collection — choose based on scenario: '.\\TSS.ps1 -Scenario NET_DFSsrv' (server-side — use for namespace root issues, DFSR replication failures, or SYSVOL replication problems — run on the DFS namespace/replication server), '.\\TSS.ps1 -Scenario NET_DFScli' (client-side — use when clients cannot access DFS paths or receive wrong referrals — run on the affected client)"
     ]
   },
   "playbooks": {

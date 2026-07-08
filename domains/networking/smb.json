@@ -87,7 +87,8 @@
       "Run 'Get-SmbClientConfiguration | Out-File C:\\smb_client_config.txt'",
       "Run 'Get-SmbMultichannelConnection | Out-File C:\\smb_multichannel.txt'",
       "Run 'Get-WinEvent -LogName Microsoft-Windows-SmbServer/Operational | Export-Clixml C:\\smb_server_events.xml'",
-      "Run 'Get-WinEvent -LogName Microsoft-Windows-SMBClient/Security | Export-Clixml C:\\smb_client_security_events.xml'"
+      "Run 'Get-WinEvent -LogName Microsoft-Windows-SMBClient/Security | Export-Clixml C:\\smb_client_security_events.xml'",
+      "TSS full data collection — choose based on scenario: '.\\TSS.ps1 -Scenario NET_SMB' (collect from both client AND server simultaneously for end-to-end trace), '.\\TSS.ps1 -Scenario NET_SMBcli' (client-side only — use when issue is access, mapping, or client behaviour), '.\\TSS.ps1 -Scenario NET_SMBsrv' (server-side only — use when issue is share access, performance, or open file handles on the server)"
     ]
   },
   "playbooks": {

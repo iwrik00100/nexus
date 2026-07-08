@@ -93,7 +93,8 @@
       "Run 'Get-DnsClientGlobalSetting | Out-File C:\\dns_global.txt'",
       "Run 'Get-DnsClientServerAddress | Out-File C:\\dns_server_addresses.txt'",
       "Run 'Get-NetIPConfiguration -Detailed | Out-File C:\\net_ip_config_detailed.txt'",
-      "Export System event log: 'wevtutil epl System C:\\System_Events.evtx'"
+      "Export System event log: 'wevtutil epl System C:\\System_Events.evtx'",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_DNScli' — run on the affected client, reproduce the issue, stop when prompted"
     ]
   },
   "playbooks": {

@@ -84,7 +84,8 @@
       "Collect WAP controller logs: client association log, RADIUS proxy log, and 802.11 state machine log for the failing client MAC.",
       "Run 'gpresult /h C:\\gpo_wireless_report.html'",
       "Run 'Get-NetAdapter | Select Name,Status,DriverVersion,DriverDate,InterfaceDescription | Out-File C:\\nic_info.txt'",
-      "Collect NPS IAS logs and Security event log from the NPS server."
+      "Collect NPS IAS logs and Security event log from the NPS server.",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_WLAN' — run on the affected client, reproduce the authentication or association failure, stop when prompted"
     ]
   },
   "playbooks": {

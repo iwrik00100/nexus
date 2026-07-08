@@ -82,7 +82,8 @@
       "Run 'certutil -store My > C:\\machine_cert_store.txt'",
       "Collect NPS configs: 'netsh nps show np > C:\\nps_np.txt'; 'netsh nps show crp > C:\\nps_crp.txt'",
       "Collect switch outputs: 'show dot1x', 'show authentication sessions', 'show radius statistics', 'show running-config interface <int>'",
-      "Run 'Get-WinEvent -LogName Microsoft-Windows-Wired-AutoConfig/Operational | Export-Clixml C:\\wired_events.xml'"
+      "Run 'Get-WinEvent -LogName Microsoft-Windows-Wired-AutoConfig/Operational | Export-Clixml C:\\wired_events.xml'",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_802Dot1x' — run on the affected client, reproduce the authentication failure, stop when prompted"
     ]
   },
   "playbooks": {

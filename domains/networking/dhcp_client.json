@@ -76,7 +76,8 @@
       "Run 'Get-NetAdapter | Export-Clixml C:\\net_adapters.xml'",
       "Run 'Get-NetAdapterBinding | Out-File C:\\adapter_bindings.txt'",
       "Run 'Get-WinEvent -LogName Microsoft-Windows-Dhcp-Client/Operational | Export-Clixml C:\\dhcp_client_events.xml'",
-      "Run 'Get-NetAdapterPowerManagement | Out-File C:\\nic_power_management.txt'"
+      "Run 'Get-NetAdapterPowerManagement | Out-File C:\\nic_power_management.txt'",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_DHCPcli' — run on the affected client, reproduce the issue, stop when prompted"
     ]
   },
   "playbooks": {

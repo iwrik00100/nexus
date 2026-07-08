@@ -89,7 +89,8 @@
       "Run 'Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational | Export-Clixml C:\\dhcp_server_events.xml'",
       "Run 'Get-DhcpServerv4DnsSetting | Out-File C:\\dhcp_dns_settings.txt'",
       "Run 'Get-DhcpServerv4Policy | Out-File C:\\dhcp_policies.txt'",
-      "Run 'Get-DhcpServerDatabase | Out-File C:\\dhcp_database_config.txt'"
+      "Run 'Get-DhcpServerDatabase | Out-File C:\\dhcp_database_config.txt'",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_DHCPsrv' — run on the DHCP server, reproduce the issue, stop when prompted"
     ]
   },
   "playbooks": {
