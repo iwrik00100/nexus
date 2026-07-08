@@ -2,7 +2,7 @@
   "key": "directory_services",
   "label": "Directory Services",
   "icon": "🏛",
-  "description": "Active Directory DS, AD CS, AD FS, Azure AD, Kerberos, LDAP, Group Policy",
+  "description": "Active Directory DS, Group Policy, SBSL",
   "technologies": [
     { "key": "ad_ds", "label": "AD DS", "icon": "🏛" },
     { "key": "group_policy", "label": "Group Policy", "icon": "📜" },

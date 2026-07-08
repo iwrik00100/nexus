@@ -25,7 +25,7 @@ const SECTION_META = {
 // Domain definitions — drives the landing page cards
 const DOMAINS = [
   { key: 'networking',          label: 'Networking',              icon: '🌐', description: 'DNS, DHCP, TCP/IP, SMB, DFS, NPS, 802.1x, VPN' },
-  { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, AD CS, AD FS, Azure AD, Kerberos, LDAP, GPO' },
+  { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, Group Policy, SBSL' },
   { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Disk I/O, Network throughput, WPA, ETW',  hidden: true },
   { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'Logon, Profiles, App Compat, AVD, RDS, Printing',       hidden: true },
   { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Intune, SCCM, Autopilot, WSUS, WDS, Co-Management',    hidden: true },
