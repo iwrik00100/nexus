@@ -26,11 +26,11 @@ const SECTION_META = {
 const DOMAINS = [
   { key: 'networking',          label: 'Networking',              icon: '🌐', description: 'DNS, DHCP, TCP/IP, SMB, DFS, NPS, 802.1x, VPN' },
   { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, AD CS, AD FS, Azure AD, Kerberos, LDAP, GPO' },
-  { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Disk I/O, Network throughput, WPA, ETW' },
-  { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'Logon, Profiles, App Compat, AVD, RDS, Printing' },
-  { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Intune, SCCM, Autopilot, WSUS, WDS, Co-Management' },
-  { key: 'storage_ha',          label: 'Storage & High Availability', icon: '💾', description: 'Storage Spaces, Failover Cluster, Hyper-V, ReFS, iSCSI' },
-  { key: 'collaboration',       label: 'Collaboration',           icon: '🤝', description: 'Exchange Online, Teams, SharePoint, OneDrive, M365' }
+  { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Disk I/O, Network throughput, WPA, ETW',  hidden: true },
+  { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'Logon, Profiles, App Compat, AVD, RDS, Printing',       hidden: true },
+  { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Intune, SCCM, Autopilot, WSUS, WDS, Co-Management',    hidden: true },
+  { key: 'storage_ha',          label: 'Storage & High Availability', icon: '💾', description: 'Storage Spaces, Failover Cluster, Hyper-V, ReFS, iSCSI',  hidden: true },
+  { key: 'collaboration',       label: 'Collaboration',           icon: '🤝', description: 'Exchange Online, Teams, SharePoint, OneDrive, M365',    hidden: true }
 ];
 
 // ─── Base path for JSON files ─────────────────────────────────────────────────
@@ -149,7 +149,7 @@ const DOMAIN_TECH_COUNTS = {
 function renderDomainGrid() {
   const grid = document.getElementById('domainGrid');
   grid.innerHTML = '';
-  DOMAINS.forEach(d => {
+  DOMAINS.filter(d => !d.hidden).forEach(d => {
     const card = document.createElement('button');
     card.className = 'domain-card';
     card.dataset.domain = d.key;
