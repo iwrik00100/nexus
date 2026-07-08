@@ -138,7 +138,7 @@ function _showPage(pageId) {
 // ─── Domain Grid ──────────────────────────────────────────────────────────────
 const DOMAIN_TECH_COUNTS = {
   networking: '11 technologies',
-  directory_services: '7 technologies',
+  directory_services: '3 technologies',
   performance: '6 technologies',
   user_experience: '6 technologies',
   device_deployment: '6 technologies',
