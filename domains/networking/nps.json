@@ -87,7 +87,8 @@
       "Capture RADIUS traffic trace: 'netsh trace start capture=yes tracefile=C:\\nps_radius_trace.etl' — reproduce — stop.",
       "Run 'netsh nps show remoteserver > C:\\nps_remote_servers.txt'",
       "Run 'Get-ADGroupMember -Identity \"RAS and IAS Servers\" | Select Name,SamAccountName | Out-File C:\\ras_ias_members.txt'",
-      "Run 'Get-ADUser -Filter * -Properties msNPAllowDialin | Where msNPAllowDialin -eq $false | Select Name,SamAccountName | Out-File C:\\users_denied_dialin.txt'"
+      "Run 'Get-ADUser -Filter * -Properties msNPAllowDialin | Where msNPAllowDialin -eq $false | Select Name,SamAccountName | Out-File C:\\users_denied_dialin.txt'",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_NPS' — run on the NPS server, reproduce the authentication failure, stop when prompted"
     ]
   },
   "playbooks": {

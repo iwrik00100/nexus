@@ -106,7 +106,8 @@
       "Run 'Get-DnsServerStatistics | ConvertTo-Json | Out-File C:\\dns_statistics.json'",
       "Export all zone data: ForEach ($z in (Get-DnsServerZone).ZoneName) { dnscmd /zoneexport $z \"C:\\$z.dns\" }",
       "Run 'Get-DnsServerDiagnostics | Out-File C:\\dns_diagnostics.txt'",
-      "Collect System and Application event logs: 'wevtutil epl System C:\\System_Events.evtx'; 'wevtutil epl Application C:\\App_Events.evtx'"
+      "Collect System and Application event logs: 'wevtutil epl System C:\\System_Events.evtx'; 'wevtutil epl Application C:\\App_Events.evtx'",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_DNSsrv' — run on the DNS server, reproduce the issue, stop when prompted"
     ]
   },
   "playbooks": {

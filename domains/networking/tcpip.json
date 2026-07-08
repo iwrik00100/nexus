@@ -86,7 +86,8 @@
       "Run 'netsh wfp show state file=C:\\wfp_filters.xml'",
       "Run 'Get-NetAdapterAdvancedProperty | Out-File C:\\nic_advanced_properties.txt'",
       "Run 'Get-NetRoute | Export-Csv C:\\routing_table.csv -NoTypeInformation'",
-      "Collect kernel memory dump for tcpip.sys bugchecks: configure via 'sysdm.cpl > Advanced > Startup and Recovery > Kernel memory dump'."
+      "Collect kernel memory dump for tcpip.sys bugchecks: configure via 'sysdm.cpl > Advanced > Startup and Recovery > Kernel memory dump'.",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_General' — run on the affected machine, reproduce the issue, stop when prompted"
     ]
   },
   "playbooks": {

@@ -85,7 +85,8 @@
       "Run 'netsh ipsec dynamic show all > C:\\ipsec_dynamic.txt' on both client and RRAS server.",
       "Export AOVPN profiles: 'Get-VpnConnection -AllUserConnection | ConvertTo-Json | Out-File C:\\aovpn_device.json'",
       "Run 'certutil -store My > C:\\rras_server_certs.txt' on the RRAS server.",
-      "Collect NPS verbose trace: 'netsh nps set tracing mode=all' — reproduce — disable — collect C:\\Windows\\tracing\\nps.log"
+      "Collect NPS verbose trace: 'netsh nps set tracing mode=all' — reproduce — disable — collect C:\\Windows\\tracing\\nps.log",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_VPN' — run on the affected VPN client, reproduce the connection failure, stop when prompted"
     ]
   },
   "playbooks": {
