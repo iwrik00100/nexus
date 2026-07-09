@@ -1,0 +1,119 @@
+{
+  "key": "rdp",
+  "label": "Unable to take RDP",
+  "icon": "🔑",
+  "domain": "user_experience",
+  "scoping": {
+    "l1": [
+      "Question 1 — What is the exact error message?",
+      "Question 2 - Is this RDS deployement or standalone machine?",
+      "Question 3 - How users are taking RDP whether its through MSTSC or any 3rd party applicaton?",
+      "Question 4 - What is the behaviour on console session?",
+      "Question 5 - Is the issue is same with hostname and IP both?",
+      "Question 6 - Since when facing the issue? Any changes that has been made in the environment?"
+    ],
+    "l2": [
+      "What type of profile is in use? Local or Roaming?",
+      "If roaming profile then what is the roaming solution? FSLogix/AD/3rd party roaming solution?",
+      "What is the behavior if we take RDP of LocalHost?",
+      "Machines are domain joined or workgroup?",
+      "If domain joined whether are in the same domain or different?",
+      "Where exactly the machines are hosted? Azure/AWS/Citrix/VMware?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - What is the OS version of source and destination machines?",
+      "Question 2 - Any specific user is unable to take RDP or all the users are affected?",
+      "Question 3 - How many machines are affected?",
+      "Question 4 - What is the patch level on the source and destination machine?",
+      "Question 5 - If issue occurs after installing the latest patch then what is the behaviour after removing the patch?",
+      "Question 6 - Are there warnings/errors in System or Application logs during RDP?"
+    ],
+    "l2": [
+      "IS there any policy which is restricting the remote access of the machine?",
+      "Is there any connection limit is set through group policy?",
+      "What is the role on the destination machine?",
+      "If the Session Host role is installed then is there any Licensing Server is configured?",
+      "If not then whether the Session host is in grace period or not?",
+      "Is there any Gateway or intermediate deice is configured in between the client and server?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Check the status of the RDP protocol on a remote computer?",
+      "Navigate to HKEY_LOCAL_MACHINE/SYSTEM/CurrentControlSet/ControlTerminal Server and HKEY_LOCAL_MACHINE/SOFTWARE/Policies/Microsoft/Windows NT/Terminal Services If the value of the fDenyTSConnections key is 0, then RDP is enabled. If the value of the fDenyTSConnections key is 1, then RDP is disabled.",
+      "Check whether a GPO is blocking RDP on a local computer",
+      "Check whether a GPO is blocking RDP on a remote computer",
+      "Check the status of the RDP services? Termservice and UmRDPService should be in running status"
+    ],
+    "l2": [
+      "Check the status of the RDP listener (Enter qwinsta)(HKEY_LOCAL_MACHINE/SYSTEM/CurrentControlSet/Control/Terminal Server/WinStations/RDP-Tcp).",
+      "Check the status of the RDP self-signed certificate.",
+      "Check the permissions of the MachineKey folder (C:/ProgramData/Microsoft/Crypto/RSA)",
+      "Check the RDP listener port",
+      "Check that another application is not trying to use the same port",
+      "Check whether a firewall is blocking the RDP port (psping -accepteula <computer IP>:3389)"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export System and Application event logs in .evtx format.",
+      "Run 'gpresult /h gp.html' to capture applied GPOs.",
+      "Run 'qwinsta /server:<hostname>' to capture current RDP session state."
+    ],
+    "l2": [
+      "Collect the RDS traces while taking the RDP from client to server",
+      "Export RDP-TCP core Operation event logs",
+      "Capture a network trace"
+    ]
+  },
+  "playbooks": {
+    "RDP": {
+      "title": "Unable to take RDP/ An Internal Error Occurred",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Navigate to C:/ProgramData/Microsoft/Crypto/RSA and check the Properties of MachineKey Folder",
+              "expect": "Make sure that the following permissions are configured Builtin/Administrators: Full control and Everyone:Read,Write"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the permission of f686 key under Machine Key folder",
+              "expect": "It should have the same permission level as of the parent folder"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Change the permission to the default one and if not then rename the Machine Key folder as .old",
+              "expect": "After reboot new Machine Key folder will get create."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Take the MSTSC of the remote computer",
+              "expect": "User will be able to successfully take session"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
