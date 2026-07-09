@@ -1,5 +1,5 @@
 {
-"key": "RDP",
+  "key": "rdp",
   "label": "Unable to take RDP",
   "icon": "🔑",
   "domain": "user_experience",
@@ -59,7 +59,8 @@
   "datacollection": {
     "l1": [
       "Export System and Application event logs in .evtx format.",
-      "Run 'gpresult /h gp.html' to capture applied GPOs."
+      "Run 'gpresult /h gp.html' to capture applied GPOs.",
+      "Run 'qwinsta /server:<hostname>' to capture current RDP session state."
     ],
     "l2": [
       "Collect the RDS traces while taking the RDP from client to server",
