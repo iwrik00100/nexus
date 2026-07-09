@@ -15,13 +15,12 @@ You do **not** need to know how to code. You only edit JSON files (structured te
 5. [One-time setup — Open the project in VS Code](#5-one-time-setup--open-the-project-in-vs-code)
 6. [Every time — Create your working branch](#6-every-time--create-your-working-branch)
 7. [Every time — Add your content](#7-every-time--add-your-content)
-8. [Every time — Validate your JSON before submitting](#8-every-time--validate-your-json-before-submitting)
-9. [Every time — Submit your work (Pull Request)](#9-every-time--submit-your-work-pull-request)
-10. [JSON content rules](#10-json-content-rules)
-11. [Domain ownership](#11-domain-ownership)
-12. [Playbook guidelines](#12-playbook-guidelines)
-13. [Commit message format](#13-commit-message-format)
-14. [Need help?](#14-need-help)
+8. [Every time — Submit your work (Pull Request)](#8-every-time--submit-your-work-pull-request)
+9. [JSON content rules](#9-json-content-rules)
+10. [Domain ownership](#10-domain-ownership)
+11. [Playbook guidelines](#11-playbook-guidelines)
+12. [Commit message format](#12-commit-message-format)
+13. [Need help?](#13-need-help)
 
 ---
 
@@ -83,34 +82,6 @@ VS Code is the editor you will use to write and edit JSON files. It highlights e
 4. When asked, tick **Add to PATH** and **Open with Code** options if shown
 
 **Verify it worked:** Open VS Code from your Start Menu or Applications folder. You should see a welcome screen.
-
----
-
-### 2c. Node.js — needed for JSON validation
-
-Node.js lets you run the validation tool that checks your JSON before you submit.
-
-1. Go to https://nodejs.org
-2. Click the **LTS** (Long Term Support) download button
-3. Run the installer with all defaults
-
-**Verify it worked:** Open a terminal and run:
-```
-node --version
-```
-You should see something like `v20.x.x`.
-
----
-
-### 2d. Install the JSON validator
-
-Open a terminal and run this one command:
-
-```bash
-npm install -g ajv-cli ajv-formats
-```
-
-This installs the same validator that the CI pipeline uses to check your files.
 
 ---
 
@@ -341,53 +312,7 @@ Open `domains/<your_domain>/_index.json` and add your technology to the `technol
 
 ---
 
-### Step 3 — Update `app.js` tech count and description
-
-Open `src/app.js` and find the two places that reference your domain:
-
-**1. `DOMAINS` array** — update the `description` to include your new technology:
-```js
-{ key: 'user_experience', label: 'User Experience', icon: '👤', description: 'Logon, RDP / Remote Desktop Services' },
-```
-
-**2. `DOMAIN_TECH_COUNTS` map** — update the count:
-```js
-user_experience: '2 technologies',
-```
-
----
-
-## 8. Every time — Validate your JSON before submitting
-
-Always validate locally before opening a PR. This catches errors before CI does.
-
-Open a terminal in the project root folder and run:
-
-```bash
-# Validate your technology file
-ajv validate -s schema/technology.schema.json -d domains/user_experience/logon.json --spec=draft7 --strict=false
-
-# Validate the domain index file
-ajv validate -s schema/domain-index.schema.json -d domains/user_experience/_index.json --spec=draft7 --strict=false
-```
-
-**If it says `valid`** — you are good to go.
-
-**If it shows errors** — read the error message carefully. Common mistakes:
-
-| Error message | What it means | How to fix |
-|---|---|---|
-| `"key" must match pattern "^[a-z0-9_]+$"` | Your `key` has uppercase letters or spaces | Change to lowercase with underscores |
-| `"l1" must NOT have fewer than 3 items` | You have fewer than 3 questions | Add more questions |
-| `"string" must NOT have fewer than 10 characters` | A question is too short | Make it longer |
-| `"severity" must be equal to one of the allowed values` | Wrong severity value | Use exactly `"high"`, `"medium"`, or `"low"` |
-| `Unexpected token` | Invalid JSON syntax | Check for missing commas or quotes |
-
-**Tip — catching JSON syntax errors in VS Code:** VS Code will underline JSON errors in red as you type. Look for red squiggles and hover over them to see what is wrong.
-
----
-
-## 9. Every time — Submit your work (Pull Request)
+## 8. Every time — Submit your work (Pull Request)
 
 A **Pull Request (PR)** is how you send your work to the repo owner for review. Here is the full flow:
 
@@ -402,7 +327,6 @@ git status
 # Stage all your changed files
 git add domains/user_experience/logon.json
 git add domains/user_experience/_index.json
-git add src/app.js
 
 # Save the changes with a descriptive message
 git commit -m "feat(user_experience): add Logon and Authentication questions and playbook"
@@ -439,7 +363,7 @@ Tag `@iwrik00100` in a comment on the PR. Once approved and all checks pass, the
 
 ---
 
-## 10. JSON content rules
+## 9. JSON content rules
 
 CI will **block your PR** if any of these fail:
 
@@ -455,7 +379,7 @@ CI will **block your PR** if any of these fail:
 
 ---
 
-## 11. Domain ownership
+## 10. Domain ownership
 
 | Domain | Folder | Owner |
 |---|---|---|
@@ -471,7 +395,7 @@ Your PR must be approved by your domain owner before it can merge. If your domai
 
 ---
 
-## 12. Playbook guidelines
+## 11. Playbook guidelines
 
 - Always use **4 phases**: Verify → Isolate → Fix → Confirm
 - `action` — the exact command or action the engineer should perform
@@ -484,7 +408,7 @@ Your PR must be approved by your domain owner before it can merge. If your domai
 
 ---
 
-## 13. Commit message format
+## 12. Commit message format
 
 Use this format for all commits:
 
@@ -504,7 +428,7 @@ docs: update CONTRIBUTING.md
 
 ---
 
-## 14. Need help?
+## 13. Need help?
 
 - **JSON syntax error you can't figure out** — paste your JSON into https://jsonlint.com — it will highlight exactly where the problem is
 - **Git or GitHub question** — open a GitHub Issue with the `question` label at https://github.com/iwrik00100/nexus/issues
