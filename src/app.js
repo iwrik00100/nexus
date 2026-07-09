@@ -27,7 +27,7 @@ const DOMAINS = [
   { key: 'networking',          label: 'Networking',              icon: '🌐', description: 'DNS, DHCP, TCP/IP, SMB, DFS, NPS, 802.1x, VPN' },
   { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, Group Policy, SBSL' },
   { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Disk I/O, Network throughput, WPA, ETW',  hidden: true },
-  { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'Logon, Profiles, App Compat, AVD, RDS, Printing' },
+  { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'RDP / Remote Desktop Services' },
   { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Intune, SCCM, Autopilot, WSUS, WDS, Co-Management',    hidden: true },
   { key: 'storage_ha',          label: 'Storage & High Availability', icon: '💾', description: 'Storage Spaces, Failover Cluster, Hyper-V, ReFS, iSCSI',  hidden: true },
   { key: 'collaboration',       label: 'Collaboration',           icon: '🤝', description: 'Exchange Online, Teams, SharePoint, OneDrive, M365',    hidden: true }
