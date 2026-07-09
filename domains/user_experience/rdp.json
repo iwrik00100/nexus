@@ -1,6 +1,7 @@
+{
 "key": "RDP",
   "label": "Unable to take RDP",
-  "icon": "💻",
+  "icon": "🔑",
   "domain": "user_experience",
   "scoping": {
     "l1": [
@@ -51,21 +52,21 @@
       "Check the status of the RDP self-signed certificate.",
       "Check the permissions of the MachineKey folder (C:/ProgramData/Microsoft/Crypto/RSA)",
       "Check the RDP listener port",
-      "Check that another application is not trying to use the same port"
+      "Check that another application is not trying to use the same port",
       "Check whether a firewall is blocking the RDP port (psping -accepteula <computer IP>:3389)"
     ]
   },
   "datacollection": {
     "l1": [
       "Export System and Application event logs in .evtx format.",
-      "Run 'gpresult /h gp.html' to capture applied GPOs.",
+      "Run 'gpresult /h gp.html' to capture applied GPOs."
     ],
     "l2": [
       "Collect the RDS traces while taking the RDP from client to server",
       "Export RDP-TCP core Operation event logs",
-      "Capture a network trace",
+      "Capture a network trace"
     ]
-  }
+  },
   "playbooks": {
     "RDP": {
       "title": "Unable to take RDP/ An Internal Error Occurred",
