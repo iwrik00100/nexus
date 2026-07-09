@@ -222,10 +222,14 @@ body {
 /* ── Domain Grid ─────────────────────────────────────────────── */
 .domain-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  max-width: 620px;
+  max-width: 960px;
   margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .domain-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 }
 
 .domain-card {
@@ -1378,7 +1382,6 @@ body.theme-dark .q-highlight { background: rgba(0,212,255,0.18); color: #00d4ff;
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .landing-main { padding: 2.5rem 1.2rem 2rem; gap: 2rem; }
-  .domain-grid  { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
   .landing-hero-title { font-size: 2.2rem; }
   .domain-main  { padding: 1.5rem 1.2rem 3rem; }
   .tech-grid    { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
