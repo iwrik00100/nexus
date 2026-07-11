@@ -2,33 +2,132 @@
   "key": "directory_services",
   "label": "Directory Services",
   "icon": "🏛",
-  "domain": "directory_services",
   "description": "Active Directory DS, Replication, Group Policy, Lifecycle, Authentication, Security Controls, and Storage Operations",
   "technologies": [
-    { "key": "ad_ds", "label": "AD DS", "icon": "🏛" },
-    { "key": "ad_replication", "label": "AD Replication", "icon": "🔄" },
-    { "key": "group_policy", "label": "Group Policy", "icon": "📜" },
-    { "key": "sb_sl", "label": "SBSL", "icon": "💻" },
-    { "key": "dfsr", "label": "DFSR", "icon": "🔄" },
-    { "key": "account_lockout", "label": "Account Lockout", "icon": "🔒" },
-    { "key": "dc_locator", "label": "DC Locator", "icon": "🔍" },
-    { "key": "ad_disaster_recovery", "label": "AD Disaster Recovery", "icon": "🏛" },
-    { "key": "kerberos", "label": "Kerberos", "icon": "🔑" },
-    { "key": "userprofiles", "label": "User Profile", "icon": "👤" },
-    { "key": "windows_time", "label": "Windows Time", "icon": "⏰" },
-    { "key": "permissions_access_control_auditing", "label": "Permissions, Access Control, and Auditing", "icon": "🔐" },
-    { "key": "ldap", "label": "LDAP", "icon": "🗂" },
-    { "key": "credential_guard", "label": "Credential Guard", "icon": "🛡" },
-    { "key": "ad_topology", "label": "Active Directory Topology", "icon": "🌐" },
-    { "key": "dcpromo_installation", "label": "DCPromo & DC Installation", "icon": "💿" },
-    { "key": "ad_domain_join", "label": "AD Domain Join", "icon": "💻" },
-    { "key": "adcs", "label": "ADCS", "icon": "🏛" },
-    { "key": "certificate_enrollment", "label": "Certificate Enrollment", "icon": "📜" },
-    { "key": "ssl_tls", "label": "SSL / TLS", "icon": "🔒" },
-    { "key": "certificate_revocation_checking", "label": "Certificate Revocation Checking", "icon": "🚫" },
-    { "key": "domain_forest_trusts", "label": "Domain & Forest Trusts", "icon": "🤝" },
-    { "key": "secure_channel_issues", "label": "Secure Channel Issues", "icon": "🔌" },
-    { "key": "lsass_performance", "label": "LSASS High CPU & Performance", "icon": "⚡" },
-    { "key": "folder_redirection", "label": "Folder Redirection", "icon": "📂" }
+    {
+      "key": "ad_ds",
+      "label": "AD DS",
+      "icon": "🏛"
+    },
+    {
+      "key": "ad_replication",
+      "label": "AD Replication",
+      "icon": "🔄"
+    },
+    {
+      "key": "group_policy",
+      "label": "Group Policy",
+      "icon": "📜"
+    },
+    {
+      "key": "sb_sl",
+      "label": "SBSL",
+      "icon": "💻"
+    },
+    {
+      "key": "dfsr",
+      "label": "DFSR",
+      "icon": "🔄"
+    },
+    {
+      "key": "account_lockout",
+      "label": "Account Lockout",
+      "icon": "🔒"
+    },
+    {
+      "key": "dc_locator",
+      "label": "DC Locator",
+      "icon": "🔍"
+    },
+    {
+      "key": "ad_disaster_recovery",
+      "label": "AD Disaster Recovery",
+      "icon": "🏛"
+    },
+    {
+      "key": "kerberos",
+      "label": "Kerberos",
+      "icon": "🔑"
+    },
+    {
+      "key": "userprofiles",
+      "label": "User Profile",
+      "icon": "👤"
+    },
+    {
+      "key": "windows_time",
+      "label": "Windows Time",
+      "icon": "⏰"
+    },
+    {
+      "key": "permissions_access_control_auditing",
+      "label": "Permissions, Access Control, and Auditing",
+      "icon": "🔐"
+    },
+    {
+      "key": "ldap",
+      "label": "LDAP",
+      "icon": "🗂"
+    },
+    {
+      "key": "credential_guard",
+      "label": "Credential Guard",
+      "icon": "🛡"
+    },
+    {
+      "key": "ad_topology",
+      "label": "Active Directory Topology",
+      "icon": "🌐"
+    },
+    {
+      "key": "dcpromo_installation",
+      "label": "DCPromo & DC Installation",
+      "icon": "💿"
+    },
+    {
+      "key": "ad_domain_join",
+      "label": "AD Domain Join",
+      "icon": "💻"
+    },
+    {
+      "key": "adcs",
+      "label": "ADCS",
+      "icon": "🏛"
+    },
+    {
+      "key": "certificate_enrollment",
+      "label": "Certificate Enrollment",
+      "icon": "📜"
+    },
+    {
+      "key": "ssl_tls",
+      "label": "SSL / TLS",
+      "icon": "🔒"
+    },
+    {
+      "key": "certificate_revocation_checking",
+      "label": "Certificate Revocation Checking",
+      "icon": "🚫"
+    },
+    {
+      "key": "domain_forest_trusts",
+      "label": "Domain & Forest Trusts",
+      "icon": "🤝"
+    },
+    {
+      "key": "secure_channel_issues",
+      "label": "Secure Channel Issues",
+      "icon": "🔌"
+    },
+    {
+      "key": "lsass_performance",
+      "label": "LSASS High CPU & Performance",
+      "icon": "⚡"
+    },
+    {
+      "key": "folder_redirection",
+      "label": "Folder Redirection",
+      "icon": "📂"
+    }
   ]
 }
