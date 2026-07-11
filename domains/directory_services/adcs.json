@@ -1,0 +1,90 @@
+{
+  "key": "adcs",
+  "label": "Active Directory Certificate Services (ADCS)",
+  "icon": "🏛",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Is the Certification Authority (CA) service completely failing to start up on the host?",
+      "When did clients start encountering trust or validation issues with issued certificates?",
+      "Is this an enterprise root CA integrated with Active Directory or a standalone unit?"
+    ],
+    "l2": [
+      "Is a hardware security module (HSM) connection failure preventing the CA key from loading?",
+      "Has the CA certificate itself expired or been inadvertently added to a revocation list?",
+      "Are Active Directory AIA and CDP container extensions accessible to validation checkers?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'certutil -cainfo' to dump configuration states and structural summary metrics.",
+      "Check the Application event log for errors tagged under source 'CertificationAuthority'.",
+      "Run 'certutil -ping' to verify cross-network accessibility parameters to the CA service endpoint."
+    ],
+    "l2": [
+      "Execute 'certutil -v -verifyStore My' to evaluate the integrity of the core CA store.",
+      "Check VSS writer health metrics flags using command 'vssadmin list writers' summaries.",
+      "Query Active Directory PKI configurations tracking using configuration command 'certutil -viewstore'."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Start the service using command tool options 'net start certsvc' via administration consoles.",
+      "Fix network parameters to restore links between the CA and corporate domain controllers.",
+      "Update missing certificate distribution points data links tracking definitions elements manually."
+    ],
+    "l2": [
+      "Renew the primary Certification Authority certificate utilizing current active root template formats.",
+      "Fix broken cryptographic provider service associations using certutil repairs pathways switches.",
+      "Clear out invalid metadata records from systemic AD CS configuration containers partitions maps."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export complete application logs tracking CA system service startup attempt histories.",
+      "Collect basic output metrics logs produced by target certutil query strings entries.",
+      "Gather target system hardware status updates logs reflecting active crypto card modules mappings."
+    ],
+    "l2": [
+      "Dump complete registry keys sets from HKLM\\SYSTEM\\CurrentControlSet\\Services\\CertSvc\\Configuration.",
+      "Collect binary copies of corporate active CRL files for structural evaluation parsing tasks.",
+      "Gather complete cryptographic service provider diagnostic trace files outputs summaries details."
+    ]
+  },
+  "playbooks": {
+    "ca_service_database_corruption": {
+      "title": "Recovering ADCS Services Following Jet Database Transaction Mismatches",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "net start certsvc", "expect": "Fails immediately, outputting error string tracking database failure status code 0x5a" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "certutil -databasestatus", "expect": "Identifies transaction error states, logging damaged index markers inside operational files" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "esentutl /r edb /d", "expect": "Executes localized transaction rollbacks, restoring operational database file balance states structurally" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "net start certsvc", "expect": "Launches successfully, returning active validation processing status indicators instantly" }
+          ]
+        }
+      ]
+    }
+  }
+}

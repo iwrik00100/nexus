@@ -1,0 +1,90 @@
+{
+  "key": "ad_topology",
+  "label": "Active Directory Topology",
+  "icon": "🌐",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are replication delays occurring globally or only between specific physical sites?",
+      "When did clients start connecting to domain controllers outside their local site?",
+      "Are all subnet ranges currently associated with a corresponding Active Directory site?"
+    ],
+    "l2": [
+      "Is the Inter-Site Topology Generator (ISTG) failing to create necessary connection objects?",
+      "Are bridgehead servers overloaded or manually assigned, blocking automatic failover?",
+      "Has a change in network routing tables rendered site link costs incorrect or obsolete?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'repadmin /kcc' to force the Knowledge Consistency Checker to run on the local DC.",
+      "Execute 'repadmin /istg' to identify the current ISTG owner for the site.",
+      "Check the Directory Service event log for Event IDs 1311 or 1566 topology generation failures."
+    ],
+    "l2": [
+      "Run 'repadmin /showconn *' to view all automatically and manually created connection objects.",
+      "Execute a PowerShell query to match local IP subnets against the NTDS site mappings configurations.",
+      "Use 'nltest /dsaddress:<Client_IP>' to see exactly which site a specific target resolves to."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Associate unassigned subnets to their proper geographical location via ADSS console.",
+      "Clear forced or broken manual connection objects to allow KCC to build optimal pathways.",
+      "Verify that RPC dynamic ports are open between all designated site bridgehead servers."
+    ],
+    "l2": [
+      "Enable or disable the 'Bridge all site links' setting depending on network mesh design rules.",
+      "Re-allocate FSMO or ISTG roles if the current owner server has become chronically unresponsive.",
+      "Adjust site link costs and replication intervals to align with actual hardware link speeds."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export all subnet-to-site associations to a text layout via Active Directory PowerShell module.",
+      "Collect comprehensive KCC execution logs by grabbing recent Directory Service event traces.",
+      "Save the output of 'repadmin /failcache' to log persistent cross-site connection blocks."
+    ],
+    "l2": [
+      "Export the entire configuration partition site topology tree structure using LDP or LDIFDE.",
+      "Capture packet sweeps during forced KCC runs over port 135 and dynamic RPC ranges.",
+      "Gather target router IP translation tables to isolate network address translation anomalies."
+    ]
+  },
+  "playbooks": {
+    "missing_subnet_site_mapping": {
+      "title": "Resolving Cross-Site Authentication Traversal Caused by Missing Subnet Maps",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "nltest /dsgetdc:mydomain.local", "expect": "Returns a DC situated in a remote datacenter rather than the local branch office server node" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-WinEvent -ComputerName <DC> -FilterHashtable @{LogName='System';Id=5778} -MaxEvents 1", "expect": "Log entry shows client IP address connected without any matching subnet registration in ADSS configuration entries" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "New-ADReplicationSubnet -Name '10.25.4.0/24' -Site 'Branch-Office-01'", "expect": "Command successfully creates and binds the subnet to the appropriate site object container" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "nltest /dsgetdc:mydomain.local", "expect": "Instantly resolves to the local subnet domain controller node, updating client site properties cleanly" }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "key": "windows_time",
+  "label": "Windows Time",
+  "icon": "⏰",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Is the clock drift symptom limited to specific client machines or domain wide?",
+      "What is the total measured time offset variance between endpoints and systems?",
+      "Are target systems virtual machines or physical infrastructure bare metal nodes?"
+    ],
+    "l2": [
+      "Is the PDC Emulator pointing to a verified external stratum 1 time reference?",
+      "Are client machines following the standard NT5DS domain hierarchy discovery route?",
+      "Are UDP port 123 communication tracks open through border firewall devices?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'w32tm /query /status' to see the current time source and status data.",
+      "Run 'w32tm /query /source' to quickly identify the active synchronization peer.",
+      "Review the System event log entries tagged under the W32Time service code."
+    ],
+    "l2": [
+      "Run 'w32tm /stripchart /computer:<target>' to evaluate latency offsets.",
+      "Verify registry configuration parameters located under system w32time parameters keys.",
+      "Run 'dcdiag /test:checksecurityerror' to verify clock variations flags context."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Force immediate synchronization adjustments using 'w32tm /resync'.",
+      "Restart the local Windows Time service using administration services tools.",
+      "Configure standard domain sync targeting via 'w32tm /config /syncfromflags:DOMHIER /update'."
+    ],
+    "l2": [
+      "Configure the root PDC Emulator node targeting external NTP pools via w32tm settings.",
+      "Unregister and reregister the time service block via 'w32tm /unregister' commands.",
+      "Disable hypervisor time synchronization tools integrations on virtual domain controllers."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect text files capturing complete 'w32tm /query /configuration' outputs.",
+      "Export System log filter structures capturing entries relating to W32Time codes.",
+      "Document current virtualization host clock settings metrics data."
+    ],
+    "l2": [
+      "Enable low-level W32Time service tracking via registry logging path values.",
+      "Capture raw network packet sweeps focusing on NTP UDP 123 network packets.",
+      "Export the applied Group Policy parameters configuring enterprise time objects."
+    ]
+  },
+  "playbooks": {
+    "pdc_time_configuration": {
+      "title": "Configuring the PDC Emulator to Sync with External NTP Source",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "w32tm /query /source", "expect": "Identifies current source; on a broken PDC it often shows 'Local CMOS Clock'" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "w32tm /query /configuration", "expect": "Verify that Type parameter is set to NTP or NT5DS and check current manual peer list configuration" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "w32tm /config /manualpeerlist:\"pool.ntp.org,0x1 time.windows.com,0x1\" /syncfromflags:manual /reliable:YES /update", "expect": "Command completes successfully; updates target operational mode registry entries" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "net stop w32time && net start w32time && w32tm /resync /rediscover", "expect": "w32tm /query /status displays the newly configured external NTP pool server as its active source" }
+          ]
+        }
+      ]
+    }
+  }
+}

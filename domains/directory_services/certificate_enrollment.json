@@ -1,0 +1,90 @@
+{
+  "key": "certificate_enrollment",
+  "label": "Certificate Enrollment",
+  "icon": "📜",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are users encountering enrollment failures during auto-enrollment or manual requests?",
+      "When did endpoints stop receiving updated certificate objects from deployment templates?",
+      "What specific template naming structure is active during the enrollment failure event?"
+    ],
+    "l2": [
+      "Are Active Directory permissions on the target template blocking the user from enrolling?",
+      "Is an alternate key credential trust mapping issue blocking the auto-enrollment module engine?",
+      "Has the maximum number of issued active keys triggered certificate policy containment limits?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'certutil -template' to view active templates listings configurations details sheets.",
+      "Check client Application log files for specific Event ID 13 or 6 auto-enrollment errors.",
+      "Use command 'certreq -enroll' path options to test manual generation capabilities directly."
+    ],
+    "l2": [
+      "Verify template security DACL lists mapping settings utilizing advanced certtmpl.msc tools layout.",
+      "Review historical requests tracking entries tables via the Certification Authority management tool indexes.",
+      "Check target client configuration parameters tracking using 'gpresult /h gpreport.html' tools files."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Add appropriate user security groups into template target permissions with Enroll flags enabled.",
+      "Force client auto-enrollment triggers using command sequences 'gpupdate /force' parameters pathways.",
+      "Unblock pending requests within the CA management interface using explicit issue override tools."
+    ],
+    "l2": [
+      "Re-publish updated certificate templates variations to ensure active availability flags match targets cleanly.",
+      "Fix misconfigured subject alternative name definitions blocking issuance criteria metrics fields.",
+      "Clear old conflicting expired key objects out of localized client personal configuration stores."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export client application log branches capturing certificate enrollment engine event summaries.",
+      "Collect text representations of target failed request profiles generated via certreq utilities.",
+      "Gather target templates assignment parameters maps details utilizing automated scripting sweeps."
+    ],
+    "l2": [
+      "Capture packet traces targeting DCOM and RPC traffic segments during enrollment cycles.",
+      "Export complete AD configuration partition public key infrastructure container object blocks details sheets.",
+      "Dump active local user certificate enrollment policy registry parameters tables configurations values."
+    ]
+  },
+  "playbooks": {
+    "template_permission_denied": {
+      "title": "Resolving Auto-Enrollment Failures Caused by Missing Template Security Configuration Entries",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "certreq -enroll UserTemplate", "expect": "Throws an operational failure string indicating 'Access is denied' or status code 0x80094012" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-CATemplate -Name UserTemplate | Get-AccessControlList", "expect": "Reveals that Domain Users or targeted computers are missing explicit 'Enroll' and 'Autoenroll' permissions" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Set-CATemplatePermission -Name UserTemplate -Group 'Domain Users' -Access Enroll,Autoenroll", "expect": "Updates the Active Directory security descriptor data structures for the target template cleanly" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "certreq -enroll UserTemplate", "expect": "Processes the request successfully, generating and installing the certificate to the local store" }
+          ]
+        }
+      ]
+    }
+  }
+}

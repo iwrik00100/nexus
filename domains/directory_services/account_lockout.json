@@ -1,0 +1,90 @@
+{
+  "key": "account_lockout",
+  "label": "Account Lockout",
+  "icon": "🔒",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Which specific user account or security principal is getting locked out?",
+      "When did the repeated lockout cycles start happening to this account?",
+      "Does the lockout clear temporarily upon administrator manual unlock actions?"
+    ],
+    "l2": [
+      "Is the lockout happening from a domain workstation, server, or external VPN?",
+      "Are there multiple devices or applications simultaneously submitting old credentials?",
+      "Is the lockout threshold configuration policy set domain-wide or via FGPP?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Query the PDC Emulator for Event ID 4740 logs identifying the lockout origin.",
+      "Run 'net user <username> /domain' to verify current lock status and lock time.",
+      "Use the LockoutStatus tool to check state across all active domain controllers."
+    ],
+    "l2": [
+      "Search Security logs for Event IDs 4625 to find bad password attempt data details.",
+      "Inspect the caller computer name field listed inside the 4740 event properties.",
+      "Check network connection sessions to map persistent open authentications."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Unlock the user account utilizing Active Directory Administrative Center UI.",
+      "Have the user update passwords on known mobile devices and persistent apps.",
+      "Clear cached network credentials from the Windows Credential Manager vault."
+    ],
+    "l2": [
+      "Identify and terminate old mapped network drives or scheduled background tasks.",
+      "Restart persistent Windows Services configured with outdated user service accounts.",
+      "Flush cached interactive web application credentials causing invisible background calls."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect text outputs from LockoutStatus tool executed against the target domain.",
+      "Export Event 4740 logs from all Domain Controllers in the infrastructure.",
+      "Gather local client security authentication failure logs during reproduction."
+    ],
+    "l2": [
+      "Enable Netlogon verbose debug logging via 'nltest /dbflag:0x2080ffff' on target controllers.",
+      "Collect network captures filtering on Kerberos and NTLM traffic from client source.",
+      "Dump active scheduled tasks lists from the identified caller workstation machine."
+    ]
+  },
+  "playbooks": {
+    "persistent_lockout_source": {
+      "title": "Locating and remediating persistent user account lockouts",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "net user targetuser /domain", "expect": "Account status should output 'Account active: Lockout'" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-WinEvent -ComputerName <PDC_Name> -FilterHashtable @{LogName='Security';Id=4740} | Select-Object -First 1 -ExpandProperty Message", "expect": "Extract Caller Computer Name to uncover the actual origin workstation" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "rundll32.exe keymgr.dll,KRShowKeyMgr", "expect": "Open credential UI on source client and remove outdated entries for the domain" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Unlock-ADAccount -Identity targetuser", "expect": "Account remains in unlocked status without triggering successive 4740 events" }
+          ]
+        }
+      ]
+    }
+  }
+}

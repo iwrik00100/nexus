@@ -1,0 +1,90 @@
+{
+  "key": "dc_locator",
+  "label": "DC locator",
+  "icon": "🔍",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are clients across all sites failing to locate a local domain controller?",
+      "What specific error messages are thrown during client join or logon attempts?",
+      "Is the issue limited to a particular subnet, VLAN, or geographical site location?"
+    ],
+    "l2": [
+      "Are the AD Site and Subnet mapping assignments correctly configured in ADSS?",
+      "Are DNS server IPs pointing correctly to local or corporate domain DNS zones?",
+      "Are firewalls dropping UDP port 389 LDAP ping calls used during discovery?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'nltest /dsgetdc:<domain>' from the client to test locator process.",
+      "Execute 'nslookup -type=SRV _ldap._tcp.dc._msdcs.<domain>' to check SRV paths.",
+      "Run 'nltest /whowasi' to identify the last contacted domain controller entity."
+    ],
+    "l2": [
+      "Run 'dsregcmd /status' to review discovery data blocks on hybrid joined systems.",
+      "Check Netlogon logs on client for specific locator failure execution records.",
+      "Verify local subnet mapping validity using 'nltest /dsaddress:<IP>' logic."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Flush the local client resolver cache using 'ipconfig /flushdns'.",
+      "Correct the DNS client settings to target valid Active Directory integrated servers.",
+      "Restart Netlogon service on domain controllers to force SRV registrations."
+    ],
+    "l2": [
+      "Add the missing client subnet range into the Active Directory Sites and Services configuration.",
+      "Resolve corporate firewall rule configurations to permit UDP 389 and TCP 3268 flows.",
+      "Fix broken DNS delegation records pointing toward parent infrastructure zones."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect text files containing outputs of nltest discovery commands.",
+      "Export the complete ipconfig configurations and local hosts configuration files.",
+      "Gather outputs of nslookup queries targeting the root domain controllers."
+    ],
+    "l2": [
+      "Enable Netlogon logging on the client by creating %windir%\\debug\\netlogon.log.",
+      "Capture wire packet traces during execution of 'nltest /dsgetdc' queries.",
+      "Export the Active Directory site-to-subnet mapping registry tables summary."
+    ]
+  },
+  "playbooks": {
+    "srv_records_missing": {
+      "title": "Client DC Locator fails due to missing DNS SRV Records",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "nltest /dsgetdc:mydomain.local", "expect": "Returns error status indicating 'Status = 1355 (0x54b) - ERROR_NO_SUCH_DOMAIN'" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "nslookup -type=SRV _ldap._tcp.dc._msdcs.mydomain.local", "expect": "Check if records exist; if output returns non-existent domain, DNS is missing SRV registration" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "nltest /dsregdns", "expect": "Forces registration of local DC records, or manual restart of the Netlogon service" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "nltest /dsgetdc:mydomain.local", "expect": "Successfully returns target DC name, IP address, and associated Active Directory site info" }
+          ]
+        }
+      ]
+    }
+  }
+}

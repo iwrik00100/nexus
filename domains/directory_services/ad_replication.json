@@ -1,0 +1,91 @@
+{
+  "key": "ad_replication",
+  "label": "AD replication",
+  "icon": "🔄",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are there specific domain controllers reporting replication errors?",
+      "When did the replication failure symptoms first begin occurring?",
+      "Is the replication issue happening intra-site or inter-site?"
+    ],
+    "l2": [
+      "Have there been recent changes to the network topology or firewalls between sites?",
+      "Are there any lingering objects or USN rollback indications in the event logs?",
+      "Is the KCC (Knowledge Consistency Checker) failing to generate the replication topology?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'repadmin /showrepl' on the affected Domain Controller.",
+      "Run 'repadmin /replsummary' to check the overall replication health status.",
+      "Check the Directory Service event log for Event IDs 1311, 1864, or 1925."
+    ],
+    "l2": [
+      "Run 'repadmin /showvector <naming_context>' to check the highest USN vectors.",
+      "Run 'dcdiag /test:replications /v' for a verbose replication diagnostics check.",
+      "Use 'repadmin /queue' to see if there are backed-up replication tasks."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Force immediate replication using 'repadmin /syncall /AeD'.",
+      "Verify DNS resolution between the source and destination domain controllers.",
+      "Verify that RPC services and NetBIOS names are reachable across the DCs."
+    ],
+    "l2": [
+      "Fix Lingering Objects using 'repadmin /removelingeringobjects' if error 8606 is present.",
+      "Reset the secure channel between domain controllers using 'nltest /sc_reset:<domain>'.",
+      "Rebuild the SYSVOL share using DFSR authoritatively or non-authoritatively if out of sync."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export the complete Directory Service event log to a .evtx file.",
+      "Run 'repadmin /showrepl * /csv > showrepl_all.csv' to capture full topology states.",
+      "Collect the output of 'ipconfig /all' and 'dcdiag /test:dns' from affected DCs."
+    ],
+    "l2": [
+      "Capture a network trace using Wireshark or Netmon during a forced replication attempt.",
+      "Export the Active Directory configuration partition registry settings for replication.",
+      "Enable verbose diagnostic logging for KCC and Replication via registry keys under NTDS\\Diagnostics."
+    ]
+  },
+  "playbooks": {
+    "rpc_server_unavailable": {
+      "title": "Active Directory Replication fails with 'RPC Server Unavailable' (Error 1722)",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "repadmin /showrepl", "expect": "Look for error string 'The RPC server is unavailable' or error code 1722" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "nltest /dsgetdc:mydomain.local /server:source_dc_name", "expect": "Should succeed; if it fails, DNS or network connectivity is broken" },
+            { "action": "portqry -n source_dc_name -e 135", "expect": "Port 135 (RPC Endpoint Mapper) must report LISTENING" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "net start rpcss", "expect": "Ensure RPC service is started, or unblock required AD ports on the intervening firewall" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "repadmin /syncall /q source_dc_name", "expect": "Syncall terminates without errors, and subsequent repadmin /showrepl displays Successful status" }
+          ]
+        }
+      ]
+    }
+  }
+}

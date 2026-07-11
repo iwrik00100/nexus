@@ -1,0 +1,90 @@
+{
+  "key": "folder_redirection",
+  "label": "Folder Redirection",
+  "icon": "📂",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are target user profiles missing their standard Documents or Desktop configurations paths?",
+      "When did synchronization or file deployment delay symptoms become noticeable to clients?",
+      "Is the target file host cluster situated locally or accessed over high-latency networks links?"
+    ],
+    "l2": [
+      "Is an ownership verification policy setting blocking creation of directories on central shares?",
+      "Are local group policy client extensions failing due to network timing parameter variations constraints?",
+      "Has an NTFS permission model inheritance modification dropped target write capability paths?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Check client machine Application log files for explicit Event ID 502 Folder Redirection errors.",
+      "Verify remote share access availability flags using basic explorer path checking loops.",
+      "Run command sequence 'gpresult /r' to verify matching policy assignment indicators flags variables."
+    ],
+    "l2": [
+      "Review precise policy client extension status listings maps data inside structural HTML report files.",
+      "Verify targeted directory ownership details properties tables fields utilizing advanced file system properties tools.",
+      "Check network tracking metrics parameters values showing latency ranges separating endpoints targets cleanly."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Grant explicit Full Control security permissions to users over their own target profile directories.",
+      "Disable policy constraint setting 'Grant user exclusive rights to Documents' if adjustments are needed.",
+      "Force client configuration synchronization passes using standard policy refresh command pipelines."
+    ],
+    "l2": [
+      "Configure policy synchronization delays options flags to wait for slow network paths connections steps.",
+      "Take folder ownership and reset inherited security controls on target central data repositories.",
+      "Fix invalid offline file caching partition states blocks using localized system clear commands settings."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export client application logs capturing folder redirection engine processing milestones states.",
+      "Collect detailed policy execution status layouts outputs files generated via gpresult tools.",
+      "Save text summaries tracking file path accessibility evaluation checklists details rows rows."
+    ],
+    "l2": [
+      "Capture system file access tracking metrics logs using background telemetry monitor loops outputs.",
+      "Export security descriptors schema lists mapping active permission sets across central profile arrays.",
+      "Gather registry configuration snapshots detailing client offline files caching operational values matrices."
+    ]
+  },
+  "playbooks": {
+    "exclusive_rights_creation_failure": {
+      "title": "Resolving Folder Redirection Launch Blockages Caused by Exclusive Ownership Policy Violations",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Get-WinEvent -LogName Application | Where-Object {$_.Id -eq 502} -MaxEvents 1", "expect": "Finds error log string confirming 'Failed to perform redirection. The folder could not be created'" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-Acl \\\\fileserver\\profiles$\\user1\\Documents", "expect": "Reveals that the administrator or system account mistakenly owns the directory path instead of user1" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Takeown /f \\\\fileserver\\profiles$\\user1\\Documents /a", "expect": "Restores directory ownership tracking alignment back to standard execution groups definitions metrics" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "gpupdate /force", "expect": "Processes folder path transfers completely with zero warning alerts thrown, synchronizing user records cleanly" }
+          ]
+        }
+      ]
+    }
+  }
+}

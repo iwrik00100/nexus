@@ -1,0 +1,90 @@
+{
+  "key": "lsass_performance",
+  "label": "LSASS High CPU, Memory, or Performance",
+  "icon": "⚡",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Is the high resource spike causing domain controllers or members to stop responding?",
+      "When did the performance degradation begin, and does it follow a cyclical pattern?",
+      "Are all authentication protocols experiencing delays, or is the bottleneck protocol-specific?"
+    ],
+    "l2": [
+      "Is an unindexed LDAP query sweep from an external application causing the LSASS thread lock?",
+      "Has a massive brute-force NTLM attack flooded the Netlogon queue parameters boundaries?",
+      "Is a faulty third-party security agent injection causing memory leak scenarios inside the process?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Open Task Manager or Resource Monitor to note explicit LSASS utilization levels metrics data.",
+      "Check Directory Service logs for Event IDs 1175 or 1216 expensive query reports summaries.",
+      "Run 'netstat -ano' to detect abnormal volumes of connections targeting ports 389, 445, or 88."
+    ],
+    "l2": [
+      "Activate the Active Directory Diagnostics data logs collection suite inside Performance Monitor.",
+      "Use NTDS logging parameter registry overrides to capture expensive client execution behaviors paths.",
+      "Review Process Explorer properties metrics tracking threads performance profiles details sheets."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Block the source IP address executing abusive network queries via host firewalls rules.",
+      "Restart auxiliary dependent directory applications if they are flooding bad bind structures.",
+      "Apply current security updates package fixes targeting known core authentication engine leak bugs."
+    ],
+    "l2": [
+      "Instruct application owners to create appropriate indices tracking custom Active Directory properties paths.",
+      "Configure NTLM restriction policies filters variables to force transition loops toward Kerberos pathways.",
+      "Disable problematic third-party credential provider library extensions via configuration registries trees."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect Performance Monitor metric log captures spanning resource spike timelines windows.",
+      "Export Directory Service event logs filtering for long runtime lookup warning markers data.",
+      "Save text listings detailing system connections tables summaries tracking target client nodes."
+    ],
+    "l2": [
+      "Create full process user memory dump files for lsass.exe using official diagnostic tools suites.",
+      "Export keys trees configuration details from HKLM\\SYSTEM\\CurrentControlSet\\Services\\NTDS\\Diagnostics.",
+      "Gather network packet frame sequences traces highlighting transaction frequencies histories files."
+    ]
+  },
+  "playbooks": {
+    "unindexed_ldap_query_flood": {
+      "title": "Isolating and Stopping High LSASS CPU Spikes Sparked by Wildcard LDAP Requests",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Get-Process lsass | Select-Object CPU, WorkingSet", "expect": "Shows extreme CPU utilization rows metrics or severe continuous memory accumulation values" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-WinEvent -LogName 'Directory Service' | Where-Object {$_.Id -eq 1175} | Select-Object -First 5 -ExpandProperty Message", "expect": "Extracts client IP tracking documentation and reveals the problematic unindexed search filter parameters string" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "New-NetFirewallRule -DisplayName 'Block Abusive Client App' -Direction Inbound -RemoteAddress '10.50.2.84' -Action Block", "expect": "Instantly severs connection bounds, preventing the client app from transmitting successive bad queries threads" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Get-Process lsass | Select-Object CPU", "expect": "Resource utilization levels drop cleanly down below baseline target limits instantly" }
+          ]
+        }
+      ]
+    }
+  }
+}

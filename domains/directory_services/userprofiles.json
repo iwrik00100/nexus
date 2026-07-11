@@ -1,0 +1,90 @@
+{
+  "key": "ad_disaster_recovery",
+  "label": "AD Disaster Recovery",
+  "icon": "🏛",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Has the domain sustained a total forest outage or single server failure?",
+      "Are valid System State backups or full bare-metal images currently available?",
+      "Which Domain Controller holds the critical FSMO roles inside the domain structure?"
+    ],
+    "l2": [
+      "Is an authoritative or non-authoritative restore required for SYSVOL components?",
+      "What is the current Tombstone Lifetime configuration setting for the forest objects?",
+      "Are isolated recovery environments networks prepared without any production links?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'wbadmin get versions' to list available local system recovery points.",
+      "Run 'netdom query fsmo' to see current infrastructure master assignments.",
+      "Check event logs for directory service corruption errors such as Event 1003."
+    ],
+    "l2": [
+      "Run 'ntdsutil \"activate instance ntds\" semantic db analysis info' for health evaluation.",
+      "Verify status of NTDS files utilizing 'esentutl /g <path_to_ntds.dit>'.",
+      "Verify backup capabilities by validating VSS writers output strings state data."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Boot into Directory Services Repair Mode (DSRM) utilizing local recovery passwords.",
+      "Restore system state images utilizing wbadmin administration command interface.",
+      "Seize outstanding FSMO roles using ntdsutil if original holders are dead."
+    ],
+    "l2": [
+      "Perform metadata cleanup using ntdsutil for removed offline domain controller nodes.",
+      "Execute authoritative restore configurations on target OUs utilizing ntdsutil utility.",
+      "Fix invalid USN states using strict isolation parameters during server cold boots."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Capture screens and outputs showing wbadmin system state histories records.",
+      "Export the setup and directory service configuration event logs to disks.",
+      "Log the network topologies maps and active IP allocation configurations."
+    ],
+    "l2": [
+      "Gather esentutl database integrity outputs and diagnostic parsing text reports.",
+      "Export systemic registry hives detailing storage configurations parameters settings.",
+      "Collect Active Directory schema configuration dumps matching forest structures."
+    ]
+  },
+  "playbooks": {
+    "metadata_cleanup": {
+      "title": "Performing Metadata Cleanup for a Failed Domain Controller",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "dcdiag /test:connectivity", "expect": "Confirm target dead domain controller is completely unreachable and unrecoverable" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-ADDomainController -Identity failed_dc", "expect": "Retrieve object properties to verify its current NTDS settings path exists in configuration partition" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Remove-ADComputer -Identity failed_dc -Confirm:$false", "expect": "Deletes computer account; modern OS automatically triggers metadata cleanup for the associated DC objects" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "ntdsutil \"metadata cleanup\" \"connections\" \"connect to server local_dc\" \"quit\" \"select operation target\" \"list servers in site\"", "expect": "Verify the failed domain controller no longer shows up in the server inventory list" }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "key": "permissions_access_control_auditing",
+  "label": "Permissions, Access Control, and Auditing",
+  "icon": "🔐",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are permissions missing on files, folders, or Active Directory objects?",
+      "When was the unauthorized access attempt or change first observed?",
+      "Is the access issue impacting a specific user, group, or service account?"
+    ],
+    "l2": [
+      "Is Advanced Security Audit Policy configuration applied domain-wide?",
+      "Are explicit or inherited ACEs blocking the necessary security context?",
+      "Has the AdminSDHolder object modified permissions on protected groups?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'icacls <path>' to view the NTFS discretionary access control list (DACL).",
+      "Run 'acldiag <object_DN>' to check permissions on an Active Directory object.",
+      "Check the Security event log for Event IDs 4663 (Object Access) or 4670 (Permissions Changed)."
+    ],
+    "l2": [
+      "Run 'auditpol /get /category:*' to display current active audit policy rules.",
+      "Execute 'dsacls <object_DN>' to check explicit and inherited security descriptors.",
+      "Search for Event ID 4738 to identify who modified sensitive account permissions."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Grant explicit NTFS permissions using 'icacls <path> /grant <user>:<permission>'.",
+      "Enable permission inheritance on a folder via the advanced security settings UI.",
+      "Force an audit policy refresh across the domain using 'gpupdate /force'."
+    ],
+    "l2": [
+      "Reset inherited ACEs on files using 'icacls <path> /reset /t /c'.",
+      "Restore default Active Directory security descriptors using 'dsacls <DN> /resetDefaultDACL'.",
+      "Fix AdminSDHolder sync blocks by manually correcting the adminCount attribute."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export the local NTFS permissions to a text file using 'icacls <path> /save'.",
+      "Export the Security event log as a .evtx file from the target server.",
+      "Collect the output of the local audit policy status using 'auditpol /get /category:*'."
+    ],
+    "l2": [
+      "Export full AD object security descriptors to a CSV using LDP.exe or PowerShell.",
+      "Capture a continuous Process Monitor boot log to trace denied file system access.",
+      "Export all registry parameters under HKLM\\System\\CurrentControlSet\\Control\\Lsa."
+    ]
+  },
+  "playbooks": {
+    "inherited_permissions_blocked": {
+      "title": "Resolving Access Denied Errors Caused by Blocked NTFS Inheritance",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "icacls C:\\SharedData\\Finance", "expect": "Output displays specific explicit ACEs, but parent permissions are missing" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-Acl C:\\SharedData\\Finance | Select-Object -ExpandProperty AreAccessRulesProtected", "expect": "Returns 'True', confirming inheritance has been explicitly disabled/blocked" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "icacls C:\\SharedData\\Finance /reset", "expect": "Command replaces explicit rules with inherited rules from the parent folder" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "icacls C:\\SharedData\\Finance", "expect": "Output shows proper inherited flags (I) matching the parent directory structure" }
+          ]
+        }
+      ]
+    }
+  }
+}
