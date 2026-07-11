@@ -2,6 +2,7 @@
   "key": "directory_services",
   "label": "Directory Services",
   "icon": "🏛",
+  "domain": "directory_services",
   "description": "Active Directory DS, Replication, Group Policy, Lifecycle, Authentication, Security Controls, and Storage Operations",
   "technologies": [
     { "key": "ad_ds", "label": "AD DS", "icon": "🏛" },
