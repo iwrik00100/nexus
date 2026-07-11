@@ -1,0 +1,141 @@
+{
+"key": "printing",
+  "label": "printing",
+  "icon": "🔑",
+  "domain": "user_experience",
+  "scoping": {
+    "l1": [
+      "Question 1 — How are Printers pushed on the client machines?GPO/GPP/point and print or third party",
+      "Question 2 - Print Client OS and Patch information?",
+      "Question 3 - Print Server OS and Patch information?",
+      "Question 4 - Issue Description and Error message if any?",
+      "Question 5 - How many Printers affected?",
+      "Question 6 - How many Print Clients Affected?"
+
+    ],
+    "l2": [
+    
+    "What are the events logged for this issue on the event logs.?",
+    "Is the print spooler service running and have you tried rebooting the print spooler service or not?",
+    "Have you tried pinging the printers ip address?",
+    "Have you tried changing the print driver for the printer (or updated the driver)",
+    "Collect the Print Driver Information.What is the exact error message?"
+
+
+    ]
+  },
+  "probing": {
+    "l1": [
+        "Ouestion 1 - What is the error message?",
+    "Question 2 - Is only a single user affected or others as well?",
+    "Question 3 - Are we able to print directly from server?",
+    "Question 4 - How the printers are added/installed to the machine?",
+    "Question 5 - Was it working correctly before?",
+    "Question 6 - What was the last change made on server/client?"
+      
+    ],
+    "l2": [
+      "Issue is with all the printer or with any specific printer? Collect printer make and model with driver version?",
+      "If there is SAP printing then whether its only SAP printing is affected?",
+      "Did customer engage SAP, If no then ask for engagement. Their insight may help to understand the behaviour change from Vendor Perspective",
+      "What is the type of printer on which you are facing the issue? Local / Network?",
+      "Check the behavior after making RestrictedDriverInstallationtoAdministrator to 0?"
+
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Check the error message?",
+"Check the print spooler service and check the dependencies" ,
+"Check the connectivity of the printer from the machine",
+"Orphaned jobs in print spooler folder c:/windows/system32/spool/printers",
+"In the case of client server scenario, check if the printing is working on the server",
+"Print a test page from the printer itself (device specific issue)",
+"Update the printer drier to the latest version", 
+"Check if the clipboard redirection is working or not (copy paste)",
+"Check for any group policy restricting the printer redirection ( Do not allow printer redirection)",
+"Run the sec /scannow command",
+"Check for the Remote Desktop device redirector bus in device manager",
+"Check for the UMRDP (Remote Desktop Services UserMode Port Redirector) service is it on or off"
+
+    ],
+    "l2": [
+      "Update the printing binaries to the latest version",
+      "Change the print driver to “generic text” and then test.",
+      "Uncheck all the advanced options from the printer properties",
+      "Check the Print service logs in event viewer.",
+      "Check the permissions on the spooler folder", 
+"Check the Application logs for the event id 1000 for the crashing issue, check the faulting module mentioned in that event",
+"If faulting module is detected/mentioned research for the dll and if the driver was identified change/update the driver",
+"Search for the dll file in the c:/windows and the registry, rename the dll name to .old",
+"Print drivers isolation (Only after discussion)",
+"Check for the redirection settings on the Listener (Registry and the listener 2008R2) setting on the server (HKEY_LOCAL_MACHINE/SYSTEM/CurrentControlSet/Control/Terminal Server/Wds/rdpwd/fDisableCpm set to 1)(HKEY_LOCAL_MACHINE/SYSTEM/CurrentControlSet/Control/Terminal Server)(HKEY_LOCAL_MACHINE/SYSTEM/CurrentControlSet/Control/Terminal Services/fDisableCpm set to 1)",
+
+"Group Policy must be correctly set to enable Easy Print on the Server. The policy location is “Computer Configuration -> Administrative templates -> Windows Component -> Remote Desktop Services -> Remote Desktop Session Host -> Printer Redirection”. The setting “Use Remote DESKTOP Easy Print printer driver first” must be set to “Enabled” for Easy Print redirection, and it has to be “Disabled”",
+"For Legacy Print. For “Not Configured”, Easy Print is chosen by Default.",
+"If the user is using an RDP file check if the following value is set “redirectprinters:i:1”",
+"Check the tsprint binaries and update them"
+
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export System and Application event logs in .evtx format.",
+      "Export Print Service Operation Logs in .evtx format",
+      "Collect gpresult."
+    ],
+    "l2": [
+      "Collect procmon at the time of reproducing the issue",
+      "Collect TSS for Printing",
+      "Capture a network trace"
+    ]
+  },
+  "playbooks": {
+    "Printing": {
+      "title": "Unable to connect to printer getting error 0x00000709 (Operation could not be completed)",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "This issue may occur if certain non Microsoft DNS solutions are providing name resolution for the network/Clients try to connect to the printers by using the CNAME record in the UNC path",
+              "expect": "Operation could ot be completed (error 0x00000709) Double chec the printer name and make sure that the printer is connected to the network"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check if the print server has been changed or there must be change in the print server nane",
+              "expect": "There must be new print server in the environment or DNS enry has been changed"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Implement the DnsOnWire registry value by running the below command (reg add HKLM/SYSTEM/CurrentControlSet/Control/Print /v DnsOnWire /t REG_DWORD /d 1)/(Edit the local Hosts file to include the CNAME record for the server.)",
+              "expect": "Restart the Print Spooler Service on Print Server"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Try to add the printer on the cliet machine using the UNC path",
+              "expect": "User will be able to connect to the printer"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
