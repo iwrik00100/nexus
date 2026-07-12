@@ -1,0 +1,134 @@
+{
+  "key": "windows_update",
+  "label": "Windows Update",
+  "icon": "🔄",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Question 1 — Is the issue affecting one machine or multiple machines across the environment?",
+      "Question 2 — What is the OS version and build number of the affected machine?",
+      "Question 3 — What specific update (KB number) is failing, or are all updates failing?",
+      "Question 4 — What is the exact error code shown in Windows Update settings?",
+      "Question 5 — Is this a physical machine, virtual machine, or Azure VM?",
+      "Question 6 — Is Windows Update managed via WSUS, SCCM, Intune, or directly from Microsoft?",
+      "Question 7 — Has the machine successfully installed any updates recently?",
+      "Question 8 — When did the update failures first start occurring?"
+    ],
+    "l2": [
+      "What do the CBS.log and WindowsUpdate.log show for the failing update?",
+      "Has the Windows Update service (wuauserv) and its dependencies been checked and restarted?",
+      "Is the SoftwareDistribution folder intact, or does it show signs of corruption?",
+      "Are there any pending reboots blocking the update from completing?",
+      "Has the DISM and SFC scan been run to check for component store corruption?",
+      "Is the machine able to reach the update endpoints (Microsoft/WSUS server) over the network?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 — What is the exact error code shown (e.g. 0x80070005, 0x800705b4, 0x80240034)?",
+      "Question 2 — At what stage does the update fail — downloading, installing, or finalizing?",
+      "Question 3 — Does the update fail immediately or after a long wait?",
+      "Question 4 — Is there any third-party security or endpoint protection software installed?",
+      "Question 5 — Has a manual reboot been attempted since the failure started?",
+      "Question 6 — Does the issue reproduce consistently or intermittently?"
+    ],
+    "l2": [
+      "What specific error and component are referenced in the CBS.log at the time of failure?",
+      "Does running the Windows Update Troubleshooter report any issues it could not automatically fix?",
+      "Is the BITS (Background Intelligent Transfer Service) running and functional?",
+      "Are there any Group Policy settings restricting Windows Update behavior on this machine?",
+      "Does the issue occur in a clean boot state with third-party services disabled?",
+      "Is the machine's system clock synchronized correctly, as certificate validation depends on accurate time?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Run the Windows Update Troubleshooter from Settings > Update & Security > Troubleshoot.",
+      "Stop the wuauserv and bits services, rename the SoftwareDistribution folder, then restart both services.",
+      "Run SFC /scannow to repair any corrupted system files.",
+      "Ensure the machine has a stable internet connection and can reach update servers.",
+      "Check for and remove any conflicting third-party software that may block Windows Update.",
+      "Manually download the failing KB from the Microsoft Update Catalog and install offline."
+    ],
+    "l2": [
+      "Run DISM /Online /Cleanup-Image /RestoreHealth to repair the Windows component store.",
+      "Analyse CBS.log for the exact failing component and cross-reference with known KB issues.",
+      "Check and reset Group Policy settings that may conflict with update delivery.",
+      "Verify and repair WMI repository if wuauserv fails to start or enumerate updates.",
+      "Review WSUS or SCCM console for approvals, sync errors, or boundary issues if managed.",
+      "Use SetupDiag.exe to analyse failed feature update logs and identify the root cause."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect the Windows Update log using: Get-WindowsUpdateLog (PowerShell) or %windir%\\Logs\\WindowsUpdate.",
+      "Export CBS.log from %windir%\\Logs\\CBS\\CBS.log.",
+      "Collect System and Application event logs in .evtx format."
+    ],
+    "l2": [
+      "Collect a full DISM log from %windir%\\Logs\\DISM\\dism.log.",
+      "Run and collect TSS for Windows Update scenario (TSS WU).",
+      "Collect SetupDiag output if a feature update failed."
+    ]
+  },
+  "playbooks": {
+    "update_fails_0x80070005": {
+      "title": "Windows Update fails with error 0x80070005 (Access Denied)",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Open Settings > Windows Update and note the exact error code and KB number.",
+              "expect": "Error 0x80070005 (ACCESS DENIED) is confirmed against a specific update."
+            },
+            {
+              "action": "Check CBS.log (%windir%\\Logs\\CBS\\CBS.log) for 'access denied' or 'hr = 0x80070005' entries.",
+              "expect": "Log confirms a permissions failure during staging or installing the update."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Run SFC /scannow in an elevated command prompt.",
+              "expect": "SFC reports either no violations found or repairs corrupted files successfully."
+            },
+            {
+              "action": "Check if any Group Policy restricts Windows Update permissions (gpedit.msc > Computer Configuration > Administrative Templates > Windows Components > Windows Update).",
+              "expect": "No restrictive policy should be blocking the update service account."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Run DISM /Online /Cleanup-Image /RestoreHealth to repair the component store.",
+              "expect": "DISM completes successfully and reports the operation completed successfully."
+            },
+            {
+              "action": "Reset Windows Update components: stop wuauserv and bits, rename SoftwareDistribution to SoftwareDistribution.old, then restart both services.",
+              "expect": "Services restart cleanly and Windows Update re-creates the SoftwareDistribution folder."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry the Windows Update and monitor the CBS.log in real time.",
+              "expect": "Update downloads and installs successfully without the 0x80070005 error."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

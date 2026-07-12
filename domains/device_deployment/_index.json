@@ -5,12 +5,12 @@
   "description": "windows update, windows upgrade, Activation, Bitlocker, Power management, device management, windows servicing",
   "technologies": [
     {
-      "key": "windows update",
+      "key": "windows_update",
       "label": "Windows Update",
       "icon": "🔄"
     },
     {
-      "key": "windows upgrade",
+      "key": "windows_upgrade",
       "label": "Windows Upgrade",
       "icon": "⬆️"
     },
@@ -20,22 +20,22 @@
       "icon": "🔑"
     },
     {
-      "key": "Bitlocker",
+      "key": "bitlocker",
       "label": "Bitlocker",
       "icon": "🔐"
     },
     {
-      "key": "Power management",
+      "key": "power_management",
       "label": "Power Management",
       "icon": "⚡"
     },
     {
-      "key": "device management",
+      "key": "device_management",
       "label": "Device Management",
       "icon": "🖥️"
     },
     {
-      "key": "windows servicing",
+      "key": "windows_servicing",
       "label": "Windows Servicing",
       "icon": "🛠️"
     }
