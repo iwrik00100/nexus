@@ -2,7 +2,7 @@
   "key": "performance",
   "label": "Performance",
   "icon": "⚡",
-  "description": "CPU, Memory, noboot, hang, WPA, bugcheck",
+  "description": "CPU, Memory, noboot, hang, bugcheck",
   "technologies": [
   
     {
