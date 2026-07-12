@@ -67,10 +67,10 @@
       "Grab FLTMC output."
     ],
     "l2": [
-      "Collect dump by enabling g-flags."
-      "Collect Performance Monitor logs."
-      "Check Process Explorer."
-      "Collect Process dump of culprit process"
+      "Collect dump by enabling g-flags.",
+      "Collect Performance Monitor logs.",
+      "Check Process Explorer.",
+      "Collect Process dump of culprit process."
     ]
   },
   "playbooks": {
