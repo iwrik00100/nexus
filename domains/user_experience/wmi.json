@@ -1,0 +1,90 @@
+{
+"key": "wmi",
+  "label": "wmi",
+  "icon": "🖨",
+  "domain": "user_experience",
+  "scoping": {
+    "l1": [
+            "Is this the only machine that is showing this behavior, if not how many?",
+"How do they recover when its happening ?(Wait? Reboot? Hard shutdown? Kill a program?)",
+"How do they know the issue is happening - (What symptoms they see, end users? Admins?",
+"What is the behaviour when issue is occurring?",
+"Is it always the same symptoms? Whats the same, Whats different?",
+"Is the issue Gradual or Sudden?",
+"Does the issue happen randomly?",
+"Is there any associated events being logged?",
+"Error message. Typically applications that hang do not generate errors. Noting any pop-up is very helpful?",
+"What are the steps to repro if applicable. Need to be as precise as we can in this documentation as it usually helps significantly when reviewing data."
+    ],
+
+    "l2": [
+    "Is WMI running locally? Is WMI running remotely?",
+“Did you try connecting through Wbemtest?”,
+“Check the status of the winmgmt service?”,
+“What is the size of the repository?”,
+“If it is a remote issue can you ping the server when the issue occurs?”,
+“Are you able to telnet the remote server over port 135?”,
+If there are DCOM errors on the event viewer, how frequently does the DCOM error occur? Which DCOM error?”,
+“Is the issue with only a single query or command or all WMI commands"
+
+
+    ]
+  },
+
+  "probing": {
+    "l1": [
+
+"General information about the Server or Workstation
+“Role of the machine if Server (eg. file server, DC, application server)”,
+“Virtualization (e.g. VmWare or Hyper-V) or Physical machine”,
+“[Ask the Customer] To describe the issue and who is impacted?”,
+“What is the name of the application or process that is having the issue?”,
+“When did the problem start?”,
+“How often has it occurred?”“Specific days and times it occurs?”,
+“When did the problem occur last?”,
+“Can we repro on demand and quickly"
+      
+    ],
+    "l2": [
+     "Are we getting any error",
+     "Does the issue occur on machines in the same subnet or just on a LAN or WAN?",
+     "When did the issue start occurring? What has changed?",
+     "How did you get notified about the problem? Did the end-users call the henpdesk?"
+
+
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+    "Check the status of WMI service",
+"Check the local WMI functionality (WMIC, WBEMTEST and WMIMGMT.msc)",
+"Try connecting to the remote machine from any two of the following: (WMIC, WBEMTEST and WMIMGMT.msc)",
+"Check the status of WMI service",
+"Verify WMI Namespace Permissions. In wmimgmt.msc, Right click on WMI Control(local) and select Properties. Got to the Security tab -> Expand the Root folder and select the CIMV2 namespace -> Click on Security and add the user account -> Enable the following permissions Enable Account, Remote Enable.",
+"Check DCOM Permissions. Open dcomcnfg -> Right click My Computer -> Properties -> Under COM security, click Edit Limits for both sections -> Give the user Remote Launch and Remote Activation permissions ->Find Windows Management Instrumentation in DCOM config and give the user Remote Launch and Remote Activation permissions",
+"Run the winmgmt /verifyrepository"
+      
+    ],
+    "l2": [
+      "Check Group Policy Settings. Computer Configuration -> Administrative Templates -> System -> Remote Procedure Call. Set (Restrictions for Unauthenticated RPC clients) and (RPC Endpoint Mapper Client Authentication) to Disabled or Not Configured",
+      "Check Registry Settings. Ensure the registry value restrict anonymous is not set to 2. It is located under HKLM/System/CurrentContorlSet/Control/Lsa",
+      "Set the following registry values -> HKLM/SOFTWARE/Microsoft/WBEM/CIMOM/AllowAnonmousallback=1 and HKLM/SOFTWARE/Microsoft/Windows/CurrentVersion/Policies/System/LocalAccountTokenFilterPolicy=1",
+      "Disable UAC Remote Restriction. HKLM/SOFTWARE/Microsoft/WIndows/CurrentVersion/Policies/System/LocalAccountTokenFilterPolicy=1. Restart the WinRM service.",
+      "Check Firewall Settings. Ensure the Windows Firewall is not blocking the connections. Allow the Remote Administration rule in Windows Firewall.",
+      "Verify Domain Membership. Ensure both machines are in the same domain or subnet. If Machine A is a domain member, ensure the local user account on Machine B has the same username and password as the domain user account on Machine B"
+
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Check the event logs while replicating the issue (system logs and the WMI activity logs)",
+      "Collect gpresult."
+    ],
+    "l2": [
+      "Collect procmon at the time of reproducing the issue",
+      "Collect TSS for WMI",
+      "Capture a network trace"
+    ]
+  }
+  
+            }
