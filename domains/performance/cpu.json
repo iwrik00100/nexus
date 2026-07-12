@@ -1,0 +1,145 @@
+{
+  "key": "cpu",
+  "label": "CPU",
+  "icon": "💻",
+  "domain": "performance",
+  "scoping": {
+    "l1": [
+  "Question 1 — Is the slowness affecting one user or multiple users?",
+  "Question 2 — Is this on a Windows Server or a Windows 10/11 desktop?",
+  "Question 3 — Is the machine an on-premises physical box or a cloud virtual machine?",
+  "Question 4 — What are the specifications of the affected machine?",
+  "Question 5 — Is this isolated to a single machine or widespread?",
+  "Question 6 — What specific process (EXE) is driving the load?",
+  "Question 7 — What is the exact process name listed at the top of Task Manager?",
+  "Question 8 — Is the high CPU constant or spiking?",
+  "Question 9 — Is the consumption happening in User Mode or Kernel Mode?",
+  "Question 10 — When did the high CPU usage begin?",
+  "Question 11 — Does it happen during specific activities?",
+  "Question 12 — Does a reboot temporarily resolve the issue?",
+  "Question 13 — Were there any recent software deployments or code updates?",
+  "Question 14 — Has Windows Update run recently?",
+  "Question 15 — Have any hardware, driver, or BIOS changes occurred?"
+]
+
+    "l2": [
+      "Is the slowness affecting one user or multiple users?",
+      "What is the exact process name listed at the top of Task Manager?",
+      "Does it happen during specific activities?",
+      "Does a reboot temporarily resolve the issue?",
+      "Is the consumption happening in User Mode or Kernel Mode?",
+      "Is this isolated to a single machine or widespread?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - What specific process name (EXE) is listed at the top of the Task Manager CPU column?",
+      "Question 2 - Is the CPU usage locked at a flat 100%, or does it rapidly spike and drop?",
+      "Question 3 - When you look at the Task Manager Performance tab, is the high usage driven by Logical processors or Kernel times? ",
+      "Question 4 - Is the high CPU accompanied by high disk activity (100% Active Time) or high memory usage?",
+      "Question 5 - Does the CPU spike immediately upon booting up, or does it build up gradually over several hours? ",
+      "Question 6 - Does this behavior occur only when specific actions are taken?"
+	  "Question 7 - Is the affected machine a physical on-premises box, or is it a virtual machine (VM) in the cloud or a local hypervisor? "
+	  "Question 8 - What are the basic resource specifications assigned to this machine?"
+    ],
+    "l2": [
+      "Is the slowness bound to a specific time of day? ",
+      "If you temporarily terminate the offending process or restart the machine, how quickly does the high CPU usage return?",
+      "Were there any software updates, application deployments, or code changes pushed right before this started?",
+      "Has Windows Update run or failed to install a patch recently?",
+      "Have there been any recent hardware modifications, driver updates, or BIOS/firmware flashes?",
+      "Is this issue isolated to a single machine/user, or are multiple endpoints experiencing the exact same symptom?"
+	  ""
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Identify the Culprit via Task Manager.",
+      "Check for High Kernel Times (Driver/Hardware Issues).",
+      "End the Runaway Process Safely.",
+      "Perform a Clean boot.",
+      "Check Windows Update and Native Services."
+	  "Disable Demanding Startup Applications."
+	  "Check the behavior in safe mode"
+    ],
+    "l2": [
+      "Deep-Dive Threads via Sysinternals Process Explorer.",
+      "Troubleshoot Hardware Interrupts & DPCs (Deferred Procedure Calls).",
+      "Analyze CPU Bottlenecks with Performance Monitor.",
+      "Check Event Viewer for Application & System Crashes.",
+      "Isolate the process in svchost container."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect Performance monitor logs.",
+      "Collect WPR logs.",
+      "Grab FLTMC output.",
+
+    ],
+    "l2": [
+            "Collect Process dump if the process is continously spiking."
+			"Collect complete dump if required (Not required usually)."
+    ]
+  },
+  "playbooks": {
+    "high cpu": {
+      "title": "Getting into high cpu",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run Performance Monitor on affected machine.",
+              "expect": "Identify the process in Perfomance Monitor logs."
+            },
+            {
+              "action": "Check Task Manager to observe the process taking high cpu.",
+              "expect": "Confirm the behavior of the process how frequently it is consuming."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "End the process in task manager.",
+              "expect": "CPU utilization should be normal once it is ended."
+            },
+            {
+              "action": "Check the behavior in Safe Mode.",
+              "expect": "In safe Mode the issue should not be present."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Check if the process is 3rd party.",
+              "expect": "Uninstall the application related to the process and mention to customer to reach out to vendor."
+            },
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Again collect Perfomance Monitor logs.",
+              "expect": "We should see normal behavior in logs."
+            },
+            {
+              "action": "Monitor the machine for a while.",
+              "expect": "CPU utilization observerd as normal."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
