@@ -4,7 +4,7 @@
   "icon": "👤",
   "description": "Logon, User Profiles, Group Policy, App Compatibility, AVD/WVD, RDS",
   "technologies": [
-    { "key": "rdp", "label": "Unable to take RDP", "icon": "🔑" }
-  
+    { "key": "rdp", "label": "Unable to take RDP", "icon": "🔑" },
+    { "key": "printing", "label": "Printing", "icon": "🖨" }
   ]
 }

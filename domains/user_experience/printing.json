@@ -1,7 +1,7 @@
 {
 "key": "printing",
-  "label": "printing",
-  "icon": "🔑",
+  "label": "Printing",
+  "icon": "🖨",
   "domain": "user_experience",
   "scoping": {
     "l1": [
@@ -91,7 +91,7 @@
     ]
   },
   "playbooks": {
-    "Printing": {
+    "printing_error_0x709": {
       "title": "Unable to connect to printer getting error 0x00000709 (Operation could not be completed)",
       "severity": "medium",
       "phases": [
