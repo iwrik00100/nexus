@@ -2,7 +2,7 @@
   "key": "windows_update",
   "label": "Windows Update",
   "icon": "🔄",
-  "domain": "windows_update",
+  "domain": "device_deployment",
   "scoping": {
     "l1": [
       "Question 1 - Is the Windows Update issue affecting one device or multiple devices?",
