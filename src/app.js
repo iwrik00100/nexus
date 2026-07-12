@@ -28,8 +28,8 @@ const DOMAINS = [
   { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, Group Policy, SBSL' },
   { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Noboot, Hang, Bugcheck' },
   { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'RDP / Remote Desktop Services' },
-  { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Intune, SCCM, Autopilot, WSUS, WDS, Co-Management',    hidden: true },
-  { key: 'storage_ha',          label: 'Storage & High Availability', icon: '💾', description: 'Storage Spaces, Failover Cluster, Hyper-V, ReFS, iSCSI',  hidden: true },
+  { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Windows Update, Activation, BitLocker, Power Management' },
+  { key: 'storage_ha',          label: 'Storage & High Availability', icon: '💾', description: 'Storage Spaces, Failover Cluster, Hyper-V, ReFS, iSCSI' },
   { key: 'collaboration',       label: 'Collaboration',           icon: '🤝', description: 'Exchange Online, Teams, SharePoint, OneDrive, M365',    hidden: true }
 ];
 
@@ -141,7 +141,7 @@ const DOMAIN_TECH_COUNTS = {
   directory_services: '3 technologies',
   performance: '5 technologies',
   user_experience: '2 technologies',
-  device_deployment: '6 technologies',
+  device_deployment: '7 technologies',
   storage_ha: '8 technologies',
   collaboration: '6 technologies'
 };
