@@ -1,0 +1,90 @@
+{
+  "key": "kerberos",
+  "label": "kerberos",
+  "icon": "🔑",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are clients facing authentication delays or immediate access denied alerts?",
+      "Is the issue occurring with a specific enterprise application or service target?",
+      "Do domain users encounter failures across both workstation types and servers?"
+    ],
+    "l2": [
+      "Are duplicate SPNs (Service Principal Names) configured across the environment?",
+      "Is the time skew between the client machine and the KDC greater than 5 minutes?",
+      "Are Kerberos token sizes exceeding default protocol buffers due to group nesting?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'klist' on the client device to view currently cached Kerberos tickets.",
+      "Execute 'setspn -Q <service/SPN>' to search for target registration states.",
+      "Check system event logs for Kerberos or LsaSrv warning and error codes."
+    ],
+    "l2": [
+      "Run 'setspn -X' to detect duplicate Service Principal Names in the domain.",
+      "Analyze Kerberos ticket payload sizes utilizing specific diagnostic scripting packages.",
+      "Use klist options to check renewal capabilities and expiration time flags."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Purge cached Kerberos tickets using 'klist purge' on client terminals.",
+      "Synchronize client system clocks to resolve authentication time skew failures.",
+      "Register missing SPN paths using 'setspn -A <SPN> <account_name>' commands."
+    ],
+    "l2": [
+      "Delete conflicting duplicate SPN values via 'setspn -D <SPN> <account_name>'.",
+      "Increase MaxTokenSize values inside registry configurations if token bloating exists.",
+      "Reset the target computer or service account password to renew secret keys."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect text files containing outputs from 'klist' and 'setspn' diagnostic tools.",
+      "Export client and domain controller security logs focusing on authentication.",
+      "Document precise system time differences measured against the core PDC emulator."
+    ],
+    "l2": [
+      "Enable verbose Kerberos logging via registry settings under System\\CurrentControlSet\\Control\\Lsa\\Kerberos\\Parameters.",
+      "Capture low-level network traces targeting ports 88 and 464 during logins.",
+      "Export the group membership profiles list for affected token bloat users."
+    ]
+  },
+  "playbooks": {
+    "duplicate_spn_remediation": {
+      "title": "Remediating Duplicate SPN Authentication Failures",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "klist", "expect": "Look for error codes KRB_ERR_BADOPTION or KDC_ERR_S_PRINCIPAL_UNKNOWN" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "setspn -X", "expect": "Tool scans the forest and outputs duplicate entries mapping the same SPN to multiple accounts" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "setspn -D HTTP/web.mydomain.local legacy_account", "expect": "Removes the duplicate mapping from the incorrect legacy account object" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "klist purge", "expect": "Purging tickets followed by subsequent successful application connections without error" }
+          ]
+        }
+      ]
+    }
+  }
+}

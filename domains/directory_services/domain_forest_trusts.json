@@ -1,0 +1,90 @@
+{
+  "key": "domain_forest_trusts",
+  "label": "Domain and Forest Trusts",
+  "icon": "🤝",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are users in a trusted forest completely unable to access resources in the trusting domain?",
+      "When did cross-realm authentication operations first fail between these infrastructures?",
+      "Is the trust relationship defined as a one-way path or a full bidirectional link?"
+    ],
+    "l2": [
+      "Is Selective Authentication policy configuration blocking cross-forest group permissions maps?",
+      "Are missing conditional DNS forwarder definitions breaking target forest domain queries?",
+      "Has an mismatch in trust password configurations disrupted the authentication pipeline?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'nltest /trust_query:<domain>' from a local controller to check trust parameters.",
+      "Execute 'netdom trust <trusting_domain> /domain:<trusted_domain> /verify' validation checks.",
+      "Check the local System log for Event ID 5722 or 5723 trust verification drops."
+    ],
+    "l2": [
+      "Run 'nltest /dsgetdc:<target_domain> /force' to trace cross-forest locator loops pathways.",
+      "Verify SID Filtering properties settings using command configurations netdom parsing arguments.",
+      "Check active Kerberos realm routing tables mappings data structures using automated scripts readouts."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Configure conditional DNS forwarders targeting the external domain namespace root servers.",
+      "Reset trust password configurations symmetrically across both domain environment points.",
+      "Grant explicit 'Allowed to Authenticate' rights on resource objects when using selective trust policies."
+    ],
+    "l2": [
+      "Modify SID History filtering variables options flags to pass required migration tokens cleanly.",
+      "Rebuild broken non-transitive shortcut links to streamline complex multi-tier routing chains.",
+      "Unblock UDP port 88 and TCP port 389 parameters flows across separating corporate hardware firewalls."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect text representations showing verification report outputs from netdom trust utilities.",
+      "Export client and server DNS zone configuration charts details sheets tracking parameters.",
+      "Gather target system domain controller authentication failure event summary rows logs."
+    ],
+    "l2": [
+      "Capture explicit network frame steps traces targeting inter-realm Kerberos ticket operations requests.",
+      "Export the Active Directory trust relationship object attribute mapping strings configurations maps.",
+      "Dump active Netlogon service trace records detailing cross-forest token evaluation loops histories."
+    ]
+  },
+  "playbooks": {
+    "trust_password_out_of_sync": {
+      "title": "Remediating Cross-Forest Access Failure Caused by Trust Password Mismatch Errors",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "netdom trust partnerdomain.local /domain:mydomain.local /verify", "expect": "Returns error message indicating 'The trust password between this domain and the trusted domain is failed'" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "nltest /sc_query:partnerdomain.local", "expect": "Logs systemic error code 1787 or 1326 tracking secure channel operational failure states" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "netdom trust partnerdomain.local /domain:mydomain.local /resetoneasynpwd /passwordt:MySecret123", "expect": "Resets the shared secret key symmetrically across both environment endpoints cleanly" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "netdom trust partnerdomain.local /domain:mydomain.local /verify", "expect": "Returns validation status success string, restoring cross-forest authentication access pathways" }
+          ]
+        }
+      ]
+    }
+  }
+}

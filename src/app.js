@@ -26,7 +26,7 @@ const SECTION_META = {
 const DOMAINS = [
   { key: 'networking',          label: 'Networking',              icon: '🌐', description: 'DNS, DHCP, TCP/IP, SMB, DFS, NPS, 802.1x, VPN' },
   { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, Group Policy, SBSL' },
-  { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Disk I/O, Network throughput, WPA, ETW',  hidden: true },
+  { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Noboot, Hang, Bugcheck' },
   { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'RDP / Remote Desktop Services' },
   { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Intune, SCCM, Autopilot, WSUS, WDS, Co-Management',    hidden: true },
   { key: 'storage_ha',          label: 'Storage & High Availability', icon: '💾', description: 'Storage Spaces, Failover Cluster, Hyper-V, ReFS, iSCSI',  hidden: true },
@@ -139,7 +139,7 @@ function _showPage(pageId) {
 const DOMAIN_TECH_COUNTS = {
   networking: '11 technologies',
   directory_services: '3 technologies',
-  performance: '6 technologies',
+  performance: '5 technologies',
   user_experience: '1 technology',
   device_deployment: '6 technologies',
   storage_ha: '6 technologies',

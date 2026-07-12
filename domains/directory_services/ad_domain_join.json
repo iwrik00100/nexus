@@ -1,0 +1,90 @@
+{
+  "key": "ad_domain_join",
+  "label": "On-Premises Active Directory Domain Join",
+  "icon": "💻",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Is the target workstation completely unable to resolve or reach the domain address?",
+      "When did the domain join failure issue first manifest on this client or subnet?",
+      "Are you joining via the system properties graphical user interface or utilizing automated commands?"
+    ],
+    "l2": [
+      "Is an existing duplicate computer account object blocking the naming registration process?",
+      "Are local local-policy encryption requirements causing token validation negotiation anomalies?",
+      "Has the user account exceeded the default limit of joining ten machines to the domain?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Review the text log file contents inside '%windir%\\debug\\netsetup.log' on the machine.",
+      "Test primary domain name health visibility by running 'ping mydomain.local' commands.",
+      "Check client System event log categories targeting NetJoinTool operational paths indices."
+    ],
+    "l2": [
+      "Verify network target path status via 'nltest /dsgetdc:<domain>' executed on the client device.",
+      "Inspect Active Directory configuration properties tracking the specific computer container allocation.",
+      "Check security configuration states focusing on SMB version execution limits rules."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Flush client system name resolver caching levels using 'ipconfig /flushdns'.",
+      "Correct adapter IP parameters to point exclusively toward internal active domain name zones.",
+      "Rename the local workstation to ensure there are no duplicate name conflicts active."
+    ],
+    "l2": [
+      "Delete or reset the stale computer account utilizing Active Directory Users and Computers.",
+      "Utilize the offline domain join provisioning system 'djoin.exe' to bypass real-time checks.",
+      "Increase machine account creation permissions limits via Group Policy adjustments parameters."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Gather the netsetup.log file output tracking all domain join execution pathways.",
+      "Collect local system adapter configuration summaries text logs details sheets.",
+      "Export client name configuration test readouts using standard nslookup outputs."
+    ],
+    "l2": [
+      "Capture explicit network frame steps traces during target domain join operations executions.",
+      "Export local computer security policy registry values for authentication checks evaluations.",
+      "Log corporate Active Directory container permission maps listing user account entitlements paths."
+    ]
+  },
+  "playbooks": {
+    "domain_join_access_denied": {
+      "title": "Resolving Domain Join Access Denied Exceptions (Error 5)",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Add-Computer -DomainName mydomain.local", "expect": "Throws an exception string indicating 'Access is denied' or shows systemic error code 5" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-ADComputer -Filter \"Name -eq 'ClientHost'\"", "expect": "Finds a pre-existing object where the current joining user lacks explicit write/reset permissions" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Remove-ADComputer -Identity ClientHost -Confirm:$false", "expect": "Deletes the conflicting computer metadata block to clear the name entry for generation" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Add-Computer -DomainName mydomain.local -Credential (Get-Credential)", "expect": "Prompts for reboot with zero warning frames, completing machine registration successfully" }
+          ]
+        }
+      ]
+    }
+  }
+}

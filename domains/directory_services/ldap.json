@@ -1,0 +1,90 @@
+{
+  "key": "ldap",
+  "label": "LDAP",
+  "icon": "🗂",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are third-party applications failing to authenticate via standard LDAP?",
+      "Is the connection failure occurring over cleartext LDAP (389) or LDAPS (636)?",
+      "Are all domain controllers rejecting the incoming application queries?"
+    ],
+    "l2": [
+      "Has channel binding or LDAP signing requirements broken older clients?",
+      "Is the SSL/TLS certificate installed on the DC valid for server authentication?",
+      "Are firewall policies dropping TCP port 636 or 3269 across network boundaries?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Use 'ldp.exe' to attempt an unauthenticated or basic bind to port 389.",
+      "Run 'nltest /dsgetdc:<domain>' to ensure the targeted DC is online.",
+      "Check the Directory Service event log for Event IDs 2886, 2887, or 2889 (Signing/Binding)."
+    ],
+    "l2": [
+      "Run 'certutil -store my' on the DC to verify the presence of an LDAPS certificate.",
+      "Execute 'ldp.exe' over port 636 with SSL enabled to test connection handshakes.",
+      "Use 'netstat -ano | findstr 636' to confirm the domain controller is listening on LDAPS."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Configure the application to use LDAP signing if cleartext binds are rejected.",
+      "Restart the NTDS service on the domain controller to reload certificates.",
+      "Verify that the client machine trusts the issuing Root CA of the DC's certificate."
+    ],
+    "l2": [
+      "Modify the 'LDAPServerIntegrity' registry value if temporary signing bypass is needed.",
+      "Renew the Domain Controller Authentication certificate via the local machine store.",
+      "Open TCP port 636 on intervening network firewalls to clear blocked connections."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export the target domain controller's Directory Service log to a .evtx file.",
+      "Capture the text output of an LDP connection attempt failure trace.",
+      "Collect local system certificate dumps using 'certutil -store my > certs.txt'."
+    ],
+    "l2": [
+      "Capture a network packet trace via netsh during a failing LDAPS handshake.",
+      "Export registry keys from HKLM\\System\\CurrentControlSet\\Services\\NTDS\\Parameters.",
+      "Collect verbose Schannel log outputs by enabling event logging in the registry."
+    ]
+  },
+  "playbooks": {
+    "ldaps_handshake_failure": {
+      "title": "Troubleshooting Secure LDAP (LDAPS) Connection and Handshake Failures",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "ldp.exe (Connect to port 636 with SSL checked)", "expect": "Error message displays 'Error <0x51>: Fail to connect to target server'" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "certutil -verifyStore My", "expect": "Check certificate validity; look for missing private keys, expired dates, or invalid CRL endpoints" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "certutil -pulse", "expect": "Triggers immediate auto-enrollment to fetch a valid Domain Controller certificate" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "ldp.exe (Retry SSL bind on 636)", "expect": "Successfully binds and returns standard RootDSE attributes over the secure channel" }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "key": "ssl_tls",
+  "label": "SSL or TLS",
+  "icon": "🔒",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are web browsers or applications reporting handshake failures during secure connections?",
+      "When did the secure socket layer channel drop, and what specific error string is thrown?",
+      "Is the issue occurring during internal corporate traffic runs or external internet connections?"
+    ],
+    "l2": [
+      "Has a cipher suite mismatch broken negotiation channels between the client and server?",
+      "Are older, insecure protocol versions like TLS 1.0 or 1.1 disabled on the server side?",
+      "Is the application server trying to utilize an ephemeral key size that the client rejects?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Use tool commands 'curl -v' paths to trace secure channel connection milestones details.",
+      "Check the target server System log for Schannel error events tagged with specific hex alerts.",
+      "Verify target listener port availability using basic netstat commands pathways patterns."
+    ],
+    "l2": [
+      "Run automated cipher profiling utilities to extract active allowed cryptographic lists maps blocks.",
+      "Verify local machine Schannel configuration registry data trees variations metrics.",
+      "Check server certificate chain path integrity variables using tool sets like 'certutil -verify'."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Bind a valid, unexpired certificate to the target application port via configuration tools.",
+      "Update modern browser client components to ensure compatibility with high-grade security protocols.",
+      "Synchronize client and server time clocks to prevent certificate validity window errors."
+    ],
+    "l2": [
+      "Deploy standardized cipher suite order definitions utilizing corporate Group Policy structures.",
+      "Enable TLS 1.2 or TLS 1.3 settings keys parameters inside target registries configurations spaces.",
+      "Remove weak or broken legacy hashing algorithm options from active server negotiation lists."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect complete curl diagnostic verbose trace outputs documents mapping handshake phases.",
+      "Export target System log outputs isolating Schannel alert event entries details.",
+      "Gather server deployment configuration summaries listing active socket binds variables."
+    ],
+    "l2": [
+      "Capture full packet traces using Wireshark to isolate raw Client Hello / Server Hello packets.",
+      "Export keys structures from HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL.",
+      "Save copies of the complete target certificate chain data blocks in base64 layout formats."
+    ]
+  },
+  "playbooks": {
+    "tls_cipher_mismatch": {
+      "title": "Remediating Secure Channel Failures Sparked by Cipher Suite Disconnects",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "curl https://myserver.mydomain.local", "expect": "Fails with message 'SSL connect error' or shows alert code 40 (handshake failure)" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-TlsCipherSuite", "expect": "Reveals that the client's supported ciphers do not overlap with the restricted set active on the server" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Enable-TlsCipherSuite -Name 'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384' -Position 1", "expect": "Adds the high-grade mutually supported cipher suite to the top of the local priority array" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "curl https://myserver.mydomain.local", "expect": "Completes the handshake instantly, returning the raw target page payload successfully" }
+          ]
+        }
+      ]
+    }
+  }
+}

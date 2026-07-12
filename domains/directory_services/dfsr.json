@@ -1,0 +1,90 @@
+{
+  "key": "dfsr",
+  "label": "DFSR",
+  "icon": "🔄",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are all members in the replication group reporting the backlog or sync issues?",
+      "When did files stop syncing between the target replication partners?",
+      "Is the replication failure affecting the SYSVOL share or data volumes?"
+    ],
+    "l2": [
+      "Have any of the replication group members recently suffered a dirty shutdown?",
+      "Is the DFSR database corrupted or reporting event ID 2213 or 4012?",
+      "Are firewalls blocking RPC ports dynamic range 49152-65535 between partners?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'dfsrdiag backlog /rgname:<group> /rfname:<folder> /sme:<source> /rme:<dest>' to check queue size.",
+      "Check the DFS Replication event log for Warning or Error event entries.",
+      "Run 'wmic /namespace:\\\\root\\microsoftdfs path dfsrreplicatedfolderinfo get replicationgroupname,replicatedfoldername,state' to see folder status."
+    ],
+    "l2": [
+      "Run 'dfsrdiag replicationstate' to dump the current active transactions.",
+      "Generate a health report using 'dfsrdiag healthreport /rgname:<name> /path:<output>'.",
+      "Check staging folder usage via 'wmic /namespace:\\\\root\\microsoftdfs path dfsrlocalmemberinfo get stagingspaceinuse'."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Restart the DFS Replication service on the affected member.",
+      "Verify network connectivity and RPC port availability between partners.",
+      "Clear up disk space if the staging folder or volume is hitting full thresholds."
+    ],
+    "l2": [
+      "Resume replication after a dirty shutdown by running the specific WMI method for ID 2213.",
+      "Perform a non-authoritative synchronization rebuild by altering the msDFSR-Enabled attribute.",
+      "Adjust the staging quota limits upward if large files are blocking the pipeline."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export the complete DFS Replication event log into an .evtx package.",
+      "Collect the generated HTML health report from dfsrdiag utility.",
+      "Gather 'dfsrdiag dumpguid' and basic system storage metrics logs."
+    ],
+    "l2": [
+      "Collect complete DFSR debug logs located under the %SystemRoot%\\Debug folder.",
+      "Export the registry configuration keys for the DFSR service parameters.",
+      "Run a continuous packet trace during forced sync attempts using built-in netsh."
+    ]
+  },
+  "playbooks": {
+    "dirty_shutdown_recovery": {
+      "title": "DFSR Replication Stopped due to Dirty Shutdown (Event ID 2213)",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Get-WinEvent -LogName 'DFS Replication' | Where-Object {$_.Id -eq 2213}", "expect": "Find recent log entries confirming a dirty shutdown was detected" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "wmic /namespace:\\\\root\\microsoftdfs path dfsrvolumeconfig get volume guid, diskspaceinuse", "expect": "Identify the specific database volume GUID that experienced the shutdown" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "wmic /namespace:\\\\root\\microsoftdfs path dfsrvolumeconfig where volumeGuid=\"<GUID>\" call ResumeReplication", "expect": "Method returns ReturnValue = 0 indicating command success" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Get-WinEvent -LogName 'DFS Replication' -MaxEvents 10", "expect": "Look for Event ID 2214 confirming connection is successfully re-established" }
+          ]
+        }
+      ]
+    }
+  }
+}

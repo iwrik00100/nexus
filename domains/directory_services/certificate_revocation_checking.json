@@ -1,0 +1,90 @@
+{
+  "key": "certificate_revocation_checking",
+  "label": "Certificate Revocation Checking",
+  "icon": "🚫",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are authentication actions dropping due to revocation checking timeout conditions?",
+      "When did the certificate validation engine begin flagging revocation status failures?",
+      "Is the checking method evaluating CRL files or querying online OCSP responders?"
+    ],
+    "l2": [
+      "Are web firewalls blocking HTTP paths leading to corporate CDP distribution endpoints?",
+      "Has the published CRL file exceeded its validity period without updates running successfully?",
+      "Is the OCSP response signing certificate expired or unrecognized by validation clients?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'certutil -verify -urlfetch <cert.cer>' to validate revocation pathways details tracking.",
+      "Check local client Crypto32 operational log structures via event viewer tracking tools screens.",
+      "Verify network line availability targeting raw CDP distribution endpoints using simple download commands."
+    ],
+    "l2": [
+      "Use certutil options to parse and view CRL cache properties parameters values tables charts.",
+      "Check OCSP configurations settings data trees using targeted diagnostic parsing parameters entries.",
+      "Verify systemic validation behavior thresholds configurations using automated script queries readouts."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Manually publish an updated CRL file on the CA server node using command 'certutil -crl'.",
+      "Clear stale local client revocation caching maps using command 'certutil -urlcache * delete'.",
+      "Resolve network rule parameters to permit connection flows out toward verification path endpoints."
+    ],
+    "l2": [
+      "Correct explicit AIA and CDP extension definitions located inside base issuance models templates.",
+      "Reconfigure OCSP array synchronization loops to ensure consistent validation token delivery frameworks.",
+      "Deploy temporary registry overrides allowing checking fallback sequences during physical network restorations."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export full diagnostic text transcripts outputted by certutil verification fetch checks loops.",
+      "Collect client CAPI2 operational event logs in native binary formats configuration types.",
+      "Gather network access history log snippets showing attempts targeting revocation paths."
+    ],
+    "l2": [
+      "Save raw binary copies of target corporate CRL files current state structures records data.",
+      "Export registry keys paths from HKLM\\Software\\Microsoft\\Cryptography\\OID\\EncodingType 0.",
+      "Gather low-level proxy server configuration maps showing intercepted authentication web calls paths."
+    ]
+  },
+  "playbooks": {
+    "expired_crl_distribution_point": {
+      "title": "Remediating Authentication Failures Triggered by Expired CRL Data Files",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "certutil -verify -urlfetch user.cer", "expect": "Log outputs status warning tracking 'The revocation function was unable to check revocation because the revocation server was offline'" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "certutil -crl C:\\inetpub\\wwwroot\\crl\\myca.crl", "expect": "Output flags 'NextUpdate' time value as situated in the past, indicating a publication loop block" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "certutil -crl", "expect": "Forces the Certification Authority to issue a fresh, signed CRL file tracking current timelines metrics" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "certutil -verify -urlfetch user.cer", "expect": "Returns pure validation success signals, confirming all revocation targets match current parameters" }
+          ]
+        }
+      ]
+    }
+  }
+}

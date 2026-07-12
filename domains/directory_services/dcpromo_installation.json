@@ -1,0 +1,90 @@
+{
+  "key": "dcpromo_installation",
+  "label": "DCPromo and Domain Controller Installation",
+  "icon": "💿",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Is the domain promotion task failing during prerequisites checks or actual sync phases?",
+      "When was the targeted server last synchronized with the primary forest architecture?",
+      "Is this promotion creating a root forest node, a new child, or adding a replica DC?"
+    ],
+    "l2": [
+      "Is a failure to query active FSMO role owners blocking the promotion wizard from continuing?",
+      "Are replication target limits timing out during large structural NTDS file operations?",
+      "Does the local administrative password match server validation policies requirements?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Check the %systemroot%\\debug\\dcpromo.log text file for clear wizard exception histories.",
+      "Run 'dcdiag /test:dns' against target existing nodes to verify network health levels.",
+      "Check the local system setup log for VSS or physical hardware block events."
+    ],
+    "l2": [
+      "Review the detailed '%systemroot%\\debug\\dcpromoui.log' to trace graphic validation loops.",
+      "Query port availability for LDAP (389), Kerberos (88), and SMB (445) on destination nodes.",
+      "Verify target forest functional levels using schema query tools to isolate deployment mismatch blocks."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Fix target client adapter DNS properties to point to existing authoritative domain servers.",
+      "Clean up prior broken deployment installation markers using metadata cleanup tasks.",
+      "Verify the target server meets system time delta parameters within 5-minute boundaries."
+    ],
+    "l2": [
+      "Utilize the Install-From-Media (IFM) workflow parameters to bypass large initial network transfers.",
+      "Explicitly target the relative RID Master node using installation switch overrides.",
+      "Resolve AD Schema mismatches by deploying standard updates prior to executing server promotions."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect full copies of all text logs situated in the %systemroot%\\debug location paths.",
+      "Export corporate network interface details and active routing tables summaries configurations.",
+      "Gather target domain health check readouts utilizing automated dcdiag script execution tools."
+    ],
+    "l2": [
+      "Capture live frame summaries utilizing network monitoring tools during active promotion setups.",
+      "Export local server storage controller driver performance summaries and configuration tables.",
+      "Dump active system registry parameters values located inside the local SAM database trees."
+    ]
+  },
+  "playbooks": {
+    "dcpromo_dns_lookup_failure": {
+      "title": "Resolving Domain Controller Promotion Failure Due to Missing Active Directory DNS Infrastructure",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Install-ADDSDomainController -DomainName mydomain.local", "expect": "Throws exception string stating 'An Active Directory domain controller for the domain could not be contacted'" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "nslookup _ldap._tcp.dc._msdcs.mydomain.local", "expect": "Returns server lookup failure or NXDOMAIN status flags, indicating broken name resolution targeting" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Set-DnsClientServerAddress -InterfaceIndex 2 -ServerAddresses ('10.0.1.10', '10.0.1.11')", "expect": "Correctly overrides default public adapter paths with internal enterprise DNS root endpoints" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Install-ADDSDomainController -DomainName mydomain.local", "expect": "Passes prerequisite checks cleanly, initializing the active database replication phase" }
+          ]
+        }
+      ]
+    }
+  }
+}

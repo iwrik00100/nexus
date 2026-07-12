@@ -1,0 +1,90 @@
+{
+  "key": "secure_channel_issues",
+  "label": "Secure Channel Issues",
+  "icon": "🔌",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "Are users blocked from logging onto a workstation with trust relationship failure screens?",
+      "When did the client machine secure channel lose connection with domain infrastructure?",
+      "Does the local system computer account log successful connections using alternate methods?"
+    ],
+    "l2": [
+      "Is a password synchronization timing delta causing computer account key conflicts active?",
+      "Are system virtualization snapshots reverting machine states back past password expiration times?",
+      "Has an administrative organizational unit relocation stripped object group rights policies?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'nltest /sc_query:<domain>' on the machine to check secure channel status data.",
+      "Check client machine System logs for Event ID 3221 or 4 Netlogon verification failures.",
+      "Verify client network connectivity tracking metrics using simple domain controller pings."
+    ],
+    "l2": [
+      "Execute 'Test-ComputerSecureChannel -Verbose' command paths within client PowerShell windows.",
+      "Query target Active Directory computer accounts passwords age properties parameters via scripting loops.",
+      "Verify local machine authentication security token properties using targeted lsa tools query lines."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Reset the computer secure channel using command sequence 'nltest /sc_reset:<domain>'.",
+      "Synchronize workstation clock alignments to match domain controller parameters precisely.",
+      "Toggle local network adapter settings states to clear out old persistent bad routing."
+    ],
+    "l2": [
+      "Execute client reconnection scripts via PowerShell using 'Test-ComputerSecureChannel -Repair'.",
+      "Reset target Active Directory computer account objects tracking records inside administration consoles.",
+      "Disable excessive computer password rotation cycles rules inside specific unstable virtual subnets."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export client system log records filtering for Netlogon error and warning strings.",
+      "Collect text output summaries showing result blocks from nltest query executions.",
+      "Gather target client computer identity parameter summaries profiles descriptions data documents."
+    ],
+    "l2": [
+      "Enable verbose Netlogon log files tracing pathways via client machine command prompts configuration.",
+      "Export local machine security configuration registry blocks trees data tracks maps layout.",
+      "Gather directory container metadata summaries tracking the specific computer account object histories."
+    ]
+  },
+  "playbooks": {
+    "workstation_trust_relationship_broken": {
+      "title": "Repairing Broken Machine Secure Channels Without Requiring Domain Rejoins",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Test-ComputerSecureChannel", "expect": "Returns systemic output value 'False', indicating a broken machine secure channel status" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "nltest /sc_query:mydomain.local", "expect": "Fails with error message indicating status code 5719 or 1326 bad password states" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Test-ComputerSecureChannel -Repair -Credential (Get-Credential)", "expect": "Command runs successfully, overwriting outdated local machine keys values against AD records" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Test-ComputerSecureChannel", "expect": "Returns systemic output value 'True', instantly restoring standard network user logon loops" }
+          ]
+        }
+      ]
+    }
+  }
+}
