@@ -1,43 +1,43 @@
 {
   "key": "device_deployment",
   "label": "Device & Deployment",
-  "icon": "📦",
-  "description": "Intune, SCCM/ConfigMgr, Autopilot, WSUS, WDS, OS Deployment",
+  "icon": "💻",
+  "description": "windows update, windows upgrade, Activation, Bitlocker, Power management, device management, windows servicing",
   "technologies": [
     {
-      "key": "coming_soon",
-      "label": "Coming Soon",
-      "icon": "🚧"
-    },
-    {
-      "key": "intune",
-      "label": "Microsoft Intune",
-      "icon": "📱"
-    },
-    {
-      "key": "sccm",
-      "label": "SCCM / ConfigMgr",
-      "icon": "🖥"
-    },
-    {
-      "key": "autopilot",
-      "label": "Windows Autopilot",
-      "icon": "🚀"
-    },
-    {
-      "key": "wsus",
-      "label": "WSUS",
+      "key": "windows update",
+      "label": "Windows Update",
       "icon": "🔄"
     },
     {
-      "key": "wds",
-      "label": "WDS / MDT",
-      "icon": "💿"
+      "key": "windows upgrade",
+      "label": "Windows Upgrade",
+      "icon": "⬆️"
     },
     {
-      "key": "co_management",
-      "label": "Co-Management",
-      "icon": "🔗"
+      "key": "activation",
+      "label": "Activation",
+      "icon": "🔑"
+    },
+    {
+      "key": "Bitlocker",
+      "label": "Bitlocker",
+      "icon": "🔐"
+    },
+    {
+      "key": "Power management",
+      "label": "Power Management",
+      "icon": "⚡"
+    },
+    {
+      "key": "device management",
+      "label": "Device Management",
+      "icon": "🖥️"
+    },
+    {
+      "key": "windows servicing",
+      "label": "Windows Servicing",
+      "icon": "🛠️"
     }
   ]
 }
