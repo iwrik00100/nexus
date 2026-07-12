@@ -10,6 +10,11 @@
       "icon": "🚧"
     },
     {
+      "key": "disk_issues",
+      "label": "Disk Issues",
+      "icon": "⚠️"
+    },
+    {
       "key": "storage_spaces",
       "label": "Storage Spaces / S2D",
       "icon": "🗂"
