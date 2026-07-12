@@ -5,21 +5,19 @@
   "domain": "performance",
   "scoping": {
     "l1": [
-  [
-  "Question 1 — Is the slowness affecting one user or multiple users?",
-  "Question 2 — Is this a physical machine or a virtual machine (VM)?",
-  "Question 3 — Is it a client OS or server OS?",
-  "Question 4 — Does the mouse cursor still move on the screen?",
-  "Question 5 — Does the keyboard toggle caps lock, num lock, or scroll lock lights?",
-  "Question 6 — Does the Ctrl + Shift + Win + B shortcut do anything?",
-  "Question 7 — Can you ping the machine or access it over the network via SSH, RDP, or UNC shares (\\\\servername\\c$) while it is hung?",
-  "Question 8 — Is the screen frozen on the last active window, or did it go completely black or solid white?",
-  "Question 9 — Is there a pattern to when the hang occurs?",
-  "Question 10 — Does the machine automatically reboot after hanging, or does it stay frozen until a hard power button reset is forced?",
-  "Question 11 — Are there any specific peripherals or external hardware attached to the machine?",
-  "Question 12 — What changed in the environment right before the hangs started?"
-]
-
+      "Question 1 — Is the slowness affecting one user or multiple users?",
+      "Question 2 — Is this a physical machine or a virtual machine (VM)?",
+      "Question 3 — Is it a client OS or server OS?",
+      "Question 4 — Does the mouse cursor still move on the screen?",
+      "Question 5 — Does the keyboard toggle caps lock, num lock, or scroll lock lights?",
+      "Question 6 — Does the Ctrl + Shift + Win + B shortcut do anything?",
+      "Question 7 — Can you ping the machine or access it over the network via SSH, RDP, or UNC shares (\\\\servername\\c$) while it is hung?",
+      "Question 8 — Is the screen frozen on the last active window, or did it go completely black or solid white?",
+      "Question 9 — Is there a pattern to when the hang occurs?",
+      "Question 10 — Does the machine automatically reboot after hanging, or does it stay frozen until a hard power button reset is forced?",
+      "Question 11 — Are there any specific peripherals or external hardware attached to the machine?",
+      "Question 12 — What changed in the environment right before the hangs started?"
+    ],
     "l2": [
       "Is it a hard hand or Soft hang?",
       "Upon hard-rebooting the machine, is there a MEMORY.DMP or a minidump file located in C Windows",
@@ -31,21 +29,21 @@
   },
   "probing": {
     "l1": [
-    "Question 1 — Is the slowness affecting one user or multiple users?",
-	"Question 2 — If you press the Caps Lock or Num Lock keys on your physical keyboard, do the little LED lights on the keyboard actually turn on and off?",
-	"Question 3 — Can you move the mouse cursor across the screen, or is the cursor completely frozen in place?",
-	"Question 4 — What happens if you press Ctrl + Shift + Win + B on the keyboard? Does the screen flicker or beep?",
-	"Question 5 — If you press Ctrl + Alt + Delete or Ctrl + Shift + Esc, does the security options screen or Task Manager eventually appear, even after a long delay?",
-	"Question 6 — Can you ping the IP address of the frozen machine from another computer on the same network?",
-],
+      "Question 1 — Is the slowness affecting one user or multiple users?",
+      "Question 2 — If you press the Caps Lock or Num Lock keys on your physical keyboard, do the little LED lights on the keyboard actually turn on and off?",
+      "Question 3 — Can you move the mouse cursor across the screen, or is the cursor completely frozen in place?",
+      "Question 4 — What happens if you press Ctrl + Shift + Win + B on the keyboard? Does the screen flicker or beep?",
+      "Question 5 — If you press Ctrl + Alt + Delete or Ctrl + Shift + Esc, does the security options screen or Task Manager eventually appear, even after a long delay?",
+      "Question 6 — Can you ping the IP address of the frozen machine from another computer on the same network?"
+    ],
     "l2": [
-    "If you try to connect via Remote Desktop (RDP), SSH, or browse its administrative share (like \\\\computername\\c$), do you get a connection error or a continuous timeout? ",
-    "For virtual machines: What does the hypervisor management console (VMware vSphere, Hyper-V, Azure, AWS) show for CPU, memory, and disk metrics at the exact moment of the hang?",
-	"Is the screen frozen showing the exact last application window you were working in, or did it turn entirely black, blue, or solid white?",
-	"Does the machine stay permanently frozen until you physically hold down the power button, or does it eventually restart on its own after a few minutes?",
-	"Is there a distinct pattern to when the freeze occurs?",
-	"Were there any recent physical hardware changes, external devices attached, or BIOS/firmware updates applied to this machine?",
-	"Has there been an aggressive antivirus/EDR policy update or a major Windows Update installed within the last 48 hours?"
+      "If you try to connect via Remote Desktop (RDP), SSH, or browse its administrative share (like \\\\computername\\c$), do you get a connection error or a continuous timeout?",
+      "For virtual machines: What does the hypervisor management console (VMware vSphere, Hyper-V, Azure, AWS) show for CPU, memory, and disk metrics at the exact moment of the hang?",
+      "Is the screen frozen showing the exact last application window you were working in, or did it turn entirely black, blue, or solid white?",
+      "Does the machine stay permanently frozen until you physically hold down the power button, or does it eventually restart on its own after a few minutes?",
+      "Is there a distinct pattern to when the freeze occurs?",
+      "Were there any recent physical hardware changes, external devices attached, or BIOS/firmware updates applied to this machine?",
+      "Has there been an aggressive antivirus/EDR policy update or a major Windows Update installed within the last 48 hours?"
     ]
   },
   "troubleshooting": {
@@ -53,25 +51,23 @@
       "Toggle Lock Keys.",
       "Restart the Graphics Driver.",
       "Force Access to Security Options.",
-      "Attempt Remote Interrogation.",
-
+      "Attempt Remote Interrogation."
     ],
     "l2": [
-      "Perform a Clean Hard Reset when machine is completely hang."
-	  "Disable Fast Startup - Post-Reboot Fix."
-	  "Run System File Integrity Checks"
-	  "Check Event Viewer for Pre-Hang Logs"
+      "Perform a Clean Hard Reset when machine is completely hang.",
+      "Disable Fast Startup - Post-Reboot Fix.",
+      "Run System File Integrity Checks.",
+      "Check Event Viewer for Pre-Hang Logs."
     ]
   },
   "datacollection": {
     "l1": [
       "Collect Remote Performance monitor logs in case of machine is pingable.",
       "Configure dump settings and collect complete memory dump.",
-      "Grab FLTMC output.",
-
+      "Grab FLTMC output."
     ],
     "l2": [
-            "Collect dump by enabling g-flags."
+      "Collect dump by enabling g-flags."
     ]
   },
   "playbooks": {
@@ -114,7 +110,7 @@
             {
               "action": "Capture Memory dump and engage EE or analyse the dump in Windbg using mex.",
               "expect": "Share dump analysis with Customer with Cause of the issue."
-            },
+            }
           ]
         },
         {
