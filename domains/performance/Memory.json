@@ -65,6 +65,7 @@
     "l2": [
       "Collect dump by enabling g-flags.",
       "Collect PoolmonX."
+      "Collect RAMMAP"
     ]
   },
   "playbooks": {
