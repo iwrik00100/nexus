@@ -5,75 +5,73 @@
   "domain": "device_deployment",
   "scoping": {
     "l1": [
-      "Question 1 — Is the issue affecting one machine or multiple machines across the environment?",
-      "Question 2 — What is the OS version and build number of the affected machine?",
-      "Question 3 — What specific update (KB number) is failing, or are all updates failing?",
-      "Question 4 — What is the exact error code shown in Windows Update settings?",
-      "Question 5 — Is this a physical machine, virtual machine, or Azure VM?",
-      "Question 6 — Is Windows Update managed via WSUS, SCCM, Intune, or directly from Microsoft?",
-      "Question 7 — Has the machine successfully installed any updates recently?",
-      "Question 8 — When did the update failures first start occurring?"
+      "Question 1 - Is the Windows Update issue affecting one device or multiple devices?",
+      "Question 2 - Is the issue related to update scan, download, install, reboot, or compliance reporting?",
+      "Question 3 - What is the exact KB number, feature update version, or error code reported?",
+      "Question 4 - Which update source is expected: Windows Update, WSUS, SCCM, Intune, WUfB, or Autopatch?",
+      "Question 5 - Did the issue start after a policy, image, network, proxy, WSUS, SCCM, or Intune change?",
+      "Question 6 - Is the issue reproducible every time or does it occur intermittently?"
     ],
     "l2": [
-      "What do the CBS.log and WindowsUpdate.log show for the failing update?",
-      "Has the Windows Update service (wuauserv) and its dependencies been checked and restarted?",
-      "Is the SoftwareDistribution folder intact, or does it show signs of corruption?",
-      "Are there any pending reboots blocking the update from completing?",
-      "Has the DISM and SFC scan been run to check for component store corruption?",
-      "Is the machine able to reach the update endpoints (Microsoft/WSUS server) over the network?"
+      "Are affected and working devices assigned to the same update ring, WSUS group, SCCM collection, or Intune group?",
+      "Is the device co-managed, and which workload currently controls Windows Update policy?",
+      "Are Windows Update policies conflicting between Group Policy, Intune Settings Catalog, Update Rings, SCCM, or local registry?",
+      "Is the device scanning the intended source, such as SUP or WSUS versus Windows Update cloud service?",
+      "Is the update blocked by TargetReleaseVersion, deferral, pause, safeguard hold, or unsupported edition or build?",
+      "Is the failure occurring in Windows Update Agent, Delivery Optimization, BITS, CBS, DISM, or Windows Setup phase?"
     ]
   },
   "probing": {
     "l1": [
-      "Question 1 — What is the exact error code shown (e.g. 0x80070005, 0x800705b4, 0x80240034)?",
-      "Question 2 — At what stage does the update fail — downloading, installing, or finalizing?",
-      "Question 3 — Does the update fail immediately or after a long wait?",
-      "Question 4 — Is there any third-party security or endpoint protection software installed?",
-      "Question 5 — Has a manual reboot been attempted since the failure started?",
-      "Question 6 — Does the issue reproduce consistently or intermittently?"
+      "Question 1 - Does Windows Update show not offered, pending download, downloading, installing, failed, or pending restart?",
+      "Question 2 - Does the same update install successfully on another device with the same build and policy?",
+      "Question 3 - Is there enough free disk space and is the device connected to a stable network?",
+      "Question 4 - Are Windows Update, BITS, Delivery Optimization, and Update Orchestrator services running?",
+      "Question 5 - Is the device using VPN, proxy, SSL inspection, firewall filtering, or metered network connection?",
+      "Question 6 - Are there errors in WindowsUpdateClient Operational, System, Application, CBS, or DISM logs?"
     ],
     "l2": [
-      "What specific error and component are referenced in the CBS.log at the time of failure?",
-      "Does running the Windows Update Troubleshooter report any issues it could not automatically fix?",
-      "Is the BITS (Background Intelligent Transfer Service) running and functional?",
-      "Are there any Group Policy settings restricting Windows Update behavior on this machine?",
-      "Does the issue occur in a clean boot state with third-party services disabled?",
-      "Is the machine's system clock synchronized correctly, as certificate validation depends on accurate time?"
+      "Does WindowsUpdate.log confirm the expected scan source and update service endpoint?",
+      "Does WUAHandler.log or ScanAgent.log show scan success, scan failure, or incorrect Software Update Point assignment?",
+      "Do registry keys such as UseWUServer, UpdateServiceUrl, DisableDualScan, or TargetReleaseVersion match the intended design?",
+      "Does CBS.log show component store corruption, missing payload, package applicability failure, or rollback activity?",
+      "For feature updates, does SetupDiag or Panther logging identify compatibility, driver, SafeOS, First Boot, or OOBE failure?",
+      "For Intune or WUfB reporting, are telemetry, Windows Health Monitoring, and device check-in prerequisites satisfied?"
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Run the Windows Update Troubleshooter from Settings > Update & Security > Troubleshoot.",
-      "Stop the wuauserv and bits services, rename the SoftwareDistribution folder, then restart both services.",
-      "Run SFC /scannow to repair any corrupted system files.",
-      "Ensure the machine has a stable internet connection and can reach update servers.",
-      "Check for and remove any conflicting third-party software that may block Windows Update.",
-      "Manually download the failing KB from the Microsoft Update Catalog and install offline."
+      "Confirm the update KB, error code, affected device count, OS build, and expected update source.",
+      "Run Windows Update troubleshooter when applicable and then retry update scan and installation.",
+      "Verify Windows Update related services including wuauserv, bits, dosvc, usosvc, and cryptsvc.",
+      "Check free disk space, network connectivity, proxy configuration, and firewall access to update endpoints.",
+      "Generate WindowsUpdate.log and review WindowsUpdateClient Operational events for scan or installation errors."
     ],
     "l2": [
-      "Run DISM /Online /Cleanup-Image /RestoreHealth to repair the Windows component store.",
-      "Analyse CBS.log for the exact failing component and cross-reference with known KB issues.",
-      "Check and reset Group Policy settings that may conflict with update delivery.",
-      "Verify and repair WMI repository if wuauserv fails to start or enumerate updates.",
-      "Review WSUS or SCCM console for approvals, sync errors, or boundary issues if managed.",
-      "Use SetupDiag.exe to analyse failed feature update logs and identify the root cause."
+      "Validate Windows Update policy registry keys under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate.",
+      "For SCCM managed devices, review WUAHandler.log, ScanAgent.log, UpdatesDeployment.log, UpdatesHandler.log, CAS.log, and ContentTransferManager.log.",
+      "For Intune managed devices, export MDM diagnostics and review DeviceManagement-Enterprise-Diagnostics-Provider Admin events.",
+      "Run DISM and SFC health checks to detect and repair servicing stack or component store corruption.",
+      "For feature update failures, run SetupDiag and analyze Panther, Rollback, setupact.log, setuperr.log, and setupapi.dev.log."
     ]
   },
   "datacollection": {
     "l1": [
-      "Collect the Windows Update log using: Get-WindowsUpdateLog (PowerShell) or %windir%\\Logs\\WindowsUpdate.",
-      "Export CBS.log from %windir%\\Logs\\CBS\\CBS.log.",
-      "Collect System and Application event logs in .evtx format."
+      "Collect winver screenshot, exact KB or feature update version, error screenshot, and affected device name.",
+      "Collect WindowsUpdate.log using Get-WindowsUpdateLog and export WindowsUpdateClient Operational event log.",
+      "Collect System and Application event logs around the update failure timestamp.",
+      "Collect gpresult /h output and export Windows Update registry policy keys from the affected device."
     ],
     "l2": [
-      "Collect a full DISM log from %windir%\\Logs\\DISM\\dism.log.",
-      "Run and collect TSS for Windows Update scenario (TSS WU).",
-      "Collect SetupDiag output if a feature update failed."
+      "Collect CBS.log, DISM.log, pending reboot state, installed hotfix list, and component store health command output.",
+      "For SCCM cases, collect client logs from C:\\Windows\\CCM\\Logs including WUAHandler, ScanAgent, UpdatesDeployment, UpdatesHandler, CAS, and ContentTransferManager.",
+      "For Intune cases, collect MDM diagnostic CAB, Intune policy report, update ring assignment details, and device check-in status.",
+      "For feature update cases, collect Panther logs, Rollback logs, SetupDiag output, CompatData XML, and setupapi.dev.log."
     ]
   },
   "playbooks": {
-    "update_fails_0x80070005": {
-      "title": "Windows Update fails with error 0x80070005 (Access Denied)",
+    "windows_update_failure": {
+      "title": "Windows Update Investigation",
       "severity": "medium",
       "phases": [
         {
@@ -81,12 +79,12 @@
           "icon": "✅",
           "steps": [
             {
-              "action": "Open Settings > Windows Update and note the exact error code and KB number.",
-              "expect": "Error 0x80070005 (ACCESS DENIED) is confirmed against a specific update."
+              "action": "Confirm the exact update issue, affected scope, OS build, KB number, feature update version, and error code.",
+              "expect": "The update scenario is classified as not offered, scan failure, download failure, install failure, reboot issue, or reporting mismatch."
             },
             {
-              "action": "Check CBS.log (%windir%\\Logs\\CBS\\CBS.log) for 'access denied' or 'hr = 0x80070005' entries.",
-              "expect": "Log confirms a permissions failure during staging or installing the update."
+              "action": "Confirm the expected management source: Windows Update, WSUS, SCCM, Intune, WUfB, Autopatch, or Deployment Service.",
+              "expect": "The intended update source is known before policy and log analysis begins."
             }
           ]
         },
@@ -95,12 +93,12 @@
           "icon": "🔍",
           "steps": [
             {
-              "action": "Run SFC /scannow in an elevated command prompt.",
-              "expect": "SFC reports either no violations found or repairs corrupted files successfully."
+              "action": "Compare one affected device with one working device from the same ring, collection, group, site, or policy scope.",
+              "expect": "Differences in policy, scan source, build, network, or update applicability are identified."
             },
             {
-              "action": "Check if any Group Policy restricts Windows Update permissions (gpedit.msc > Computer Configuration > Administrative Templates > Windows Components > Windows Update).",
-              "expect": "No restrictive policy should be blocking the update service account."
+              "action": "Review WindowsUpdate.log, event logs, registry policy keys, and management tool logs for the failing stage.",
+              "expect": "The failure is isolated to policy targeting, scan source, download, installation, servicing, reboot, or reporting."
             }
           ]
         },
@@ -109,12 +107,16 @@
           "icon": "🛠",
           "steps": [
             {
-              "action": "Run DISM /Online /Cleanup-Image /RestoreHealth to repair the component store.",
-              "expect": "DISM completes successfully and reports the operation completed successfully."
+              "action": "Correct conflicting Windows Update policies, scan source configuration, update ring assignment, WSUS/SUP assignment, or co-management workload ownership.",
+              "expect": "The device scans against the intended update source and receives the expected update offering."
             },
             {
-              "action": "Reset Windows Update components: stop wuauserv and bits, rename SoftwareDistribution to SoftwareDistribution.old, then restart both services.",
-              "expect": "Services restart cleanly and Windows Update re-creates the SoftwareDistribution folder."
+              "action": "Repair servicing health using DISM and SFC when CBS or DISM logs show corruption or missing source errors.",
+              "expect": "Component store health is restored and update installation can be retried."
+            },
+            {
+              "action": "Resolve network, proxy, Delivery Optimization, BITS, or content download issues when download or content transfer errors are present.",
+              "expect": "Update content downloads successfully from the intended source or cache path."
             }
           ]
         },
@@ -123,8 +125,12 @@
           "icon": "🎯",
           "steps": [
             {
-              "action": "Retry the Windows Update and monitor the CBS.log in real time.",
-              "expect": "Update downloads and installs successfully without the 0x80070005 error."
+              "action": "Run a fresh update scan and retry the failed update installation after remediation.",
+              "expect": "The device moves to installed, pending restart, or compliant state without the original failure."
+            },
+            {
+              "action": "Validate reporting in Intune, SCCM, WSUS, WUfB reports, or local update history after policy refresh and report sync.",
+              "expect": "Management reporting aligns with the local device update state."
             }
           ]
         }
