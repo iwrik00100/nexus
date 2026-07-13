@@ -142,7 +142,7 @@ const DOMAIN_TECH_COUNTS = {
   performance: '5 technologies',
   user_experience: '2 technologies',
   device_deployment: '6 technologies',
-  storage_ha: '6 technologies',
+  storage_ha: '8 technologies',
   collaboration: '6 technologies'
 };
 

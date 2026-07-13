@@ -1,0 +1,135 @@
+{
+  "key": "memory",
+  "label": "Memory",
+  "icon": "💻",
+  "domain": "performance",
+  "scoping": {
+    "l1": [
+      "Question 1 — Is the slowness affecting one user or multiple users?",
+      "Question 2 — Is this a physical machine or a virtual machine (VM)?",
+      "Question 3 — Is it a client OS or server OS?",
+      "Question 4 — What specific process (EXE) is consuming the highest Private Working Set?",
+      "Question 5 — Is the leak occurring in User Mode or Kernel Mode?",
+      "Question 6 — Is the Commit Charge close to or exceeding the total physical RAM plus Pagefile size?",
+      "Question 7 — Is the \"System Cache\" or \"Modified\" memory pool abnormally large?",
+      "Question 8 — Does the memory utilization build up gradually or spike instantly?",
+      "Question 9 — When did this memory exhaustion behavior first begin?",
+      "Question 10 — Does closing the suspected application immediately return the memory to the system?"
+    ],
+    "l2": [
+      "Does a system reboot temporarily resolve the problem?",
+      "If you restart the application pool or service, how long does it take to climb back up to critical memory thresholds?",
+      "Were there any recent software deployments, application pool changes, or code updates?",
+      "Has there been a recent change to the virtual machine provisioning or physical hardware?",
+      "Is this issue isolated to a single machine or widespread across the environment?",
+      "Are the Windows Pagefile settings managed by the system or configured manually?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 — When you look at the Task Manager Details tab, which process has the highest 'Commit size' or 'Working set'?",
+      "Question 2 — What are the exact values listed for 'Paged pool' and 'Non-paged pool' on the Performance tab?",
+      "Question 3 — Does the memory consumption scale linearly with the uptime of the system or application?",
+      "Question 4 — If you close the main application window, does its executable process actually terminate or does it persist in the background?",
+      "Question 5 — If you press Ctrl + Alt + Delete or Ctrl + Shift + Esc, does the security options screen or Task Manager eventually appear, even after a long delay?",
+      "Question 6 — What is the current 'Commit charge' ratio shown under the Memory Performance graph?"
+    ],
+    "l2": [
+      "Is the Windows Pagefile set to 'System managed' or configured to a fixed custom size on the drive?",
+      "Does the 'In use (Compressed)' memory pool look exceptionally high?",
+      "Does the out-of-memory error occur during an idle period or when a specific heavy task is executed?",
+      "Is the problem accompanied by Event ID 2004 (Resource-Exhaustion-Detector) in the System Event Log?",
+      "For Virtual Machines: Has Dynamic Memory or Memory Ballooning been enabled within the hypervisor settings?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Identify the Highest Consumer via Task Manager.",
+      "Perform a Clean boot and System Restart.",
+      "Audit Heavy Startup and Background Apps."
+    ],
+    "l2": [
+      "Evaluate the Kernel Memory Pools.",
+      "Inspect Event ID 2004 (Resource Exhaustion).",
+      "Verify Windows Pagefile Allocation."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect Performance monitor logs.",
+      "Collect Poolmon.",
+      "Collect RAMMAP.",
+      "Collect Memory WPR.",
+      "Configure dump settings and collect complete memory dump."
+    ],
+    "l2": [
+      "Collect dump by enabling g-flags.",
+      "Collect PoolmonX.",
+      "Collect RAMMAP."
+    ]
+  },
+  "playbooks": {
+    "memory_leak": {
+      "title": "Getting Hold of Memory",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "configure complete memory dump.",
+              "expect": "Crash the machine when the issue will occur next time."
+            },
+            {
+              "action": "Check the behavior in Safe Mode.",
+              "expect": "In safe Mode the issue should not be present."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "configure complete memory dump.",
+              "expect": "Crash the machine when the issue will occur next time."
+            },
+            {
+              "action": "Check the behavior in Safe Mode.",
+              "expect": "In safe Mode the issue should not be present."
+            },
+            {
+              "action": "Update the machine to the latest Windows patch.",
+              "expect": "Observe the behavior after update."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Perform Cleanboot by disabling 3rd party services.",
+              "expect": "Reboot and check if memory issue is present if not then perform divide and conquer to identify which 3r party service is causing the issue."
+            },
+            {
+              "action": "Run PoolmonX and Identify whih tag is responsible for leak with respect to page pool and non page pool.",
+              "expect": "Once the tag is identified use findstr command to Identify the driver associated to the tag and remove the same."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Monitor the machine for a while after Cutomer Performs action plan provided from dump analysis or troubleshooting done via PoolmonX.",
+              "expect": "No Memory situation should occur."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
