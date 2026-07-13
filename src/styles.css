@@ -222,14 +222,18 @@ body {
 /* ── Domain Grid ─────────────────────────────────────────────── */
 .domain-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  max-width: 640px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-@media (max-width: 900px) {
-  .domain-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+@media (max-width: 1024px) {
+  .domain-grid { grid-template-columns: repeat(2, 1fr); max-width: 640px; }
+}
+
+@media (max-width: 640px) {
+  .domain-grid { grid-template-columns: 1fr; max-width: 400px; }
 }
 
 .domain-card {
