@@ -1,0 +1,117 @@
+/* ── Additional Design Enhancements ─────────────────────────────────── */
+
+/* Smooth fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scale animation for interactive elements */
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Pulse animation for important elements */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Enhanced button hover effects */
+button {
+  transition: var(--transition);
+}
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Enhanced focus states for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  transition: outline-color 0.2s ease;
+}
+
+/* Smooth scrolling behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Loading state animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Enhanced card hover states */
+.tech-card {
+  transition: var(--transition-slow);
+}
+.tech-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+}
+
+/* Question item hover effects */
+.question-item {
+  transition: var(--transition);
+  border-left: 3px solid transparent;
+}
+.question-item:hover {
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+  transform: translateX(4px);
+}
+
+/* Input field focus effects */
+input, textarea, select {
+  transition: var(--transition);
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+  transform: translateY(-1px);
+}
+
+/* Copy button animations */
+.copy-btn {
+  transition: var(--transition-fast);
+}
+.copy-btn:hover {
+  background: var(--accent);
+  color: white;
+  transform: scale(1.1);
+}
+.copy-btn.copied {
+  background: var(--l1);
+  color: white;
+  animation: pulse 0.3s ease;
+}
+
+/* Responsive touch targets for mobile */
+@media (max-width: 768px) {
+  button, .domain-card, .tech-card {
+    min-height: 44px; /* WCAG touch target size */
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
