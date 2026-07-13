@@ -68,41 +68,5 @@
       "Advanced collection 4 — Export Get-StorageJob status and history",
       "Advanced collection 5 — Collect firmware/driver versions for all storage controllers"
     ]
-  },
-  "playbooks": {
-    "symptom_slug": {
-      "title": "Storage pool degraded or disks missing",
-      "severity": "high",
-      "phases": [
-        {
-          "name": "Verify",
-          "icon": "✅",
-          "steps": [
-            { "action": "Run Get-StoragePool to confirm degraded state", "expect": "Pool shows warning or degraded status" }
-          ]
-        },
-        {
-          "name": "Isolate",
-          "icon": "🔍",
-          "steps": [
-            { "action": "Run Get-PhysicalDisk to identify unhealthy disks", "expect": "One or more disks show retired or warning state" }
-          ]
-        },
-        {
-          "name": "Fix",
-          "icon": "🛠",
-          "steps": [
-            { "action": "Run Repair-VirtualDisk or Reset-PhysicalDisk", "expect": "Disks return to healthy state and pool rebuilds" }
-          ]
-        },
-        {
-          "name": "Confirm",
-          "icon": "🎯",
-          "steps": [
-            { "action": "Run Get-VirtualDisk and Get-StoragePool", "expect": "All disks and pool show healthy operational status" }
-          ]
-        }
-      ]
-    }
   }
 }
