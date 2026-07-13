@@ -4,7 +4,7 @@ A professional incident command platform for L1 and L2 Microsoft Unified Support
 
 **Live:** https://iwrik00100.github.io/nexus/src/
 
-**Status:** [![Uptime Robot status](https://stats.uptimerobot.com/4djVFYOOwd)](https://stats.uptimerobot.com/4djVFYOOwd)
+**Status:** [![Uptime Robot status](https://uptimerobot.com/api/badge?key=4djVFYOOwd)](https://stats.uptimerobot.com/4djVFYOOwd)
 
 ---
 
