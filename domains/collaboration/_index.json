@@ -5,11 +5,6 @@
   "description": "Exchange Online, Microsoft Teams, SharePoint, OneDrive, M365 connectivity",
   "technologies": [
     {
-      "key": "coming_soon",
-      "label": "Coming Soon",
-      "icon": "🚧"
-    },
-    {
       "key": "exchange",
       "label": "Exchange Online",
       "icon": "📧"
