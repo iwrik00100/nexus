@@ -11,8 +11,8 @@
     },
     {
       "key": "storage_spaces",
-      "label": "Storage Spaces / S2D",
-      "icon": "🗂"
+      "label": "Storage Spaces and Storage Pool",
+      "icon": "🗄"
     },
     {
       "key": "failover_cluster",
