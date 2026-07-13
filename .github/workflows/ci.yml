@@ -13,8 +13,7 @@ jobs:
   validate-json:
     name: Validate Domain JSON Files
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    continue-on-error: true
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -59,7 +58,7 @@ jobs:
     name: Validate HTML
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
+    continue-on-error: true  # Informational validation with relaxed rules
     steps:
       - uses: actions/checkout@v4
 
@@ -106,7 +105,6 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -128,6 +126,10 @@ jobs:
       - name: Run tests
         if: steps.check_tests.outputs.has_tests == 'true'
         run: npm test
+
+      - name: Skip tests (no test suite)
+        if: steps.check_tests.outputs.has_tests == 'false'
+        run: echo "ℹ️ No test suite found - skipping tests"
 
   # ── Lighthouse CI ───────────────────────────────────────────────
   lighthouse:
@@ -174,8 +176,8 @@ jobs:
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| JSON Schema Validation | ${{ needs.validate-json.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| HTML Validation        | ${{ needs.validate-html.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| JS Lint                | ${{ needs.lint-js.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JS Lint                | ${{ needs.lint_js.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests             | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Lighthouse CI          | ${{ needs.lighthouse.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Note:** Jobs with \`continue-on-error: true\` may show as failed but won't block the pipeline." >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** HTML validation and Lighthouse use relaxed rules and won't block the pipeline." >> $GITHUB_STEP_SUMMARY
