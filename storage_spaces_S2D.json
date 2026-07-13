@@ -1,0 +1,108 @@
+{
+  "key": "storage_spaces",
+  "label": "storage_spaces_and_storage_pool",
+  "icon": "🗄",
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the storage pool issue first appear?",
+      "Question 2 — Is the pool composed of physical disks or virtual disks?",
+      "Question 3 — Are all disks in the pool affected or only some?",
+      "Question 4 — Has the pool been recently expanded or modified?",
+      "Question 5 — Is the issue impacting production workloads or test environments?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are there any disks showing warning or retired status in the pool?",
+      "Advanced question 2 — Has the server undergone hardware or firmware updates recently?",
+      "Advanced question 3 — Is the pool configured with parity, mirror, or simple layout?",
+      "Advanced question 4 — Are there tiered storage spaces (SSD + HDD) involved?",
+      "Advanced question 5 — Is the pool part of a clustered Storage Spaces Direct (S2D) setup?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command or question 1 — Open Server Manager and check Storage Pools status",
+      "Command or question 2 — Run PowerShell Get-StoragePool to confirm health",
+      "Command or question 3 — Verify physical disks with Get-PhysicalDisk",
+      "Command or question 4 — Check if virtual disks are online in Disk Management",
+      "Command or question 5 — Review Event Viewer for storage-related warnings",
+      "Command or question 6 — Run PowerShell Get-StorageTier to check tier health and usage"
+    ],
+    "l2": [
+      "Advanced command 1 — Run Get-VirtualDisk to check operational status",
+      "Advanced command 2 — Use Get-StorageJob to identify pending repair or rebuild jobs",
+      "Advanced command 3 — Query cluster logs if using Storage Spaces Direct",
+      "Advanced command 4 — Run Get-PhysicalDisk | ft FriendlyName,HealthStatus,OperationalStatus",
+      "Advanced command 5 — Check tiered storage performance counters"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Resolution step 1 — Restart the server and recheck pool health",
+      "Resolution step 2 — Reconnect or replace any missing physical disks",
+      "Resolution step 3 — Run Repair-VirtualDisk if a disk shows degraded status",
+      "Resolution step 4 — Ensure all disks are online and not set to retired",
+      "Resolution step 5 — Verify sufficient free capacity in the pool"
+    ],
+    "l2": [
+      "Advanced fix 1 — Run Reset-PhysicalDisk on disks stuck in retired state",
+      "Advanced fix 2 — Update firmware and drivers for storage controllers",
+      "Advanced fix 3 — Rebalance or re-tier storage spaces if performance degraded",
+      "Advanced fix 4 — Run cluster validation tests for Storage Spaces Direct",
+      "Advanced fix 5 — Escalate to Microsoft support if pool metadata corruption suspected"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export log X — Save Event Viewer storage logs",
+      "Collect trace Y — Run Get-StoragePool and export results",
+      "Run command Z — Execute Get-PhysicalDisk and save output",
+      "Step 4 — Capture screenshot of Server Manager storage pool view",
+      "Step 5 — Collect OS build and patch level",
+      "Step 6 — Export Get-StorageTier results for tier health and usage"
+    ],
+    "l2": [
+      "Advanced collection 1 — Export Get-VirtualDisk detailed report",
+      "Advanced collection 2 — Collect cluster logs if using S2D",
+      "Advanced collection 3 — Gather performance monitor counters for storage spaces",
+      "Advanced collection 4 — Export Get-StorageJob status and history",
+      "Advanced collection 5 — Collect firmware/driver versions for all storage controllers"
+    ]
+  },
+  "playbooks": {
+    "symptom_slug": {
+      "title": "Storage pool degraded or disks missing",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Run Get-StoragePool to confirm degraded state", "expect": "Pool shows warning or degraded status" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Run Get-PhysicalDisk to identify unhealthy disks", "expect": "One or more disks show retired or warning state" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Run Repair-VirtualDisk or Reset-PhysicalDisk", "expect": "Disks return to healthy state and pool rebuilds" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Run Get-VirtualDisk and Get-StoragePool", "expect": "All disks and pool show healthy operational status" }
+          ]
+        }
+      ]
+    }
+  }
+}
