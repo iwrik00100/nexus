@@ -1,15 +1,17 @@
-const CACHE_NAME = 'nexus-v1';
+const CACHE_NAME = 'nexus-v2';
 const STATIC_ASSETS = [
-  '/src/index.html',
-  '/src/styles.css',
-  '/src/app.js',
-  '/manifest.json',
-  '/domains/technologies.json',
-  '/domains/technology.schema.json'
+  '/nexus/src/index.html',
+  '/nexus/src/styles.css',
+  '/nexus/src/app.js',
+  '/nexus/manifest.json',
+  '/nexus/src/enhancements.css',
+  '/nexus/domains/technologies.json',
+  '/nexus/domains/technology.schema.json'
 ];
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
+  console.log('[Service Worker] Install event triggered');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -28,6 +30,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  console.log('[Service Worker] Activate event triggered');
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -88,11 +91,18 @@ self.addEventListener('fetch', (event) => {
             
             // Return a custom offline page for HTML requests
             if (event.request.headers.get('accept')?.includes('text/html')) {
-              return caches.match('/src/index.html');
+              return caches.match('/nexus/src/index.html');
             }
           });
       })
   );
+});
+
+// Handle skip waiting message
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Background sync for when connectivity is restored
@@ -106,8 +116,7 @@ self.addEventListener('sync', (event) => {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'New update available in Nexus',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 32 32\'%3E%3Crect width=\'14\' height=\'14\' x=\'1\' y=\'1\' fill=\'%23f25022\'/%3E%3Crect width=\'14\' height=\'14\' x=\'17\' y=\'1\' fill=\'%237fba00\'/%3E%3Crect width=\'14\' height=\'14\' x=\'1\' y=\'17\' fill=\'%2300a4ef\'/%3E%3Crect width=\'14\' height=\'14\' x=\'17\' y=\'17\' fill=\'%23ffb900\'/%3E%3C/svg%3E',
     vibrate: [200, 100, 200],
     data: {
       dateOfArrival: Date.now(),
