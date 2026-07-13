@@ -4,7 +4,6 @@
   "icon": "⚡",
   "description": "CPU, Memory, noboot, hang, bugcheck",
   "technologies": [
-  
     {
       "key": "cpu",
       "label": "CPU",
