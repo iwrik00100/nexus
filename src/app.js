@@ -9,6 +9,19 @@ const state = {
   techData: {}       // cache: techKey -> technology.json data
 };
 
+// ─── Service Worker Registration ─────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('[App] Service Worker registered successfully:', registration.scope);
+      })
+      .catch((error) => {
+        console.log('[App] Service Worker registration failed:', error);
+      });
+  });
+}
+
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 const LS = {
   get: (k, fallback = null) => { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : fallback; } catch { return fallback; } },
@@ -18,14 +31,14 @@ const LS = {
 const SECTION_META = {
   scoping:         { label: 'Scoping',        icon: '🔍', desc: 'Environment & impact questions' },
   probing:         { label: 'Probing',         icon: '🧪', desc: 'Diagnostic commands & data requests' },
-  troubleshooting: { label: 'Troubleshooting', icon: '🛠',  desc: 'Resolution steps' },
-  datacollection:  { label: 'Data Collection', icon: '📦', desc: 'Logs, traces & exports' }
+  troubleshooting: { label: 'Troubleshooting', icon: '🔧',  desc: 'Resolution steps' },
+  datacollection:  { label: 'Data Collection', icon: '📊', desc: 'Logs, traces & exports' }
 };
 
 // Domain definitions — drives the landing page cards
 const DOMAINS = [
   { key: 'networking',          label: 'Networking',              icon: '🌐', description: 'DNS, DHCP, TCP/IP, SMB, DFS, NPS, 802.1x, VPN' },
-  { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, Replication, Group Policy, Kerberos, LDAP, ADCS, Trusts' },
+  { key: 'directory_services',  label: 'Directory Services',      icon: '🏛️',  description: 'AD DS, Replication, Group Policy, Kerberos, LDAP, ADCS, Trusts' },
   { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Noboot, Hang, Bugcheck' },
   { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'RDP, Printing' },
   { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Windows Update, Upgrade, Activation, BitLocker, Power Management' },

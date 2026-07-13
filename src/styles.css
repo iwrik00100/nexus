@@ -1,40 +1,42 @@
 /* ── Variables ───────────────────────────────────────────────── */
 :root {
-  --bg:         #f3f5f9;
-  --bg2:        #eaecf2;
-  --surface:    rgba(255,255,255,0.60);
-  --surface2:   rgba(255,255,255,0.75);
-  --surface3:   rgba(255,255,255,0.90);
-  --border:     rgba(180,200,230,0.55);
-  --border2:    rgba(140,170,210,0.70);
-  --accent:     #0078d4;
-  --accent2:    #106ebe;
-  --accent-dim: rgba(0,120,212,0.08);
-  --accent-glow:rgba(0,120,212,0.18);
-  --ms-red:     #f25022;
-  --ms-green:   #7fba00;
-  --ms-blue:    #00a4ef;
-  --ms-yellow:  #ffb900;
-  --l1:         #107c10;
-  --l2:         #ca5010;
-  --l1-dim:     rgba(16,124,16,0.08);
-  --l2-dim:     rgba(202,80,16,0.08);
-  --text:       #1a1a2e;
-  --text2:      #5a6478;
-  --text3:      #9aa3b2;
-  --red:        #d13438;
-  --head:       'Segoe UI', system-ui, sans-serif;
+  --bg:         #f8fafc;
+  --bg2:        #f1f5f9;
+  --surface:    rgba(255,255,255,0.85);
+  --surface2:   rgba(255,255,255,0.92);
+  --surface3:   rgba(255,255,255,0.96);
+  --border:     rgba(148,163,184,0.30);
+  --border2:    rgba(100,116,139,0.50);
+  --accent:     #2563eb;
+  --accent2:    #1d4ed8;
+  --accent-dim: rgba(37,99,235,0.10);
+  --accent-glow:rgba(37,99,235,0.15);
+  --ms-red:     #dc2626;
+  --ms-green:   #16a34a;
+  --ms-blue:    #2563eb;
+  --ms-yellow:  #ca8a04;
+  --l1:         #16a34a;
+  --l2:         #ea580c;
+  --l1-dim:     rgba(22,163,74,0.12);
+  --l2-dim:     rgba(234,88,12,0.12);
+  --text:       #0f172a;
+  --text2:      #475569;
+  --text3:      #94a3b8;
+  --red:        #dc2626;
+  --head:       'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono:       'JetBrains Mono', 'Cascadia Code', monospace;
-  --r:          6px;
-  --rl:         12px;
-  --transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+  --r:          8px;
+  --rl:         16px;
+  --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  --transition-fast: all 0.15s cubic-bezier(0.4,0,0.2,1);
+  --transition-slow: all 0.5s cubic-bezier(0.4,0,0.2,1);
 }
 
 /* ── Reset ───────────────────────────────────────────────────── */
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; scroll-behavior: smooth; }
 body {
-  background: #dce8f8;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   color: var(--text);
   font-family: var(--head);
   min-height: 100vh;
@@ -42,21 +44,25 @@ body {
 }
 
 /* ── Page System ─────────────────────────────────────────────── */
-.page { display: none; min-height: 100vh; }
-.page.active { display: flex; flex-direction: column; }
+.page { display: none; min-height: 100vh; opacity: 0; transform: translateY(20px); transition: opacity 0.4s ease, transform 0.4s ease; }
+.page.active { display: flex; flex-direction: column; opacity: 1; transform: translateY(0); }
 
 /* ── Microsoft Header ────────────────────────────────────────── */
 .ms-header {
-  background: rgba(240,246,255,0.75);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  border-bottom: 1px solid rgba(180,210,240,0.50);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.8) inset;
   padding: 0 2rem;
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: all 0.3s ease;
+}
+.ms-header:hover {
+  box-shadow: 0 6px 25px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset;
 }
 .ms-header-inner {
   max-width: 1400px;
@@ -77,9 +83,26 @@ body {
   padding: 0;
   text-align: left;
   text-decoration: none;
-  transition: opacity 0.18s;
+  transition: var(--transition);
+  position: relative;
 }
-.ms-logo:hover { opacity: 0.8; }
+.ms-logo:hover { 
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.ms-logo::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.ms-logo:hover::after {
+  width: 100%;
+}
 .ms-logo-icon {
   width: 21px;
   height: 21px;
@@ -185,6 +208,17 @@ body {
 .landing-hero {
   text-align: center;
   padding: 1rem 0 0.5rem;
+  animation: fadeInUp 0.8s ease-out;
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .landing-hero-eyebrow {
   display: inline-block;
@@ -194,22 +228,24 @@ body {
   text-transform: uppercase;
   color: var(--accent);
   background: var(--accent-dim);
-  border: 1px solid rgba(0,120,212,0.25);
+  border: 1px solid rgba(37,99,235,0.25);
   border-radius: 20px;
   padding: 4px 14px;
   margin-bottom: 1.2rem;
+  animation: fadeIn 1s ease-out 0.2s both;
 }
 .landing-hero-title {
   font-size: clamp(2.6rem, 5vw, 4rem);
   font-weight: 300;
   line-height: 1.1;
   letter-spacing: -0.04em;
-  color: #0f1c2e;
+  color: #0f172a;
   margin-bottom: 1.2rem;
+  animation: fadeIn 1s ease-out 0.4s both;
 }
 .landing-hero-title strong {
   font-weight: 700;
-  color: #fff;
+  color: var(--accent);
 }
 .landing-hero-sub {
   font-size: 1rem;
@@ -217,15 +253,17 @@ body {
   max-width: 520px;
   margin: 0 auto;
   line-height: 1.7;
+  animation: fadeIn 1s ease-out 0.6s both;
 }
 
 /* ── Domain Grid ─────────────────────────────────────────────── */
 .domain-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
   max-width: 1200px;
   margin: 0 auto;
+  animation: fadeIn 1s ease-out 0.8s both;
 }
 
 @media (max-width: 1024px) {
@@ -241,28 +279,47 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(180,210,240,0.55);
-  border-radius: 16px;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid var(--border);
+  border-radius: 20px;
   padding: 0;
   cursor: pointer;
   text-align: left;
-  transition: var(--transition);
+  transition: var(--transition-slow);
   overflow: hidden;
   outline: none;
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  box-shadow: 0 2px 12px rgba(100,150,220,0.08), 0 1px 0 rgba(255,255,255,0.80) inset;
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.8) inset;
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 .domain-card:hover {
-  border-color: rgba(0,120,212,0.45);
-  transform: translateY(-5px);
-  box-shadow: 0 16px 48px rgba(0,120,212,0.16), 0 1px 0 rgba(255,255,255,0.90) inset;
-  background: rgba(255,255,255,0.75);
+  border-color: var(--accent);
+  transform: translateY(-8px) rotateX(2deg);
+  box-shadow: 0 20px 60px rgba(37,99,235,0.20), 0 1px 0 rgba(255,255,255,0.9) inset;
+  background: rgba(255,255,255,0.85);
 }
 .domain-card:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+  transform: translateY(-4px);
+}
+.domain-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(37,99,235,0.05) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 20px;
+  pointer-events: none;
+}
+.domain-card:hover::before {
+  opacity: 1;
 }
 
 /* Coloured top accent bar per domain */
@@ -279,15 +336,21 @@ body {
   flex: 1;
 }
 .domain-card-icon-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   flex-shrink: 0;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--accent-dim) 0%, transparent 100%);
+  transition: var(--transition);
+}
+.domain-card:hover .domain-card-icon-wrap {
+  transform: scale(1.1) rotate(5deg);
+  background: linear-gradient(135deg, var(--accent-glow) 0%, transparent 100%);
 }
 .domain-card-label {
   font-size: 1.05rem;
