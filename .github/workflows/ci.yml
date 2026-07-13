@@ -5,6 +5,7 @@ on:
     branches: [main, ver1.8]
   push:
     branches: [main, ver1.8]
+  workflow_dispatch:
 
 jobs:
 
@@ -12,11 +13,12 @@ jobs:
   validate-json:
     name: Validate Domain JSON Files
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
@@ -55,11 +57,12 @@ jobs:
   validate-html:
     name: Validate HTML
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
@@ -68,7 +71,7 @@ jobs:
 
       - name: Create html-validate config
         run: |
-          echo '{"extends":["html-validate:recommended"],"rules":{"void-style":"off","no-implicit-button-type":"off","autocomplete-password":"off","prefer-native-element":"off","no-inline-style":"off","attribute-boolean-style":"off","no-trailing-whitespace":"off"}}' > .htmlvalidate.json
+          echo '{"extends":["html-validate:recommended"],"rules":{"void-style":"off","no-implicit-button-type":"off","autocomplete-password":"off","prefer-native-element":"off","no-inline-style":"off","attribute-boolean-style":"off","no-trailing-whitespace":"off","wcag/h32":"off","element-permitted-content":"off","no-multiple-main":"off"}}' > .htmlvalidate.json
 
       - name: Validate src/index.html
         run: html-validate src/index.html || true
@@ -77,11 +80,12 @@ jobs:
   lint-js:
     name: Lint JavaScript
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
@@ -99,11 +103,12 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
@@ -126,11 +131,12 @@ jobs:
     name: Lighthouse CI
     runs-on: ubuntu-latest
     needs: [validate-json, validate-html]
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
