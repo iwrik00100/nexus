@@ -550,7 +550,7 @@ function filterQuestions() {
 
     if (!q) {
       item.classList.remove('q-hidden');
-      textEl.innerHTML = escapeHtml(raw);
+      textEl.textContent = raw;
       visible++;
       return;
     }
@@ -560,8 +560,23 @@ function filterQuestions() {
       item.classList.add('q-hidden');
     } else {
       item.classList.remove('q-hidden');
-      const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      textEl.innerHTML = escapeHtml(raw).replace(regex, m => `<mark class="q-highlight">${m}</mark>`);
+      // Safe highlighting using textContent and DOM manipulation
+      textEl.textContent = raw;
+      const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      const highlightedText = raw.replace(regex, '___HIGHLIGHT_START___$1___HIGHLIGHT_END___');
+      const parts = highlightedText.split(/___HIGHLIGHT_START___|___HIGHLIGHT_END___/);
+      
+      textEl.innerHTML = '';
+      parts.forEach((part, index) => {
+        if (index % 2 === 1) {
+          const mark = document.createElement('mark');
+          mark.className = 'q-highlight';
+          mark.textContent = part;
+          textEl.appendChild(mark);
+        } else {
+          textEl.appendChild(document.createTextNode(part));
+        }
+      });
       visible++;
     }
   });
