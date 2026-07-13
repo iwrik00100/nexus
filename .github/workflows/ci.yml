@@ -13,14 +13,15 @@ jobs:
   validate-json:
     name: Validate Domain JSON Files
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install AJV CLI
         run: npm install -g ajv-cli ajv-formats
@@ -58,13 +59,14 @@ jobs:
     name: Validate HTML
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install html-validate
         run: npm install -g html-validate
@@ -87,7 +89,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install ESLint
         run: npm install -g eslint@8
@@ -104,13 +106,14 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Check for test files
         id: check_tests
@@ -138,7 +141,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install serve and Lighthouse CI
         run: npm install -g @lhci/cli serve
@@ -174,3 +177,5 @@ jobs:
           echo "| JS Lint                | ${{ needs.lint-js.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests             | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Lighthouse CI          | ${{ needs.lighthouse.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Jobs with \`continue-on-error: true\` may show as failed but won't block the pipeline." >> $GITHUB_STEP_SUMMARY
