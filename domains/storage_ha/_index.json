@@ -15,6 +15,11 @@
       "icon": "🗄"
     },
     {
+      "key": "iscsi",
+      "label": "iSCSI Connectivity Issues",
+      "icon": "🌐"
+    },
+    {
       "key": "failover_cluster",
       "label": "Failover Clustering",
       "icon": "🔁"
@@ -28,11 +33,6 @@
       "key": "refs",
       "label": "ReFS / NTFS",
       "icon": "📁"
-    },
-    {
-      "key": "iscsi",
-      "label": "iSCSI / FC SAN",
-      "icon": "🔌"
     },
     {
       "key": "backup",

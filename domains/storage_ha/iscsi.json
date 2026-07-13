@@ -1,0 +1,70 @@
+{
+  "key": "iscsi",
+  "label": "iSCSI Connectivity Issues",
+  "icon": "🌐",
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the iSCSI connectivity issue first appear?",
+      "Question 2 — Is the problem affecting all targets or a specific one?",
+      "Question 3 — Has the iSCSI initiator been configured recently?",
+      "Question 4 — Is the issue intermittent or persistent?",
+      "Question 5 — Are multiple servers affected or only one?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are there network changes such as VLAN or firewall updates?",
+      "Advanced question 2 — Is multipath I/O (MPIO) configured and functioning correctly?",
+      "Advanced question 3 — Are authentication methods (CHAP, mutual CHAP) in use?",
+      "Advanced question 4 — Is the iSCSI target part of clustered storage or SAN?",
+      "Advanced question 5 — Are there performance drops before disconnections?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command or question 1 — Open iSCSI Initiator and check target status",
+      "Command or question 2 — Run PowerShell Get-IscsiSession to confirm active sessions",
+      "Command or question 3 — Verify connectivity with ping to target IP",
+      "Command or question 4 — Check Event Viewer for iSCSI-related warnings",
+      "Command or question 5 — Run iscsicli ListTargets to list configured targets"
+    ],
+    "l2": [
+      "Advanced command 1 — Run Get-IscsiConnection to check detailed session info",
+      "Advanced command 2 — Use iscsicli QLoginTarget to query login status",
+      "Advanced command 3 — Run netstat -an to confirm TCP port 3260 connectivity",
+      "Advanced command 4 — Check MPIO configuration with Get-MSDSMGlobalDefaultLoadBalancePolicy",
+      "Advanced command 5 — Review firewall rules for iSCSI traffic allowance"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Resolution step 1 — Restart iSCSI Initiator service",
+      "Resolution step 2 — Verify target IP and DNS resolution",
+      "Resolution step 3 — Re-enter target portal details in iSCSI Initiator",
+      "Resolution step 4 — Ensure firewall allows TCP port 3260",
+      "Resolution step 5 — Test basic connectivity with ping and tracert"
+    ],
+    "l2": [
+      "Advanced fix 1 — Reconfigure CHAP authentication if credentials changed",
+      "Advanced fix 2 — Update NIC drivers and firmware for iSCSI traffic",
+      "Advanced fix 3 — Configure MPIO properly for redundancy and load balancing",
+      "Advanced fix 4 — Run iscsicli RefreshTargetPortal to refresh stale connections",
+      "Advanced fix 5 — Escalate to SAN vendor if target-side issues suspected"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export log X — Save Event Viewer iSCSI logs",
+      "Collect trace Y — Run Get-IscsiSession and export results",
+      "Run command Z — Execute iscsicli ListTargets and save output",
+      "Step 4 — Capture screenshot of iSCSI Initiator target list",
+      "Step 5 — Collect OS build and patch level"
+    ],
+    "l2": [
+      "Advanced collection 1 — Export Get-IscsiConnection detailed session report",
+      "Advanced collection 2 — Collect MPIO configuration and policies",
+      "Advanced collection 3 — Gather performance monitor counters for iSCSI traffic",
+      "Advanced collection 4 — Export firewall rules related to TCP port 3260",
+      "Advanced collection 5 — Collect SAN-side logs for target events"
+    ]
+  }
+}
