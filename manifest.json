@@ -2,11 +2,12 @@
   "name": "Nexus - Microsoft Unified Support Platform",
   "short_name": "Nexus",
   "description": "Professional incident command platform for L1/L2 Microsoft Unified Support engineers",
-  "start_url": "/src/index.html",
+  "start_url": "/nexus/src/index.html",
+  "scope": "/nexus/",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='14' height='14' x='1' y='1' fill='%23f25022'/%3E%3Crect width='14' height='14' x='17' y='1' fill='%237fba00'/%3E%3Crect width='14' height='14' x='1' y='17' fill='%2300a4ef'/%3E%3Crect width='14' height='14' x='17' y='17' fill='%23ffb900'/%3E%3C/svg%3E",
@@ -21,13 +22,13 @@
       "name": "Search Technologies",
       "short_name": "Search",
       "description": "Quick search for technologies",
-      "url": "/src/index.html?search=true"
+      "url": "/nexus/src/index.html?search=true"
     },
     {
       "name": "View Disciplines",
       "short_name": "Disciplines",
       "description": "Browse all support disciplines",
-      "url": "/src/index.html"
+      "url": "/nexus/src/index.html"
     }
   ]
 }

@@ -12,13 +12,32 @@ const state = {
 // ─── Service Worker Registration ─────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    // Register service worker at root level for proper PWA scope
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then((registration) => {
         console.log('[App] Service Worker registered successfully:', registration.scope);
+        
+        // Force update waiting service worker
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        
+        // Listen for controlling changes
+        registration.addEventListener('controllerchange', () => {
+          console.log('[App] Service Worker controller changed');
+          window.location.reload();
+        });
       })
       .catch((error) => {
         console.log('[App] Service Worker registration failed:', error);
       });
+  });
+  
+  // Listen for service worker messages
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+      console.log('[App] Skipping waiting service worker');
+    }
   });
 }
 
