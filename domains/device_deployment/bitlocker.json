@@ -1,0 +1,136 @@
+{
+  "key": "bitlocker",
+  "label": "BitLocker",
+  "icon": "🔒",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Question 1 - Is the BitLocker issue affecting one device, multiple devices, or a specific security group?",
+      "Question 2 - Is the issue related to encryption not starting, recovery prompt loop, missing recovery key, key escrow failure, or policy noncompliance?",
+      "Question 3 - What Windows version, edition, device model, TPM version, and boot mode are present on the affected device?",
+      "Question 4 - Where is the recovery key expected to be stored: Active Directory, Entra ID, Intune, MBAM, or another key escrow location?",
+      "Question 5 - Did the issue start after BIOS update, firmware change, TPM reset, motherboard replacement, boot configuration change, or Windows update?",
+      "Question 6 - Is the BitLocker policy coming from Intune, Group Policy, Configuration Manager, MBAM, or local settings?"
+    ],
+    "l2": [
+      "Is TPM ready, owned, enabled, activated, and compatible with the configured BitLocker protector requirements?",
+      "Are protectors configured as expected, such as TPM, TPM+PIN, recovery password, startup key, or numerical password?",
+      "Is recovery caused by PCR profile changes, Secure Boot changes, boot order changes, firmware updates, or BCD changes?",
+      "Are BitLocker policies conflicting between Intune, GPO, MBAM, Configuration Manager, or local policy?",
+      "Is recovery key backup failing due to device identity, hybrid join, Entra ID registration, AD schema, permissions, or network connectivity?",
+      "Are BitLocker-API, TPM-WMI, DeviceManagement, or MDM logs showing policy, protector, encryption, or escrow errors?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - What does 'manage-bde -status' show for encryption percentage, protection status, and conversion status?",
+      "Question 2 - What does 'manage-bde -protectors -get C:' show for configured key protectors?",
+      "Question 3 - Is the device prompting for recovery once, repeatedly after every reboot, or only after specific hardware or firmware changes?",
+      "Question 4 - Can the expected recovery key be found in AD, Entra ID, Intune, MBAM, or the configured escrow service?",
+      "Question 5 - Is Secure Boot enabled and is the device using UEFI rather than legacy BIOS when required by policy?",
+      "Question 6 - Does a known working device with the same BitLocker policy encrypt and escrow the recovery key successfully?"
+    ],
+    "l2": [
+      "Does TPM management output show TPM readiness, ownership, lockout state, and attestation health?",
+      "Do BitLocker event logs show protector creation, escrow, recovery reason, encryption failure, or policy enforcement errors?",
+      "Does MDM diagnostic output show BitLocker CSP policy application errors or conflicting encryption settings?",
+      "Does Active Directory or Entra ID show the correct device object and recent recovery key escrow timestamp?",
+      "Do PCR validation events or firmware changes explain why BitLocker entered recovery mode?",
+      "Are there duplicate device records, stale objects, or renamed devices causing recovery key lookup confusion?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Confirm the BitLocker symptom, affected device count, policy source, expected escrow location, and recovery prompt behavior.",
+      "Run 'manage-bde -status' and 'manage-bde -protectors -get C:' to capture encryption and protector state.",
+      "Verify TPM readiness, Secure Boot state, UEFI mode, and current recovery key availability.",
+      "Confirm whether the device recently had BIOS, TPM, Secure Boot, boot order, disk, or motherboard changes.",
+      "Compare policy assignment and encryption status with a known working device under the same policy."
+    ],
+    "l2": [
+      "Review BitLocker-API and TPM-WMI event logs to identify encryption, protector, recovery, or escrow failures.",
+      "Validate Intune, GPO, MBAM, or Configuration Manager BitLocker policy precedence and conflicts.",
+      "Confirm recovery key backup permissions, device identity, Entra ID registration, AD object state, and escrow service connectivity.",
+      "Analyze recovery triggers such as PCR profile changes, Secure Boot DB changes, BCD changes, firmware updates, or TPM reset.",
+      "Suspend and resume BitLocker only when performing planned firmware, BIOS, boot configuration, or hardware maintenance."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect a screenshot or photo of the BitLocker recovery prompt or encryption error message.",
+      "Collect 'manage-bde -status' and 'manage-bde -protectors -get C:' output from the affected device.",
+      "Collect 'tpm.msc' status or 'Get-Tpm' output from the affected device.",
+      "Export System, BitLocker-API, TPM-WMI, and DeviceManagement event logs in .evtx format."
+    ],
+    "l2": [
+      "Collect Intune device configuration results, MDM diagnostics, and BitLocker policy assignment details when Intune manages encryption.",
+      "Collect Group Policy results using 'gpresult /h gp.html' when GPO manages BitLocker policy.",
+      "Collect recovery key escrow evidence from AD, Entra ID, Intune, or MBAM with timestamps and device identifiers.",
+      "Collect BIOS/firmware version, Secure Boot state, boot mode, disk layout, and recent hardware or firmware change history."
+    ]
+  },
+  "playbooks": {
+    "bitlocker_investigation": {
+      "title": "BitLocker Investigation",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm encryption state, protector state, recovery behavior, policy source, and expected key escrow location.",
+              "expect": "The BitLocker scenario is classified as encryption, recovery, escrow, policy, or compliance issue."
+            },
+            {
+              "action": "Collect manage-bde, TPM, and event log evidence from an affected device.",
+              "expect": "The protector and platform state are available for analysis."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare TPM, policy, protector, recovery key, and firmware state against a working device.",
+              "expect": "The cause is narrowed to TPM, policy conflict, escrow, firmware, identity, or protector configuration."
+            },
+            {
+              "action": "Review BitLocker and TPM event logs for recovery, escrow, encryption, and policy enforcement errors.",
+              "expect": "A specific BitLocker dependency or failure stage is identified."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Correct policy conflicts, TPM readiness, protector configuration, recovery key backup, or device identity issues as applicable.",
+              "expect": "The device can encrypt and back up recovery information as intended."
+            },
+            {
+              "action": "Suspend and resume protection around planned firmware or boot changes to avoid unnecessary recovery prompts.",
+              "expect": "BitLocker remains protected without repeated unexpected recovery prompts."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Verify encryption status, protection status, protector list, and recovery key escrow after remediation.",
+              "expect": "BitLocker protection is on and recovery key is stored in the expected location."
+            },
+            {
+              "action": "Monitor the affected group for recurring recovery prompts or escrow failures.",
+              "expect": "No repeated BitLocker recovery or key backup trend remains."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
