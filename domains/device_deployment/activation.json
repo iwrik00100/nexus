@@ -1,0 +1,136 @@
+{
+  "key": "activation",
+  "label": "Activation",
+  "icon": "🔑",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Question 1 - Is the activation issue affecting one device, multiple devices, or a specific device group?",
+      "Question 2 - What Windows edition, version, build, and activation channel is installed on the affected device?",
+      "Question 3 - What exact activation error code, message, or activation status is displayed to the user?",
+      "Question 4 - Is the device expected to activate using KMS, MAK, subscription activation, digital license, or OEM activation?",
+      "Question 5 - Did activation work previously on the same device before hardware, image, domain, tenant, or license changes?",
+      "Question 6 - Is the issue seen after imaging, OS upgrade, motherboard replacement, tenant migration, domain join, or license assignment change?"
+    ],
+    "l2": [
+      "Is the installed Windows edition eligible for the expected activation method and assigned license?",
+      "Is the device able to reach the required KMS host, Microsoft activation service, or licensing endpoint?",
+      "Are DNS SRV records, KMS host configuration, firewall rules, proxy settings, and time synchronization healthy?",
+      "Is subscription activation dependent on Entra ID join, Hybrid Entra ID join, user sign-in, or assigned Windows Enterprise license?",
+      "Are slmgr, ospp, licensing event logs, or ClipSVC/SPP logs showing token, entitlement, or activation service failures?",
+      "Is the activation issue isolated to a specific image, hardware model, OU, site, network, tenant, or license group?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - What does Settings > System > Activation show for activation state and error details?",
+      "Question 2 - What does 'slmgr /dlv' show for license status, activation channel, partial product key, and KMS client information?",
+      "Question 3 - Is the device connected to corporate network, VPN, internet, or isolated network when activation is attempted?",
+      "Question 4 - Has the product key, edition, or license assignment changed recently?",
+      "Question 5 - Is the user signed in with the expected work account when subscription activation is expected?",
+      "Question 6 - Can a known working device in the same network, image, license group, or OU activate successfully?"
+    ],
+    "l2": [
+      "Does the device resolve the expected KMS DNS SRV record and connect to the KMS host on the required port?",
+      "Does the Software Protection Platform event log show activation, token, genuine validation, or product key errors?",
+      "Does the activation channel match the intended deployment model such as KMS, MAK, ADBA, OEM, or subscription activation?",
+      "Are licensing tokens corrupted, missing, or mismatched after imaging, sysprep, cloning, or edition conversion?",
+      "Does Entra ID device state and user licensing support subscription activation for Windows Enterprise?",
+      "Are proxy, SSL inspection, firewall, DNS, or time skew issues blocking activation validation?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Confirm Windows edition, version, activation channel, exact error code, and expected activation method.",
+      "Run 'slmgr /dlv' and 'slmgr /xpr' to confirm licensing status and expiration state.",
+      "Verify network connectivity, DNS resolution, proxy settings, time synchronization, and internet or KMS reachability.",
+      "Confirm that the correct product key, license assignment, or subscription activation entitlement is applied.",
+      "Compare activation behavior with a known working device from the same image, network, and license group."
+    ],
+    "l2": [
+      "Validate KMS discovery using DNS SRV records and confirm the KMS host is reachable from the client network.",
+      "Review Software Protection Platform and licensing events for token, entitlement, product key, or service communication failures.",
+      "Validate Entra ID join state, Hybrid join state, user sign-in, and Windows Enterprise license assignment for subscription activation.",
+      "Repair or rebuild licensing store only after confirming product key, entitlement, and activation source are correct.",
+      "Check image preparation, sysprep state, edition conversion, and cloning practices if activation failures occur immediately after deployment."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect a screenshot of the Windows Activation page and exact activation error message.",
+      "Collect 'winver', 'systeminfo', and 'Get-ComputerInfo' output from the affected device.",
+      "Collect 'slmgr /dlv', 'slmgr /xpr', and 'slmgr /ato' output from the affected device.",
+      "Export System, Application, and Software Protection Platform related event logs in .evtx format."
+    ],
+    "l2": [
+      "Collect DNS lookup results for KMS SRV records and network connectivity test results to the KMS host or activation service.",
+      "Collect dsregcmd /status output when subscription activation or Entra ID based licensing is involved.",
+      "Collect proxy configuration, firewall path details, network traces, and time synchronization output when activation network failures are suspected.",
+      "Collect license assignment screenshots or exported tenant/device licensing evidence when subscription activation is involved."
+    ]
+  },
+  "playbooks": {
+    "activation_failure": {
+      "title": "Activation Investigation",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the activation method, Windows edition, activation state, error code, and affected device scope.",
+              "expect": "The activation model and exact failure state are clearly identified."
+            },
+            {
+              "action": "Run licensing commands and collect activation page evidence from the affected device.",
+              "expect": "The device licensing state, channel, and activation source are available for review."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare activation settings, network reachability, DNS, time sync, and license assignment against a working device.",
+              "expect": "The issue is isolated to entitlement, network, KMS discovery, licensing store, image, or device state."
+            },
+            {
+              "action": "Review Software Protection Platform events and activation command output for the first meaningful failure.",
+              "expect": "A specific activation component or dependency is identified."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Correct product key, license assignment, KMS discovery, network access, time sync, or subscription activation prerequisites as applicable.",
+              "expect": "The device has the correct activation source and required dependencies."
+            },
+            {
+              "action": "Repair licensing state or reattempt activation only after entitlement and connectivity are validated.",
+              "expect": "Activation completes or returns a new actionable error."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Verify activation status using Settings, slmgr output, and event logs after remediation.",
+              "expect": "The device reports activated status with the expected activation channel."
+            },
+            {
+              "action": "Monitor similar devices from the same image, group, or network for recurring activation failures.",
+              "expect": "No broader activation trend remains unresolved."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "key": "windows_servicing",
+  "label": "Windows Servicing",
+  "icon": "🧩",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Question 1 - Is the servicing issue affecting one server or device, multiple machines, or an offline image?",
+      "Question 2 - Is the issue related to installing roles or features, Features on Demand (FOD), or capability installation?",
+      "Question 3 - What Windows version, edition, build, architecture, and installation type is involved?",
+      "Question 4 - What exact Server Manager, PowerShell, DISM, or CBS error code is displayed?",
+      "Question 5 - Is the installation being performed online or against an offline VHD or WIM image?",
+      "Question 6 - Did the issue start after a patch, servicing stack update, image change, source media change, or policy change?"
+    ],
+    "l2": [
+      "Is the component store healthy and is the source media matching the exact Windows version, build, edition, and architecture?",
+      "Are all required parent roles, role services, dependencies, or FOD language prerequisites available or selected?",
+      "Is an alternate source path required because feature payload files were removed from the local component store?",
+      "Are Server Manager, DISM, CBS, or Setup event logs showing source missing, dependency, inventory, or component corruption errors?",
+      "Is the environment configured to use WSUS, Configuration Manager, Windows Update, or a policy-driven source for payload retrieval?",
+      "Can another simple role, feature, or FOD be installed successfully to confirm whether the failure is item-specific or servicing-wide?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - What is the exact role, feature, or FOD capability name and installation command used?",
+      "Question 2 - Does the failure occur during inventory, dependency check, source resolution, download, staging, installation, or reboot?",
+      "Question 3 - Is the component store healthy according to DISM ScanHealth, RestoreHealth, and CBS log results?",
+      "Question 4 - Is the required feature state Available, Installed, Removed, Disabled, or payload-removed?",
+      "Question 5 - Does the same role, feature, or FOD install successfully when an explicit matching source path is provided?",
+      "Question 6 - Is the server or device behind WSUS, SCCM, proxy, firewall, or restricted internet access?"
+    ],
+    "l2": [
+      "Does Get-WindowsFeature or DISM /Get-Features show the target as Available, Removed, Installed, or InstallPending?",
+      "Does CBS.log show CBS_E_SOURCE_MISSING, ERROR_SXS_ASSEMBLY_MISSING, CBS_E_NOT_APPLICABLE, or installers failed errors?",
+      "Does DISM /Get-CapabilityInfo identify dependencies, payload requirements, or source requirements for the FOD capability?",
+      "Does the optional component installation and component repair policy redirect or block FOD and feature acquisition?",
+      "Are pending reboot, PackagesPending, SessionsPending, or failed staged packages preventing role or feature installation?",
+      "For FOD, does DISM.log show whether the installer searched Windows Update, source paths, or a local FOD repository?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Confirm the target server or device, Windows build, feature or FOD name, installation method, source path, and exact error code.",
+      "Try installing a different basic feature or FOD to determine whether the failure is item-specific or affects servicing broadly.",
+      "Run DISM /Online /Cleanup-Image /RestoreHealth and SFC /scannow when component corruption is suspected.",
+      "Provide a matching alternate source path from installation media, SxS folder, WIM path, FOD ISO, or approved network source.",
+      "Restart the server or device when pending operations or reboot-required servicing states are present before retrying.",
+      "Verify proxy, firewall, WSUS, SCCM, and policy-driven update source configuration when online payload download fails."
+    ],
+    "l2": [
+      "Review CBS.log, DISM.log, Server Manager events, and Setup logs to find the first meaningful failure and package identity.",
+      "Validate role dependencies and install required parent features, role services, and management tools before adding the target role.",
+      "Validate optional component installation policy, WSUS behavior, source path accessibility, and computer account permissions to the source share.",
+      "For FOD, validate that language packs are installed before language FODs and before applying later cumulative updates to customized images.",
+      "For offline VHD or WIM servicing, validate image index, mount state, scratch space, source version, and pending actions.",
+      "If CBS indicates missing assemblies or source files, match the missing package identity to source media or servicing repair strategy before retrying."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect the exact role, feature, or FOD capability name, installation command, and screenshot of the failure.",
+      "Collect Windows version, edition, build, architecture, installation type, and whether the target is online or offline.",
+      "Collect CBS.log and DISM.log from C:\\Windows\\Logs\\CBS and C:\\Windows\\Logs\\DISM immediately after reproducing the failure.",
+      "Export System, Application, Setup, and ServerManager-MultiMachine event logs in .evtx format."
+    ],
+    "l2": [
+      "Collect Get-WindowsFeature, DISM /Get-Features, and DISM /Get-FeatureInfo output for the failing role or feature.",
+      "Collect DISM /Online /Get-Capabilities and Get-WindowsCapability output when the failure involves a FOD capability.",
+      "Collect Group Policy results, optional component installation policy, alternate source path configuration, and WSUS or SCCM update source settings.",
+      "Collect FOD ISO or Languages and Optional Features ISO version and repository structure when offline source is used.",
+      "Collect TSS setup or servicing logs when CBS, DISM, source resolution, or component store issues require deeper analysis."
+    ]
+  },
+  "playbooks": {
+    "servicing_installation_failure": {
+      "title": "Windows Servicing Installation Failure Investigation",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the exact role, feature, or FOD name, tool used, target server or image, source path, and error code.",
+              "expect": "The failure is classified as dependency, source, policy, component store, offline servicing, or FOD acquisition issue."
+            },
+            {
+              "action": "Collect CBS.log, DISM.log, Server Manager events, and feature or capability state after reproducing the failure.",
+              "expect": "The failing package identity, source resolution details, and servicing stage are available."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare the failing item with another basic feature or FOD and a known-good server or image with the same build.",
+              "expect": "The issue is narrowed to a specific item, source path, policy setting, or servicing stack condition."
+            },
+            {
+              "action": "Review CBS, DISM, and Server Manager logs for the first meaningful failure and related dependency or acquisition chain.",
+              "expect": "The root servicing dependency, source blocker, or policy redirect is identified from logs."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Correct role dependencies, alternate source path, source permissions, optional component policy, or FOD repository structure.",
+              "expect": "The installer can locate required payload and dependency content."
+            },
+            {
+              "action": "Repair component store health and clear pending servicing blockers before retrying the role, feature, or FOD installation.",
+              "expect": "The installation proceeds without CBS source, corruption, or FOD acquisition errors."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Verify final role, feature, or FOD install state using Server Manager, PowerShell, DISM, and event logs.",
+              "expect": "The target role, feature, or capability reports installed or enabled as expected."
+            },
+            {
+              "action": "Monitor the server or device after reboot and after the next servicing cycle for rollback or pending state recurrence.",
+              "expect": "No recurring servicing installation failure is detected."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

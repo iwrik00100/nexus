@@ -1,0 +1,141 @@
+{
+  "key": "windows_upgrade",
+  "label": "Windows Upgrade",
+  "icon": "⬆️",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Question 1 - Is the upgrade from a previous Windows version to a higher Windows version failing on one device or multiple devices?",
+      "Question 2 - What is the current source Windows version/build and what higher target Windows version/build is expected?",
+      "Question 3 - Is the upgrade not starting, not offered, stuck, failing before reboot, failing after reboot, or rolling back to the previous version?",
+      "Question 4 - What exact setup error code, rollback code, percentage, screen message, or SetupDiag result is observed?",
+      "Question 5 - How is the higher version upgrade being triggered: Intune Feature Update policy, SCCM in-place upgrade task sequence, ISO media, setup.exe, Autopatch, or Windows Update for Business?",
+      "Question 6 - Did the failure start after a driver, BIOS/firmware, security software, disk encryption, policy, image, or deployment change?"
+    ],
+    "l2": [
+      "Which Windows Setup phase failed: downlevel, SafeOS, first boot, second boot/OOBE, uninstall, or rollback?",
+      "Are SetupDiag, setupact.log, setuperr.log, CompatData.xml, ScanResult.xml, or rollback logs showing a specific blocker?",
+      "Is the device blocked by hardware readiness, TPM, Secure Boot, CPU, storage, BIOS mode, safeguard hold, TargetReleaseVersion, or compatibility assessment?",
+      "Is the upgrade path supported from the current Windows version, edition, language, architecture, and servicing channel to the target higher version?",
+      "Are third-party antivirus, disk encryption, filter drivers, storage drivers, VPN clients, or endpoint security components present during the upgrade?",
+      "Is the same upgrade package, ISO, feature update policy, or task sequence successful on a comparable working device?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - What previous Windows version is installed now and what higher Windows version should the device upgrade to?",
+      "Question 2 - Does the upgrade fail before the first reboot, during SafeOS, during first boot, during second boot/OOBE, or after rollback?",
+      "Question 3 - Is the failure reproducible every time or does the upgrade progress further on retry?",
+      "Question 4 - Does the device have enough free disk space, stable power, working network access, and no pending reboot before upgrade begins?",
+      "Question 5 - Were nonessential peripherals, docking stations, external storage, and third-party security tools removed for testing?",
+      "Question 6 - Was a compatibility scan performed before the upgrade and did it report any hard block or warning?"
+    ],
+    "l2": [
+      "Does SetupDiag identify a matched rule, setup phase, operation, result code, extend code, or rollback reason?",
+      "Do setupact.log and setuperr.log point to the same fatal setup operation or component before rollback occurs?",
+      "Does CompatData.xml or ScanResult.xml show appraiser hard blocks, driver blocks, unsupported hardware, language mismatch, or edition mismatch?",
+      "Does setupapi.dev.log show failed device migration, problematic driver installation, or 0xC1900101 style driver failure indicators?",
+      "Do rollback logs under C:\\$WINDOWS.~BT\\Sources\\Rollback show unexpected reboot, bugcheck, migration failure, or setup platform failure?",
+      "Does the management workflow show the device received the correct higher version upgrade assignment and package content?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Confirm the source version, target higher version, upgrade method, affected count, exact error code, and rollback behavior.",
+      "Run SetupDiag and review the output before deeper manual log review.",
+      "Restart the device, clear pending reboot state, verify free disk space, and retry the higher version upgrade.",
+      "Remove nonessential peripherals and temporarily remove or disable third-party security, disk encryption, and unsupported software for testing.",
+      "Confirm that the device is targeted to the correct higher version upgrade policy, task sequence, deployment, or media source."
+    ],
+    "l2": [
+      "Map the result code and extend code to the Windows Setup phase to identify whether failure occurred in downlevel, SafeOS, first boot, second boot, or rollback.",
+      "Analyze setupact.log and setuperr.log from the correct setup phase folder and search backward from the last fatal setup error.",
+      "Review CompatData.xml, ScanResult.xml, and appraiser outputs to identify hard blocks, driver blocks, application blocks, or unsupported upgrade path issues.",
+      "Review setupapi.dev.log and driver inventory when setup errors indicate migration failure, boot failure, or 0xC1900101 patterns.",
+      "Validate Feature Update targeting, TargetReleaseVersion, provisioning policies, SCCM task sequence logic, BIOS/firmware readiness, and upgrade package integrity."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect a screenshot of the setup failure, rollback message, stuck percentage, or upgrade error screen.",
+      "Collect source Windows version/build using 'winver', 'systeminfo', and 'Get-ComputerInfo'.",
+      "Collect the target higher Windows version/build, upgrade method, deployment name, policy name, ISO source, or task sequence name.",
+      "Collect SetupDiag output such as SetupDiagResults.log or SetupDiagResults.xml from the affected device."
+    ],
+    "l2": [
+      "Collect C:\\$WINDOWS.~BT\\Sources\\Panther\\setupact.log and C:\\$WINDOWS.~BT\\Sources\\Panther\\setuperr.log for downlevel or pre-reboot upgrade failures.",
+      "Collect C:\\$WINDOWS.~BT\\Sources\\Rollback\\setupact.log and related rollback logs when the device returns to the previous Windows version.",
+      "Collect C:\\Windows\\Panther\\setupact.log, C:\\Windows\\Panther\\setuperr.log, C:\\Windows\\Panther\\miglog.xml, and C:\\Windows\\INF\\setupapi.dev.log when available.",
+      "Collect CompatData.xml, ScanResult.xml, appraiser logs, and BlueBox.log when upgrade readiness or compatibility assessment is involved.",
+      "Collect SCCM SMSTS logs, Intune policy reports, Feature Update policy status, exported Setup event logs, and TSS deployment logs when managed deployment is used."
+    ]
+  },
+  "playbooks": {
+    "windows_upgrade_to_higher_version": {
+      "title": "Windows Upgrade to Higher Version Investigation",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the previous Windows version, target higher Windows version, upgrade method, error code, and affected device scope.",
+              "expect": "The issue is classified as not offered, readiness block, setup failure, stuck upgrade, rollback, or post-upgrade issue."
+            },
+            {
+              "action": "Run SetupDiag or collect existing SetupDiag output from the affected device after the failed upgrade attempt.",
+              "expect": "A matched rule, setup phase, result code, extend code, or rollback reason is available for investigation."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Identify the failing Windows Setup phase using SetupDiag, setupact.log, setuperr.log, rollback logs, and setup folder location.",
+              "expect": "The failure is mapped to downlevel, SafeOS, first boot, second boot/OOBE, uninstall, or rollback."
+            },
+            {
+              "action": "Review compatibility, driver, firmware, application, storage, policy, and upgrade package indicators from setup and compatibility logs.",
+              "expect": "The likely blocker is narrowed to readiness, compatibility, driver, application, firmware, storage, policy, or package source."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Remove or update blocking drivers, applications, disk encryption, third-party security tools, firmware, or unsupported peripherals identified in logs.",
+              "expect": "Known compatibility and driver blockers are remediated before retrying the higher version upgrade."
+            },
+            {
+              "action": "Correct Feature Update targeting, TargetReleaseVersion, SCCM task sequence logic, upgrade package source, or policy assignment as applicable.",
+              "expect": "The device receives the intended higher version upgrade path without policy or targeting conflicts."
+            },
+            {
+              "action": "Repair servicing health, confirm disk space, update BIOS/firmware/drivers, and retry the upgrade from a validated source.",
+              "expect": "The upgrade progresses beyond the previous failure point and completes setup phases successfully."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Verify the upgraded Windows version using winver, OS build, setup logs, event logs, management console status, and application validation.",
+              "expect": "The device is running the target higher Windows version and reports successful upgrade completion."
+            },
+            {
+              "action": "Monitor the device group through the next deployment, reboot, policy refresh, and compliance reporting cycle.",
+              "expect": "No repeated rollback, readiness block, or post-upgrade compliance mismatch is observed."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
