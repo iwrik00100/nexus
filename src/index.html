@@ -17,7 +17,7 @@
 <!-- ── Landing Page ─────────────────────────────────────────── -->
 <div id="landingPage" class="page page-landing active">
 
-  <header class="ms-header">
+  <header class="ms-header" aria-label="Nexus Application Header">
     <div class="ms-header-inner">
       <button class="ms-logo" onclick="backToLanding()" aria-label="Go to home">
         <svg class="ms-logo-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
@@ -26,10 +26,10 @@
           <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
           <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
         </svg>
-        <div class="ms-logo-text">
+        <span class="ms-logo-text">
           <span class="ms-logo-product">Nexus</span>
           <span class="ms-logo-org">Microsoft Unified Support</span>
-        </div>
+        </span>
       </button>
       <div class="ms-header-actions">
         <button class="ms-theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle dark mode">
@@ -39,7 +39,7 @@
     </div>
   </header>
 
-  <main class="landing-main">
+  <main class="landing-main" aria-label="Landing Page - Disciplines Selection">
     <div class="landing-hero">
       <h1 class="landing-hero-title">Incident Command Center</h1>
       <p class="landing-hero-sub">Structured scoping, probing, troubleshooting, data collection and step-by-step playbooks for Windows Server and Azure support scenario.</p>
@@ -55,7 +55,7 @@
 <!-- ── Domain Page ──────────────────────────────────────────── -->
 <div id="domainPage" class="page page-domain">
 
-  <header class="ms-header">
+  <header class="ms-header" aria-label="Domain Page Header">
     <div class="ms-header-inner">
       <button class="ms-logo" onclick="backToLanding()" aria-label="Go to home">
         <svg class="ms-logo-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
@@ -64,16 +64,16 @@
           <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
           <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
         </svg>
-        <div class="ms-logo-text">
+        <span class="ms-logo-text">
           <span class="ms-logo-product">Nexus</span>
           <span class="ms-logo-org">Microsoft Unified Support</span>
-        </div>
+        </span>
       </button>
       <div class="ms-header-actions">
-        <div class="tier-toggle">
-          <button class="tier-btn active" data-tier="l1" onclick="setTier('l1')">L1</button>
-          <button class="tier-btn" data-tier="l2" onclick="setTier('l2')">L2</button>
-          <button class="tier-btn" data-tier="both" onclick="setTier('both')">Both</button>
+        <div class="tier-toggle" role="group" aria-label="Support Tier Selection">
+          <button class="tier-btn active" data-tier="l1" onclick="setTier('l1')" aria-label="L1 Support">L1</button>
+          <button class="tier-btn" data-tier="l2" onclick="setTier('l2')" aria-label="L2 Support">L2</button>
+          <button class="tier-btn" data-tier="both" onclick="setTier('both')" aria-label="Both L1 and L2 Support">Both</button>
         </div>
         <button class="ms-theme-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle dark mode">
           <span id="themeIcon2">🌙</span>
@@ -83,17 +83,17 @@
   </header>
 
   <!-- Domain hero bar -->
-  <div class="domain-hero-bar" id="domainHeroBar">
+  <div class="domain-hero-bar" id="domainHeroBar" role="banner">
     <div class="domain-hero-inner">
       <button class="domain-back-btn" onclick="backToLanding()" aria-label="Back to disciplines">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        All Disciplines
+        <span>All Disciplines</span>
       </button>
-      <div class="domain-hero-identity" id="domainHeroIdentity"></div>
+      <div class="domain-hero-identity" id="domainHeroIdentity" aria-live="polite"></div>
     </div>
   </div>
 
-  <main class="domain-main">
+  <main class="domain-main" aria-label="Domain Technology Selection">
 
     <!-- Tech picker -->
     <div class="tech-section" id="techSection">
