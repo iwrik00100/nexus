@@ -1,0 +1,278 @@
+{
+  "key": "windows_servicing",
+  "label": "Windows Servicing",
+  "icon": "🧩",
+  "domain": "device_deployment",
+  "subtopics": {
+    "installing_roles_and_features": {
+      "key": "installing_roles_and_features",
+      "label": "Installing Roles and Features",
+      "scoping": {
+        "l1": [
+          "Question 1 - Is the role or feature installation issue affecting one server, multiple servers, or an offline image?",
+          "Question 2 - Which role, role service, or Windows feature is being installed, removed, or failing to enable?",
+          "Question 3 - What Windows Server version, edition, build, architecture, and installation type is involved?",
+          "Question 4 - What exact Server Manager, PowerShell, DISM, or Windows Setup error code is displayed?",
+          "Question 5 - Is the installation being performed through Server Manager, Install-WindowsFeature, DISM, PowerShell, or automation?",
+          "Question 6 - Did the issue start after a patch, servicing stack update, image change, source media change, or policy change?"
+        ],
+        "l2": [
+          "Is the affected target online, remote, Server Core, Desktop Experience, or an offline VHD or WIM image?",
+          "Are all required parent roles, role services, dependencies, and management tools available or selected?",
+          "Is an alternate source path required because feature payload files were removed from the local component store?",
+          "Does the installation source match the exact Windows version, build, edition, architecture, and image index?",
+          "Are Server Manager, DISM, CBS, Setup, or Windows event logs showing source missing, dependency, inventory, or component corruption errors?",
+          "Can another simple role or feature be installed successfully to confirm whether the failure is feature-specific or servicing-wide?"
+        ]
+      },
+      "probing": {
+        "l1": [
+          "Question 1 - What is the exact role or feature name and installation command used by the customer?",
+          "Question 2 - Does the role or feature fail during inventory, dependency check, source resolution, installation, or reboot?",
+          "Question 3 - Is the server behind WSUS, SCCM, proxy, firewall, restricted internet access, or disconnected network?",
+          "Question 4 - Is the component store healthy according to DISM ScanHealth, RestoreHealth, and CBS log results?",
+          "Question 5 - Is the required feature state Available, Installed, Removed, Disabled, or Disabled with payload removed?",
+          "Question 6 - Does the same role or feature install successfully when an explicit matching source path is provided?"
+        ],
+        "l2": [
+          "Does Get-WindowsFeature show the feature as Available, Removed, Installed, or InstallPending?",
+          "Does DISM /Get-Features or DISM /Get-FeatureInfo show a payload-removed or pending state?",
+          "Does CBS.log show CBS_E_SOURCE_MISSING, ERROR_SXS_ASSEMBLY_MISSING, CBS_E_NOT_APPLICABLE, or installers failed errors?",
+          "Does ServerManager-MultiMachine or Setup event logging show inventory collection, feature dependency, or role installation failures?",
+          "Does Group Policy specify optional component installation and repair settings that override Windows Update or alternate source behavior?",
+          "Are pending reboot, PackagesPending, SessionsPending, or failed staged packages preventing role or feature installation?"
+        ]
+      },
+      "troubleshooting": {
+        "l1": [
+          "Confirm the target server, Windows build, feature or role name, installation method, source path, and exact error code.",
+          "Try installing a different basic feature to determine whether the failure is limited to one role or affects servicing broadly.",
+          "Run DISM /Online /Cleanup-Image /RestoreHealth and SFC /scannow when component corruption is suspected.",
+          "Provide a matching alternate source path from installation media, SxS folder, WIM path, or approved network source.",
+          "Restart the server when pending operations or reboot-required servicing states are present before retrying installation."
+        ],
+        "l2": [
+          "Review CBS.log, DISM.log, Server Manager events, and Setup logs to find the first meaningful failure and package identity.",
+          "Validate role dependencies and install required parent features, role services, and management tools before adding the target role.",
+          "Validate optional component installation policy, WSUS behavior, source path accessibility, and computer account permissions to the source share.",
+          "For offline VHD or WIM servicing, validate image index, mount state, scratch space, source version, and whether pending actions exist.",
+          "If CBS indicates missing assemblies or source files, match the missing package identity to source media or servicing repair strategy before retrying."
+        ]
+      },
+      "datacollection": {
+        "l1": [
+          "Collect the exact role or feature name, command line, Server Manager workflow, and screenshot of the installation failure.",
+          "Collect Windows version, edition, build, architecture, installation type, and whether the target is online or offline serviced.",
+          "Collect CBS.log and DISM.log from C:\\Windows\\Logs\\CBS and C:\\Windows\\Logs\\DISM immediately after reproducing the failure.",
+          "Export System, Application, Setup, and ServerManager-MultiMachine event logs in .evtx format."
+        ],
+        "l2": [
+          "Collect Get-WindowsFeature output and Install-WindowsFeature result details for the failing role or feature.",
+          "Collect DISM /Online /Get-Features and DISM /Online /Get-FeatureInfo output for the affected feature name.",
+          "Collect Group Policy results, optional component installation policy, and alternate source path configuration.",
+          "Collect source media details, WIM index, source folder permissions, and network access test results when alternate source is used.",
+          "Collect TSS setup or servicing logs when CBS, DISM, source resolution, or component store issues require deeper analysis."
+        ]
+      },
+      "playbooks": {
+        "roles_and_features_installation_issue": {
+          "title": "Roles and Features Installation Investigation",
+          "severity": "medium",
+          "phases": [
+            {
+              "name": "Verify",
+              "icon": "✅",
+              "steps": [
+                {
+                  "action": "Confirm the exact role, feature, tool used, target server or image, source path, and error code.",
+                  "expect": "The failure is classified as dependency, source, policy, component store, offline servicing, or Server Manager issue."
+                },
+                {
+                  "action": "Collect CBS.log, DISM.log, Server Manager events, and feature state output after reproducing the failure.",
+                  "expect": "The failing feature state, package identity, and source resolution details are available."
+                }
+              ]
+            },
+            {
+              "name": "Isolate",
+              "icon": "🔍",
+              "steps": [
+                {
+                  "action": "Compare the failing role or feature with another basic feature and a known-good server or image.",
+                  "expect": "The issue is narrowed to a specific role, feature, source path, policy setting, or servicing stack condition."
+                },
+                {
+                  "action": "Review CBS, DISM, and Server Manager logs for the first meaningful failure and related dependency chain.",
+                  "expect": "The root servicing dependency or blocker is identified from logs."
+                }
+              ]
+            },
+            {
+              "name": "Fix",
+              "icon": "🛠",
+              "steps": [
+                {
+                  "action": "Correct role dependencies, alternate source path, source permissions, optional component policy, or matching media issues.",
+                  "expect": "The installer can locate required payload and dependency content."
+                },
+                {
+                  "action": "Repair component store health and clear pending servicing blockers before retrying the role or feature installation.",
+                  "expect": "The role or feature installation proceeds without CBS source or corruption errors."
+                }
+              ]
+            },
+            {
+              "name": "Confirm",
+              "icon": "🎯",
+              "steps": [
+                {
+                  "action": "Verify final role or feature install state using Server Manager, PowerShell, DISM, and event logs.",
+                  "expect": "The target role or feature reports installed or enabled as expected."
+                },
+                {
+                  "action": "Monitor the server after reboot and after the next servicing cycle for rollback or pending state recurrence.",
+                  "expect": "No recurring role or feature installation failure is detected."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "fod": {
+      "key": "fod",
+      "label": "Features on Demand",
+      "scoping": {
+        "l1": [
+          "Question 1 - Is the FOD issue affecting one device, multiple devices, an offline image, or a specific deployment group?",
+          "Question 2 - Which Feature on Demand capability is being installed, removed, or failing to download?",
+          "Question 3 - What Windows version, build, edition, architecture, and language configuration is involved?",
+          "Question 4 - What exact DISM, PowerShell, Windows Settings, or CBS error code is displayed during FOD installation?",
+          "Question 5 - Is the capability being installed from Windows Update, WSUS, SCCM, Intune, FOD ISO, language and optional features ISO, or custom repository?",
+          "Question 6 - Did the issue start after a cumulative update, image customization, language pack addition, policy change, or source repository change?"
+        ],
+        "l2": [
+          "Does the FOD source repository match the exact Windows version, build, architecture, and language requirements of the target image?",
+          "Are language packs and language FODs being added in the correct order before later cumulative update servicing?",
+          "Is the environment configured to use WSUS, Configuration Manager, Windows Update, or a policy-driven update source for FOD payload retrieval?",
+          "Does the FOD have satellite packages, and is the repository well formed with required metadata rather than copied CAB files only?",
+          "Are DISM.log and CBS.log showing invalid Windows Update count, source missing, payload unavailable, or capability applicability errors?",
+          "Is the issue limited to one FOD capability such as RSAT, .NET Framework 3.5, language basic, handwriting, OCR, speech, or text-to-speech?"
+        ]
+      },
+      "probing": {
+        "l1": [
+          "Question 1 - What is the exact FOD capability name and command used for installation or removal?",
+          "Question 2 - Is the capability state NotPresent, Staged, Installed, InstallPending, or Removed?",
+          "Question 3 - Does the failure occur during capability search, payload download, package staging, installation, or reboot?",
+          "Question 4 - Is the device configured to reach Windows Update directly or only through WSUS or Configuration Manager?",
+          "Question 5 - Is /Source specified, is /LimitAccess used, and does the source path contain matching FOD content?",
+          "Question 6 - Does the same FOD install successfully on a clean device or image with the same ISO and policy settings?"
+        ],
+        "l2": [
+          "Does DISM /Online /Get-Capabilities show the target capability and its current install state?",
+          "Does DISM /Get-CapabilityInfo identify dependencies, payload requirements, or source requirements for the capability?",
+          "Does CBS.log show failed download from Windows Update, invalid update count, source missing, or feature acquisition errors?",
+          "Does DISM.log show whether the installer searched Windows Update, source paths, or a local FOD repository?",
+          "Does the policy 'Specify settings for optional component installation and component repair' redirect or block FOD acquisition?",
+          "Are language satellite packages, base language packages, and Basic language FOD dependencies present when language FODs are installed?"
+        ]
+      },
+      "troubleshooting": {
+        "l1": [
+          "Confirm Windows build, FOD capability name, installation method, source type, policy source, and exact error code.",
+          "Run DISM /Online /Get-Capabilities and Get-WindowsCapability to confirm current capability state.",
+          "Use a matching FOD ISO or Languages and Optional Features ISO as source when Windows Update download is blocked or unavailable.",
+          "Verify proxy, firewall, WSUS, SCCM, Intune, and policy-driven update source configuration when online FOD download fails.",
+          "Retry with an explicit matching source path and /LimitAccess when using an offline or controlled repository."
+        ],
+        "l2": [
+          "Review CBS.log and DISM.log for Windows Update search criteria, FOD download attempts, source path resolution, and capability identity.",
+          "Validate that language packs are installed before related language FODs and before applying later cumulative updates to customized images.",
+          "Validate that FODs with satellite packages come from a well-formed repository, mounted ISO, or exported source instead of hand-copied CAB files.",
+          "For WSUS or Configuration Manager environments, validate FOD and language pack acquisition policy behavior for the target Windows release.",
+          "When repeated FOD installation is slow or inconsistent, test installing multiple capabilities in one DISM servicing session from local source."
+        ]
+      },
+      "datacollection": {
+        "l1": [
+          "Collect the exact FOD capability name, command, screenshot, and full error output from the failed installation attempt.",
+          "Collect Windows version, build, edition, architecture, installed language list, and target capability state.",
+          "Collect CBS.log and DISM.log from C:\\Windows\\Logs\\CBS and C:\\Windows\\Logs\\DISM immediately after the failed FOD attempt.",
+          "Collect DISM /Online /Get-Capabilities and Get-WindowsCapability output for installed and not present capabilities."
+        ],
+        "l2": [
+          "Collect FOD ISO or Languages and Optional Features ISO version, source path, repository structure, and capability package details.",
+          "Collect optional component installation policy, update source policy, WSUS configuration, and Configuration Manager update source behavior.",
+          "Collect WindowsUpdate.log, CBS download lines, and network/proxy evidence when the FOD attempts to download payload from Windows Update.",
+          "Collect installed language, language pack, and language FOD state when the failing FOD is language related.",
+          "Collect TSS setup or servicing logs when DISM, CBS, Windows Update, or source repository evidence is insufficient."
+        ]
+      },
+      "playbooks": {
+        "fod_installation_issue": {
+          "title": "Features on Demand Installation Investigation",
+          "severity": "medium",
+          "phases": [
+            {
+              "name": "Verify",
+              "icon": "✅",
+              "steps": [
+                {
+                  "action": "Confirm the FOD capability name, target Windows build, source method, policy path, and exact CBS or DISM error.",
+                  "expect": "The FOD issue is classified as source, policy, online download, repository, dependency, language, or applicability failure."
+                },
+                {
+                  "action": "Collect CBS.log, DISM.log, capability state, source path details, and policy configuration after reproducing the failure.",
+                  "expect": "The package identity, capability identity, download behavior, and source resolution evidence are available."
+                }
+              ]
+            },
+            {
+              "name": "Isolate",
+              "icon": "🔍",
+              "steps": [
+                {
+                  "action": "Compare the same FOD installation with a matching ISO source, direct Windows Update path, and known-good device or image.",
+                  "expect": "The issue is narrowed to source mismatch, policy redirection, WU acquisition, repository structure, or capability dependency."
+                },
+                {
+                  "action": "Review CBS and DISM logs for failed FOD download, invalid Windows Update count, missing payload, or applicability failure.",
+                  "expect": "The failing FOD acquisition or servicing stage is identified."
+                }
+              ]
+            },
+            {
+              "name": "Fix",
+              "icon": "🛠",
+              "steps": [
+                {
+                  "action": "Correct the FOD source, repository metadata, optional component policy, WSUS behavior, or update source policy as applicable.",
+                  "expect": "The target can locate the correct FOD payload and dependencies."
+                },
+                {
+                  "action": "Install required language packs, base language FODs, or dependent capabilities in the correct servicing order before retrying.",
+                  "expect": "The FOD installation completes without source, dependency, or applicability errors."
+                }
+              ]
+            },
+            {
+              "name": "Confirm",
+              "icon": "🎯",
+              "steps": [
+                {
+                  "action": "Verify capability state using DISM, Get-WindowsCapability, Settings optional features, and CBS or DISM logs.",
+                  "expect": "The FOD capability reports Installed or the intended final state."
+                },
+                {
+                  "action": "Monitor the next update or image servicing cycle when language packs or FODs were added to customized images.",
+                  "expect": "The FOD remains present and no post-update removal or source error recurs."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}
