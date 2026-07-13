@@ -66,5 +66,41 @@
       "Advanced collection 4 — Export firewall rules related to TCP port 3260",
       "Advanced collection 5 — Collect SAN-side logs for target events"
     ]
+  },
+  "playbooks": {
+    "iscsi_disconnect": {
+      "title": "iSCSI target disconnects or fails to connect",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Run Get-IscsiSession to confirm session state", "expect": "Session shows disconnected or error state" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Ping target IP and check firewall rules", "expect": "Connectivity confirmed or blocked" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Restart iSCSI Initiator service and re-login to target", "expect": "Session reconnects successfully" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Run Get-IscsiConnection and check Event Viewer", "expect": "Healthy session with no new errors" }
+          ]
+        }
+      ]
+    }
   }
 }
