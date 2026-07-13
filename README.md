@@ -2,9 +2,7 @@
 
 A professional incident command platform for L1 and L2 Microsoft Unified Support engineers. Structured scoping, probing, troubleshooting, data collection and step-by-step playbooks for Windows Server and Azure support scenarios.
 
-**Live:** https://iwrik00100.github.io/nexus/src/
-
-**Status:** [![Uptime Robot status](https://uptimerobot.com/api/badge?key=m802893684-a13a35dd7669ae6c27d2cfc1)](https://stats.uptimerobot.com/4djVFYOOwd)
+**Live:** https://iwrik00100.github.io/nexus/src/ | **Status:** https://stats.uptimerobot.com/4djVFYOOwd
 
 ---
 
