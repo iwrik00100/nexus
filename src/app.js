@@ -25,10 +25,10 @@ const SECTION_META = {
 // Domain definitions — drives the landing page cards
 const DOMAINS = [
   { key: 'networking',          label: 'Networking',              icon: '🌐', description: 'DNS, DHCP, TCP/IP, SMB, DFS, NPS, 802.1x, VPN' },
-  { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, Group Policy, SBSL' },
+  { key: 'directory_services',  label: 'Directory Services',      icon: '🏛',  description: 'AD DS, Replication, Group Policy, Kerberos, LDAP, ADCS, Trusts' },
   { key: 'performance',         label: 'Performance',             icon: '⚡', description: 'CPU, Memory, Noboot, Hang, Bugcheck' },
-  { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'RDP / Remote Desktop Services' },
-  { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Windows Update, Activation, BitLocker, Power Management' },
+  { key: 'user_experience',     label: 'User Experience',         icon: '👤', description: 'RDP, Printing' },
+  { key: 'device_deployment',   label: 'Device & Deployment',     icon: '📦', description: 'Windows Update, Upgrade, Activation, BitLocker, Power Management' },
   { key: 'storage_ha',          label: 'Storage & High Availability', icon: '💾', description: 'Storage Spaces, Failover Cluster, Hyper-V, ReFS, iSCSI' },
   { key: 'collaboration',       label: 'Collaboration',           icon: '🤝', description: 'Exchange Online, Teams, SharePoint, OneDrive, M365',    hidden: true }
 ];
