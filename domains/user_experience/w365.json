@@ -1,0 +1,102 @@
+{
+  "key": "w365",
+  "label": "W365 Troubleshooting",
+  "icon": "🗂",
+  "domain": "user_experience",
+  "scoping": {
+    "l1": [
+     "What is the exact issue being reported?",
+"Is the problem related to: ( Cloud PC not visible? / Sign-in failure? /Connection failure? / Black screen? / Performance issue? / Disconnection? / Provisioning issue?)",
+"How many users are impacted (single, multiple, all)?",
+"When did the issue first occur? Can the user access the Cloud PC through -> (Windows App? / Web Portal (windows365.microsoft.com))?",
+"Is the issue reproducible?",
+"Does it occur every time or intermittently?",
+"Does it occur on multiple devices?",
+"Need to collect the basic information -> ( Cloud PC name / User UPN / Tenant ID / Timestamp with timezone / Screenshot of error / Correlation ID / Session ID)"    
+
+],
+    "l2": [
+     "What type of license customer is using ? If License assigned successfully?",
+"Is the Provisioning Policy assigned?",
+"Cloud PC state (Provisioned / Grace Period / Failed / Unavailable)?",
+"Is Cloud PC visible in Intune?",
+"Is this Enterprise, Frontline Dedicated, or Frontline Shared Cloud PC? Check if this Entra ID join or Hybrid Join",
+"What is the Network location of user",
+"What is the Cloud PC region",
+"What is the RTT latency",
+"Is there any VPN/Proxy involvement",
+"What is the session type whether it is UDP or TCP",
+"Is the RDP Shortpath is enabled or not",
+"What is the Windows App version",
+"What is the AVD Host App version",
+"Check the status of Intune policy",
+"Check the device compliance status"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Can you see the Cloud PC in Windows 365 Portal?",
+"Did you recently receive a Cloud PC license?",
+"Was the Cloud PC working previously?",
+"Does the issue happen before launching the Cloud PC? Or During sign-in? Or After desktop loads?",
+"Can you access through another network?",
+"Any authentication prompt?",
+"MFA challenge failing?",
+"Recent password change?",
+"Is the session disconnecting?",
+"Any lag or latency?",
+"Is the Cloud PC frozen or black screen?"
+    ],
+    "l2": [
+      "Was provisioning completed successfully?",
+"Any provisioning failures in CPCD?",
+"Is ANC validation successful?",
+"Any Azure infrastructure dependency failures?",
+"Client Telemetry Investigation -> Correlation ID available? / Session ID available? / Activity ID available?",
+"Any W365 App telemetry failures?",
+"Any Graph API failures?",
+"Any token acquisition failures?",
+"Check if the RTT values exceeding 200 ms?",
+"User and CPC located in different regions?",
+"Check if UDP disconnections observed?",
+"If this is Windows 365 boot device then check if the Boot-to-Cloud policy applied?",
+"Check the Registry values present -> BootToCloudMode = 1 / OverrideShellProgram = 1 / SharedPC Mode enabled",
+"Is Windows App launch successful?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+     "Verify license assignment. In Microsoft 365 Admin Center → Users → Active Users, confirm the user has a Windows 365 license (Business or Enterprise).",
+"Verify user assignment. In Windows 365 Admin Portal, check that the Cloud PC is provisioned for the user.",
+"Validate Cloud PC appears in Windows 365 Portal -> Go to https://windows365.microsoft.com and confirm the Cloud PC appears under the users account.",
+ "Windows App -> Install the Windows App and verify the Cloud PC is listed.",
+"Intune (if admin available)-> In Endpoint Manager → Devices, confirm the Cloud PC is enrolled and compliant.",
+"Test access from-> Web Client / Windows App / Alternate network / Alternate device",
+"Collect the details -> Cloud PC Name / Correlation ID / Session ID / Screenshot / Timestamp / Tenant ID"
+    ],
+    "l2": [
+    "Validate provisioning events -> Go to Endpoint Manager → Devices → Cloud PCs → Provisioning status. Confirm events show Succeeded.",
+"Validate ANC health -> Check Azure Network Connection (ANC) health in Endpoint Manager. Ensure connectivity tests (DNS, domain join, latency) pass.",
+"Check CPC Availability Dashboard -> In Windows 365 Admin Portal, review the availability dashboard for Cloud PCs across tenants.",
+"Confirm Cloud PCs show Available and not Failed or Provisioning.",
+"In Azure Portal, check the underlying VM resource health (CPU, memory, disk).",
+"In Windows 365 diagnostics, check user connection attempts and outcomes",
+"Use diagnostics to confirm Cloud PC traffic is flowing over optimal UDP Shortpath; fallback to TCP if needed.",
+"Measure round-trip time (RTT) in diagnostics to confirm latency is within acceptable limits.",
+"Ensure Cloud PCs are provisioned in the correct region closest to the user for performance."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+    "Collect the Error message / Correlation ID / Time stamp /Screenshot",
+    "MSRD Collect",
+    "Gather client-side logs from the Windows App"
+    ],
+    "l2": [
+      "Review CPCD diagnostics -> Inn Windows 365 Admin Portal → Cloud PC diagnostics, review CPCD (Cloud PC Control Diagnostics) logs for provisioning errors.",
+"Review provisioning activity ID -> Each provisioning attempt generates an Activity ID. Capture it from the portal or error logs for troubleshooting.",
+"In Endpoint Manager, view Cloud PC restart/recovery logs to ensure no repeated failures."
+
+    ]
+  }
+}

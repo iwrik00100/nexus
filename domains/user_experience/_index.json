@@ -2,11 +2,12 @@
   "key": "user_experience",
   "label": "User Experience",
   "icon": "👤",
-  "description": "Logon, User Profiles, Group Policy, App Compatibility, AVD/WVD, RDS",
+  "description": "Logon, User Profiles, Group Policy, App Compatibility, AVD/WVD, RDS, Windows 365",
   "technologies": [
     { "key": "rdp", "label": "Unable to take RDP", "icon": "🔑" },
     { "key": "printing", "label": "Printing", "icon": "🖨" },
     { "key": "wmi", "label": "WMI Troubleshooting", "icon": "⚙️" },
-    { "key": "avd", "label": "AVD Troubleshooting", "icon": "💻" }
+    { "key": "avd", "label": "AVD Troubleshooting", "icon": "💻" },
+    { "key": "w365", "label": "W365 Troubleshooting", "icon": "🗂" }
   ]
 }
