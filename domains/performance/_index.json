@@ -2,7 +2,7 @@
   "key": "performance",
   "label": "Performance",
   "icon": "⚡",
-  "description": "CPU, Memory, noboot, hang, bugcheck",
+  "description": "CPU, Memory, hang, bugcheck",
   "technologies": [
     {
       "key": "cpu",
@@ -13,11 +13,6 @@
       "key": "memory",
       "label": "Memory",
       "icon": "💾"
-    },
-    {
-      "key": "noboot",
-      "label": "Noboot",
-      "icon": "💿"
     },
     {
       "key": "hang",

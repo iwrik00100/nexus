@@ -1,0 +1,136 @@
+{
+  "key": "bugcheck",
+  "label": "Bug_check",
+  "icon": "💻",
+  "domain": "performance",
+  "scoping": {
+    "l1": [
+      "Question 1 — Is the slowness affecting one user or multiple users?",
+      "Question 2 — Is this a physical machine or a virtual machine (VM)?",
+      "Question 3 — Is it a client OS or server OS?",
+      "Question 4 — What is the exact Stop Code and bugcheck parameters shown on the screen or in the event log?",
+      "Question 5 — Is the Stop Code always identical, or does it vary with every crash?",
+      "Question 6 — How frequently does the bugcheck occur?",
+      "Question 7 — Does the crash happen during a specific system state or activity?",
+      "Question 8 — Does the machine crash immediately when a specific application or peripheral is used?",
+      "Question 9 — Were there any hardware modifications, component upgrades, or BIOS updates applied right before the crashes started?"
+    ],
+    "l2": [
+      "Has there been a recent Windows Update, third-party software deployment, or graphics driver installation?",
+      "Was there a recent update or policy push to your endpoint security or antivirus agent?",
+      "Did Windows successfully write a crash dump file (MEMORY.DMP or a minidump) to the disk?",
+      "Does the machine reboot immediately after the crash, or does it hang on the BSOD screen indefinitely?",
+      "What does Event Viewer report under Event ID 41 (Kernel-Power) or Event ID 1001 (Bugcheck)?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 — Is the slowness affecting one user or multiple users?",
+      "Question 2 — What is the exact Stop Code and text string displayed on the blue screen?",
+      "Question 3 — Does the blue screen mention a specific file with a .sys, .dll, or .exe extension at the bottom?",
+      "Question 4 — Does the crash screen complete its progress counter to 100% and successfully restart, or does it hang permanently on the blue screen?",
+      "Question 5 — Does the machine bugcheck at a consistent point during boot up, or does it only happen after logging into user sessions?",
+      "Question 6 — Does the crash occur immediately when performing a specific task or executing a heavy script?",
+      "Question 7 — Is the bugcheck accompanied by an audible glitch, screen tearing, or cooling fan speed spikes right before it halts?"
+    ],
+    "l2": [
+      "If you browse to C:\\Windows\\, do you see a file named MEMORY.DMP, or are there small .dmp files present in C:\\Windows\\Minidump\\?",
+      "Does the system report an Event ID 1001 (Bugcheck) in the System Event Log upon booting back up?",
+      "Are there any recurring disk errors, controller warnings (storahci), or WHEA hardware warnings logged in Event Viewer right before the time of the crash?",
+      "For Virtual Machines: Does the host hypervisor log an unexpected reset, power loss, or a physical storage disconnect for this VM node?",
+      "Has any security agent software (EDR, Antivirus, or DLP) updated its definition files or scanning engine within the last 48 hours?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Recover the Stop Code and Faulting Driver.",
+      "Unplug Non-Essential Hardware.",
+      "Run the Built-In Windows Memory Diagnostic.",
+      "Boot into Safe Mode to Isolate Third-Party Drivers.",
+      "Check and Roll Back Recent Updates.",
+      "Repair Core Windows Image Binaries."
+    ],
+    "l2": [
+      "Perform Deep-Dive Kernel Analysis via WinDbg.",
+      "Stress-Test Driver Stability via Driver Verifier.",
+      "Run Advanced Memory Validation via MemTest86.",
+      "Audit WHEA Hardware Architecture Telemetry."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Complete Memory Dumps.",
+      "Windows Event Logs.",
+      "Collect TSS"
+    ],
+    "l2": [
+      "System Information & Environment Context.",
+      "Driver Verifier Telemetry Logs (If Enabled).",
+      "Driver & Module State Snapshots."
+    ]
+  },
+  "playbooks": {
+    "bugcheck": {
+      "title": "Isolating and Resolving Kernel Bugchecks (BSOD)",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Locate and confirm the generation of MEMORY.DMP or minidump files in C:\\Windows\\ or C:\\Windows\\Minidump\\.",
+              "expect": "Crash dump files are present and match the timestamp of the latest system failure."
+            },
+            {
+              "action": "Query the System Event Log for Event ID 1001 (Bugcheck) or Event ID 41 (Kernel-Power) to recover raw Stop Codes and parameters.",
+              "expect": "Identify the exact hex error signature (e.g., 0x000000D1) and any named faulting driver file."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Open the crash dump file in WinDbg, configure public symbols, and execute the !analyze -v routine.",
+              "expect": "Isolate the execution stack to find the exact third-party .sys driver or module that triggered the kernel panic."
+            },
+            {
+              "action": "Boot the affected machine into Windows Safe Mode to bypass non-essential startup items and third-party kernel filters.",
+              "expect": "Observe system stability; if the machine remains stable, physical hardware is healthy and a software driver is the culprit."
+            },
+            {
+              "action": "If dump files are generic, activate Driver Verifier against all non-Microsoft drivers using standard verification flags.",
+              "expect": "The system intentionally bugchecks upon reboot, explicitly naming the rogue memory-corrupting driver."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Uninstall, roll back, or update the specific vendor driver identified by the WinDbg stack analysis or Driver Verifier output.",
+              "expect": "The unseated, corrupted, or conflicting system module is cleanly replaced or removed from the boot sequence."
+            },
+            {
+              "action": "Execute standard DISM and SFC file integrity scanners via an administrative command prompt to repair core OS binaries.",
+              "expect": "Any corrupted file structures or core kernel resources are restored to a healthy baseline status."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Run verifier /reset to disable any active verifier testing flags, then monitor the machine under normal operational workloads.",
+              "expect": "The environment processes workflows reliably over an extended monitoring period without generating any further crash telemetry."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
