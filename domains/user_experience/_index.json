@@ -6,6 +6,7 @@
   "technologies": [
     { "key": "rdp", "label": "Unable to take RDP", "icon": "🔑" },
     { "key": "printing", "label": "Printing", "icon": "🖨" },
-    { "key": "wmi", "label": "WMI Troubleshooting", "icon": "⚙️" }
+    { "key": "wmi", "label": "WMI Troubleshooting", "icon": "⚙️" },
+    { "key": "avd", "label": "AVD Troubleshooting", "icon": "💻" }
   ]
 }

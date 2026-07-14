@@ -1,0 +1,113 @@
+{
+  "key": "avd",
+  "label": "AVD Troubleshooting",
+  "icon": "💻",
+  "domain": "user_experience",
+  "scoping": {
+    "l1": [
+      "Is this Azure Virtual Desktop (AVD) or another VDI solution?",
+      "Is the issue affecting Full Desktop or RemoteApp?",
+      "Which client is being used?(Windows App / Remote Desktop Client /Web Client)",
+      "Which OS is used on the endpoint device?",
+      "How many users are affected?(Single user / Multiple users / All users)",
+      "Is the issue business critical?",
+      "When did the issue start?",
+      "Whether the issue is (Connectivity issue / Authentication issue / Performance issue /RemoteApp issue /Session disconnection /Black screen /Provisioning issue)",
+      "Can the issue be reproduced consistently?",
+      "Does it occur on all devices?",
+      "Does it occur on different networks?",
+      "Any recent Windows updates?",
+      "Any client updates?",
+      "Any networking, VPN, firewall, proxy, or policy changes?"
+    ],
+    "l2": [
+      "Collect the following -> (HostPool name / Workspace name /AppGroup name / SessionHost name / Region / Subscription ID)",
+      "Validate whether it is EntraID Joined/HybridJoined",
+      "Validate the ADConnect status",
+      "Validate the Conditional Access policies",
+      "Validate the MFA requirements",
+      "Validation at Session Host level -> (Are sessionhosts showing Healthy? / Are agents running? / Any unhealthy host status? /Is Start VM on Connect enabled?)",
+      "Check if RDP Shortpath is enabled or not?",
+      "Check wthether the Required URLs accessible or not?",
+      "Check if Firewall or proxy inspection present?",
+      "Check if DNS resolution working or not?",
+      "Confirm if FSLogix enabled? If yes then whether Profile container mounted successfully?",
+      "Check the health status of Azure Files / ANF?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "What exactly are users attempting to do?",
+      "What happens when the issue occurs?",
+      "Is there an error message?",
+      "Does the issue happen: ( Before sign-in?/ During sign-in? /After session launch?",
+      "How many user are affected (One user or multiple users)?",
+      "How many Session host are affected (One host or all hosts)?",
+      "If issue is with application then how many applications are affected (One application or all applications)?",
+      "Does Web Client work?",
+      "Does another device work?",
+      "Does another network work?",
+      "Can the user launch another AVD resource?",
+      "Is VPN connected?",
+      "Is the problem intermittent?"
+    ],
+    "l2": [
+      "Validation at Authentication Layer -> Any Entra sign-in failures? / Token acquisition failures? /Conditional Access blocks?",
+      "Validation at Broker Layer -> Is Broker communication healthy? /Any registration failures?",
+      "Validation at Session Host Layer -> Is VM running? / Is VM reachable via RDP? / Are AVD agents healthy?",
+      "Validation at Network Layer -> TCP 443 connectivity successful? / UDP Shortpath functioning? / Any latency or packet loss?",
+      "Check if this scenario supported?",
+      "Check if this is expected behaviour?",
+      "Check if there is any documented limitation"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Validate Azure Service Health?",
+      "Validate User Access -> If User assigned to App Group? / User licensed correctly?",
+      "Test the behaviour over Web client",
+      "Check the client version if the latest version is installed",
+      "Validate the Internet connectivity",
+      "Test the behaviour after disabling VPN",
+      "Check if DNS resolution is working expected"
+    ],
+    "l2": [
+      "Check the Azure Service Health -> Go to Azure Portal → Service Health.",
+      "Check for active incidents, planned maintenance, or advisories affecting AVD services in your region.",
+      "AVD Diagnostics -> Navigate to Azure Portal  -> Azure Virtual Desktop -> Diagnostics. Use Connection Diagnostics to test user connectivity. Run Registration checks to confirm session hosts are properly registered with the broker. Export logs to Log Analytics Workspace for deeper troubleshooting.",
+      "In Azure Portal → Azure Virtual Desktop → Host Pools. Verify registration status of session hosts.",
+      "Check scaling plans and autoscale readiness.",
+      "Confirm app groups are correctly assigned to workspaces.",
+      "Use Azure Monitor metrics (CPU, memory, network) to ensure performance is within thresholds.",
+      "VM running → In Azure Portal, go to Host Pool → Session Hosts. Confirm the VM status is Running.",
+      "Agent service running → Log into the VM, open Services.msc, and verify the Remote Desktop Agent Loader service is running.",
+      "Agent registration status → In Portal, check the session hosts Registration State (should be Registered).",
+      "Conditional Access → Verify policies applied to AVD users; ensure they dont unintentionally block access.",
+      "SSO validation → Test user login to confirm seamless single sign-on.",
+      "MFA validation → Check MFA enforcement in Entra ID; confirm users can complete MFA successfully.",
+      "Port 443 connectivity → Run Test-NetConnection <AVD URL> -Port 443 from the session host.",
+      "Required URLs → Ensure outbound access to AVD service endpoints (documented in Microsofts URL list)",
+      "Proxy configuration → Confirm proxy/firewall rules allow AVD traffic.",
+      "DNS resolution → Run nslookup for AVD service URLs to verify resolution.",
+      "UDP Shortpath validation → Check if UDP Shortpath is enabled; test connectivity with netstat -an | find UDP.",
+      "Profile container mount → Ensure user profile containers mount correctly during login.",
+      "Storage health → Validate Azure Files/Storage account health in Azure Portal; check latency and availability metrics."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect the Error message / Correlation ID / Time stamp /Screenshot",
+      "MSRD Collect",
+      "Gather client-side logs from the AVD client application"
+    ],
+    "l2": [
+      "Event Viewer review → On the VM, open Event Viewer → Applications and Services Logs → Microsoft → Windows → RemoteDesktop. Look for errors/warnings.",
+      "Entra Sign-in Logs → In Entra ID Portal, review sign-in logs for failed attempts or conditional access blocks.",
+      "FSLogix logs → On session host, review logs at C:/ProgramData/FSLogix/Logs",
+      "TSS traces",
+      "AVD diagnostics",
+      "Kusto queries",
+      "Network capture"
+    ]
+  }
+}
