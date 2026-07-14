@@ -139,8 +139,8 @@ function _showPage(pageId) {
 const DOMAIN_TECH_COUNTS = {
   networking: '11 technologies',
   directory_services: '25 technologies',
-  performance: '5 technologies',
-  user_experience: '2 technologies',
+  performance: '4 technologies',
+  user_experience: '5 technologies',
   device_deployment: '7 technologies',
   storage_ha: '7 technologies',
   collaboration: '6 technologies'
