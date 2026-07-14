@@ -1,6 +1,6 @@
 {
-  "key": "memory",
-  "label": "Memory",
+  "key": "bugcheck",
+  "label": "Bug_check",
   "icon": "💻",
   "domain": "performance",
   "scoping": {
