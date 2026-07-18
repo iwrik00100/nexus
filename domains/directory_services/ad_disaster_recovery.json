@@ -7,48 +7,64 @@
     "l1": [
       "Has the domain sustained a total forest outage or single server failure?",
       "Are valid System State backups or full bare-metal images currently available?",
-      "Which Domain Controller holds the critical FSMO roles inside the domain structure?"
+      "Which Domain Controller holds the critical FSMO roles inside the domain structure?",
+      "Is the outage impacting authentication, DNS resolution, or Group Policy processing?",
+      "Are end users unable to log in or access shared resources due to the failure?"
     ],
     "l2": [
       "Is an authoritative or non-authoritative restore required for SYSVOL components?",
       "What is the current Tombstone Lifetime configuration setting for the forest objects?",
-      "Are isolated recovery environments networks prepared without any production links?"
+      "Are isolated recovery environments networks prepared without any production links?",
+      "Is the forest functional level compatible with the recovery method being attempted?",
+      "Are backup Domain Controllers available in other sites for role transfer or rebuild?"
     ]
   },
   "probing": {
     "l1": [
       "Run 'wbadmin get versions' to list available local system recovery points.",
       "Run 'netdom query fsmo' to see current infrastructure master assignments.",
-      "Check event logs for directory service corruption errors such as Event 1003."
+      "Check event logs for directory service corruption errors such as Event 1003.",
+      "Run 'dcdiag /test:DNS' to confirm DNS service health on surviving DCs.",
+      "Check if SYSVOL and Netlogon shares are accessible from client machines."
     ],
     "l2": [
       "Run 'ntdsutil \"activate instance ntds\" semantic db analysis info' for health evaluation.",
       "Verify status of NTDS files utilizing 'esentutl /g <path_to_ntds.dit>'.",
-      "Verify backup capabilities by validating VSS writers output strings state data."
+      "Verify backup capabilities by validating VSS writers output strings state data.",
+      "Run 'repadmin /showrepl' to identify replication failures across sites.",
+      "Check Kerberos authentication latency using 'klist' and Event ID 4768 logs."
     ]
   },
   "troubleshooting": {
     "l1": [
       "Boot into Directory Services Repair Mode (DSRM) utilizing local recovery passwords.",
       "Restore system state images utilizing wbadmin administration command interface.",
-      "Seize outstanding FSMO roles using ntdsutil if original holders are dead."
+      "Seize outstanding FSMO roles using ntdsutil if original holders are dead.",
+      "Rebuild DNS zones from backup if primary DNS service is corrupted.",
+      "Re-enable SYSVOL replication using 'ntfrsutl' if replication is halted."
     ],
     "l2": [
       "Perform metadata cleanup using ntdsutil for removed offline domain controller nodes.",
       "Execute authoritative restore configurations on target OUs utilizing ntdsutil utility.",
-      "Fix invalid USN states using strict isolation parameters during server cold boots."
+      "Fix invalid USN states using strict isolation parameters during server cold boots.",
+      "Reconfigure replication topology using 'repadmin /replsummary' and site link adjustments.",
+      "Restore schema master role from backup if schema corruption is detected."
     ]
   },
   "datacollection": {
     "l1": [
       "Capture screens and outputs showing wbadmin system state histories records.",
       "Export the setup and directory service configuration event logs to disks.",
-      "Log the network topologies maps and active IP allocation configurations."
+      "Log the network topologies maps and active IP allocation configurations.",
+      "Collect 'ipconfig /all' outputs from affected servers and clients.",
+      "Document FSMO role holders before and after recovery attempts."
     ],
     "l2": [
       "Gather esentutl database integrity outputs and diagnostic parsing text reports.",
       "Export systemic registry hives detailing storage configurations parameters settings.",
-      "Collect Active Directory schema configuration dumps matching forest structures."
+      "Collect Active Directory schema configuration dumps matching forest structures.",
+      "Export replication logs and Event Viewer Directory Service logs from all DCs.",
+      "Capture Wireshark traces during failed authentication attempts."
     ]
   },
   "playbooks": {
