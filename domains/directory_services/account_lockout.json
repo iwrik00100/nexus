@@ -7,36 +7,54 @@
     "l1": [
       "Which specific user account or security principal is getting locked out?",
       "When did the repeated lockout cycles start happening to this account?",
-      "Does the lockout clear temporarily upon administrator manual unlock actions?"
+      "Does the lockout clear temporarily upon administrator manual unlock actions?",
+      "Is this user a member of any high-privilege groups like Domain Admins?",
+      "Does the user have the same username on any non-domain systems or personal devices?",
+      "Are other users in the same department or office experiencing similar issues?"
     ],
     "l2": [
       "Is the lockout happening from a domain workstation, server, or external VPN?",
       "Are there multiple devices or applications simultaneously submitting old credentials?",
-      "Is the lockout threshold configuration policy set domain-wide or via FGPP?"
+      "Is the lockout threshold configuration policy set domain-wide or via FGPP?",
+      "Was there a recent password change or forced reset prior to the lockouts starting?",
+      "Does the lockout occur specifically when the user is logged into a specific VDI or RDS session?",
+      "Are there any third-party SMTP or FTP services configured to use this account's credentials?"
     ]
   },
   "probing": {
     "l1": [
       "Query the PDC Emulator for Event ID 4740 logs identifying the lockout origin.",
       "Run 'net user <username> /domain' to verify current lock status and lock time.",
-      "Use the LockoutStatus tool to check state across all active domain controllers."
+      "Use the LockoutStatus tool to check state across all active domain controllers.",
+      "Check the 'lastBadPasswordAttempt' attribute in AD using PowerShell or ADSI Edit.",
+      "Verify if the account is currently locked out on the local machine's SAM database.",
+      "Check if any Active Directory replication latency is delaying the unlock state."
     ],
     "l2": [
       "Search Security logs for Event IDs 4625 to find bad password attempt data details.",
       "Inspect the caller computer name field listed inside the 4740 event properties.",
-      "Check network connection sessions to map persistent open authentications."
+      "Check network connection sessions to map persistent open authentications.",
+      "Analyze Netlogon logs to determine if the auth request is NTLM or Kerberos.",
+      "Use 'klist purge' on the suspect workstation to clear any stale Kerberos tickets.",
+      "Review IIS logs on web servers if the source is identified as an internal web portal."
     ]
   },
   "troubleshooting": {
     "l1": [
       "Unlock the user account utilizing Active Directory Administrative Center UI.",
       "Have the user update passwords on known mobile devices and persistent apps.",
-      "Clear cached network credentials from the Windows Credential Manager vault."
+      "Clear cached network credentials from the Windows Credential Manager vault.",
+      "Instruct the user to sign out of all active Windows sessions and reboot.",
+      "Disconnect mobile devices from corporate Wi-Fi and Exchange ActiveSync temporarily.",
+      "Reset the user's password to a temporary one to break existing automated retry loops."
     ],
     "l2": [
       "Identify and terminate old mapped network drives or scheduled background tasks.",
       "Restart persistent Windows Services configured with outdated user service accounts.",
-      "Flush cached interactive web application credentials causing invisible background calls."
+      "Flush cached interactive web application credentials causing invisible background calls.",
+      "Check for 'Saved Passwords' in browsers (Chrome/Edge) for internal applications.",
+      "Examine COM+ applications or IIS Application Pools running under the user identity.",
+      "Remove the user's account from any automated scripts or batch jobs found on servers."
     ]
   },
   "datacollection": {
@@ -60,28 +78,40 @@
           "name": "Verify",
           "icon": "✅",
           "steps": [
-            { "action": "net user targetuser /domain", "expect": "Account status should output 'Account active: Lockout'" }
+            {
+              "action": "net user targetuser /domain",
+              "expect": "Account status should output 'Account active: Lockout'"
+            }
           ]
         },
         {
           "name": "Isolate",
           "icon": "🔍",
           "steps": [
-            { "action": "Get-WinEvent -ComputerName <PDC_Name> -FilterHashtable @{LogName='Security';Id=4740} | Select-Object -First 1 -ExpandProperty Message", "expect": "Extract Caller Computer Name to uncover the actual origin workstation" }
+            {
+              "action": "Get-WinEvent -ComputerName <PDC_Name> -FilterHashtable @{LogName='Security';Id=4740} | Select-Object -First 1 -ExpandProperty Message",
+              "expect": "Extract Caller Computer Name to uncover the actual origin workstation"
+            }
           ]
         },
         {
           "name": "Fix",
           "icon": "🛠",
           "steps": [
-            { "action": "rundll32.exe keymgr.dll,KRShowKeyMgr", "expect": "Open credential UI on source client and remove outdated entries for the domain" }
+            {
+              "action": "rundll32.exe keymgr.dll,KRShowKeyMgr",
+              "expect": "Open credential UI on source client and remove outdated entries for the domain"
+            }
           ]
         },
         {
           "name": "Confirm",
           "icon": "🎯",
           "steps": [
-            { "action": "Unlock-ADAccount -Identity targetuser", "expect": "Account remains in unlocked status without triggering successive 4740 events" }
+            {
+              "action": "Unlock-ADAccount -Identity targetuser",
+              "expect": "Account remains in unlocked status without triggering successive 4740 events"
+            }
           ]
         }
       ]
