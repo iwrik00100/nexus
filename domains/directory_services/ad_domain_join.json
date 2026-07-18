@@ -7,48 +7,74 @@
     "l1": [
       "Is the target workstation completely unable to resolve or reach the domain address?",
       "When did the domain join failure issue first manifest on this client or subnet?",
-      "Are you joining via the system properties graphical user interface or utilizing automated commands?"
+      "Are you joining via the system properties graphical user interface or utilizing automated commands?",
+      "Is the client connected via VPN, LAN, or Wi-Fi when attempting the join?",
+      "Has the workstation been recently reimaged or renamed before attempting the join?",
+      "Is the machine running Windows Home edition which cannot join domains?",
+      "Are DHCP leases correctly assigning domain DNS servers?"
     ],
     "l2": [
       "Is an existing duplicate computer account object blocking the naming registration process?",
-      "Are local local-policy encryption requirements causing token validation negotiation anomalies?",
-      "Has the user account exceeded the default limit of joining ten machines to the domain?"
+      "Are local-policy encryption requirements causing token validation negotiation anomalies?",
+      "Has the user account exceeded the default limit of joining ten machines to the domain?",
+      "Is the secure channel establishment failing due to mismatched machine account passwords?",
+      "Are firewall or IPS rules blocking LDAP/Kerberos traffic to domain controllers?",
+      "Is the workstation attempting to join across a read-only domain controller (RODC)?",
+      "Are GPO restrictions preventing domain join operations?"
     ]
   },
   "probing": {
     "l1": [
       "Review the text log file contents inside '%windir%\\debug\\netsetup.log' on the machine.",
       "Test primary domain name health visibility by running 'ping mydomain.local' commands.",
-      "Check client System event log categories targeting NetJoinTool operational paths indices."
+      "Check client System event log categories targeting NetJoinTool operational paths indices.",
+      "Run 'nslookup mydomain.local' to confirm DNS resolution is functional.",
+      "Check Event ID 5719 in the System log for secure channel establishment failures.",
+      "Run 'netdom verify <computername>' to validate trust relationship."
     ],
     "l2": [
       "Verify network target path status via 'nltest /dsgetdc:<domain>' executed on the client device.",
       "Inspect Active Directory configuration properties tracking the specific computer container allocation.",
-      "Check security configuration states focusing on SMB version execution limits rules."
+      "Check security configuration states focusing on SMB version execution limits rules.",
+      "Run 'repadmin /showrepl' to confirm replication health before join attempts.",
+      "Check Kerberos ticket requests using 'klist' and Event ID 4768/4771 logs.",
+      "Run 'dcdiag /test:Advertising' to confirm DCs are advertising domain services."
     ]
   },
   "troubleshooting": {
     "l1": [
       "Flush client system name resolver caching levels using 'ipconfig /flushdns'.",
       "Correct adapter IP parameters to point exclusively toward internal active domain name zones.",
-      "Rename the local workstation to ensure there are no duplicate name conflicts active."
+      "Rename the local workstation to ensure there are no duplicate name conflicts active.",
+      "Restart Netlogon service to re-register SRV records with DNS.",
+      "Ensure the client time is synchronized with the domain controller using 'w32tm /resync'.",
+      "Temporarily disable third-party antivirus/firewall to rule out blocking."
     ],
     "l2": [
       "Delete or reset the stale computer account utilizing Active Directory Users and Computers.",
       "Utilize the offline domain join provisioning system 'djoin.exe' to bypass real-time checks.",
-      "Increase machine account creation permissions limits via Group Policy adjustments parameters."
+      "Increase machine account creation permissions limits via Group Policy adjustments parameters.",
+      "Reset secure channel using 'nltest /sc_reset:<domain>' or PowerShell 'Test-ComputerSecureChannel -Repair'.",
+      "Reconfigure DNS suffix search order to ensure proper domain resolution.",
+      "Force replication between DCs using 'repadmin /syncall /AdeP'."
     ]
   },
   "datacollection": {
     "l1": [
       "Gather the netsetup.log file output tracking all domain join execution pathways.",
       "Collect local system adapter configuration summaries text logs details sheets.",
-      "Export client name configuration test readouts using standard nslookup outputs."
+      "Export client name configuration test readouts using standard nslookup outputs.",
+      "Save outputs of 'ipconfig /all' and 'route print' for network path validation.",
+      "Export System and Application event logs in .evtx format for join attempts.",
+      "Document workstation OS version and patch level."
     ],
     "l2": [
       "Capture explicit network frame steps traces during target domain join operations executions.",
       "Export local computer security policy registry values for authentication checks evaluations.",
-      "Log corporate Active Directory container permission maps listing user account entitlements paths."
+      "Log corporate Active Directory container permission maps listing user account entitlements paths.",
+      "Collect Kerberos ticket cache outputs using 'klist tickets'.",
+      "Export replication and DNS server logs from domain controllers involved in join attempts.",
+      "Gather GPO Resultant Set of Policy (RSoP) reports for affected clients."
     ]
   },
   "playbooks": {
@@ -82,6 +108,87 @@
           "icon": "🎯",
           "steps": [
             { "action": "Add-Computer -DomainName mydomain.local -Credential (Get-Credential)", "expect": "Prompts for reboot with zero warning frames, completing machine registration successfully" }
+          ]
+        }
+      ]
+    },
+    "secure_channel_failure": {
+      "title": "Repairing Secure Channel Failures During Domain Join",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Test-ComputerSecureChannel", "expect": "Returns False indicating secure channel is broken" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Test-ComputerSecureChannel -Repair -Credential (Get-Credential)", "expect": "Secure channel repaired successfully" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "nltest /sc_verify:mydomain.local", "expect": "Reports secure channel is established correctly" }
+          ]
+        }
+      ]
+    },
+    "duplicate_account_conflict": {
+      "title": "Resolving Duplicate Computer Account Conflicts",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Get-ADComputer -Filter \"Name -eq 'ClientHost'\"", "expect": "Duplicate account object exists in AD" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Reset-ADComputer -Identity ClientHost", "expect": "Resets the computer account password and clears conflict" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Add-Computer -DomainName mydomain.local", "expect": "Domain join completes successfully without duplicate conflict" }
+          ]
+        }
+      ]
+    },
+    "time_sync_failure": {
+      "title": "Resolving Time Synchronization Issues Blocking Domain Join",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "⏱",
+          "steps": [
+            { "action": "w32tm /query /status", "expect": "Shows client time drift beyond Kerberos tolerance (5 minutes)" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "w32tm /resync /force", "expect": "Client time synchronized with domain controller" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "net time \\dc1 /set /y", "expect": "Client time matches domain controller time" }
           ]
         }
       ]
