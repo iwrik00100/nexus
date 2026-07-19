@@ -5,9 +5,9 @@
   "description": "Storage Spaces, Failover Clustering, Hyper-V, ReFS, iSCSI, S2D",
   "technologies": [
     {
-      "key": "coming_soon",
-      "label": "Coming Soon",
-      "icon": "🚧"
+      "key": "disk_issues",
+      "label": "Disk Issues",
+      "icon": "⚠️"
     },
     {
       "key": "storage_spaces",

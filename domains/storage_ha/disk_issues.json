@@ -1,0 +1,130 @@
+{
+  "key": "disk_issues",
+  "label": "Disk Issues",
+  "icon": "⚠️",
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the issue first start occurring?",
+      "Question 2 — Is the disk internal or external to the server?",
+      "Question 3 — Does the disk disappear consistently or intermittently?",
+      "Question 4 — Is the issue affecting user access or server processes?",
+      "Question 5 — Has any recent OS update or patch been applied?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are multiple disks affected or only one specific disk?",
+      "Advanced question 2 — Has the server hardware recently been modified or updated?",
+      "Advanced question 3 — Are there any RAID or virtualization layers involved with the disk?",
+      "Advanced question 4 — Is the disk part of clustered storage or SAN?",
+      "Advanced question 5 — Are there performance degradation patterns before disappearance?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command or question 1 — Check if the disk appears in Disk Management",
+      "Command or question 2 — Verify if the disk is listed in Device Manager",
+      "Command or question 3 — Run a basic hardware rescan in Windows",
+      "Command or question 4 — Use diskpart list disk to confirm visibility",
+      "Command or question 5 — Test with another USB/SATA cable if external"
+    ],
+    "l2": [
+      "Advanced command 1 — Review Event Viewer logs for disk or controller errors",
+      "Advanced command 2 — Run PowerShell Get-Disk to confirm OS detection",
+      "Advanced command 3 — Check controller firmware and driver compatibility",
+      "Advanced command 4 — Run chkdsk /f /r to scan for corruption",
+      "Advanced command 5 — Use vendor diagnostic utilities for SMART health"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Resolution step 1 — Re-seat or reconnect the disk cables",
+      "Resolution step 2 — Update or reinstall basic disk drivers",
+      "Resolution step 3 — Test the disk on another system if possible",
+      "Resolution step 4 — Disable USB selective suspend if external",
+      "Resolution step 5 — Ensure power settings do not turn off the disk"
+    ],
+    "l2": [
+      "Advanced fix 1 — Update server BIOS and storage controller firmware",
+      "Advanced fix 2 — Run diagnostic tools from the disk manufacturer",
+      "Advanced fix 3 — Check RAID configuration or rebuild array if degraded",
+      "Advanced fix 4 — Replace faulty controller or backplane if errors persist",
+      "Advanced fix 5 — Escalate to vendor support if hardware failure suspected"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export log X — Save Event Viewer system logs",
+      "Collect trace Y — Gather Device Manager hardware status",
+      "Run command Z — Execute diskpart list disk output",
+      "Step 4 — Capture screenshot of Disk Management",
+      "Step 5 — Collect OS build and patch level"
+    ],
+    "l2": [
+      "Advanced collection 1 — Capture performance monitor counters for disk I/O",
+      "Advanced collection 2 — Collect storage controller diagnostic logs",
+      "Advanced collection 3 — Export full PowerShell storage subsystem report",
+      "Advanced collection 4 — Gather SMART data from vendor utilities",
+      "Advanced collection 5 — Collect RAID controller logs and config dump"
+    ]
+  },
+  "playbooks": {
+    "disk_auto_eject": {
+      "title": "Disk auto-ejecting or disappearing from File Explorer",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Open Disk Management and check if the disk is visible there.",
+              "expect": "Disk should appear in Disk Management even if not in File Explorer."
+            },
+            {
+              "action": "Check Device Manager for any disk or controller errors (yellow exclamation marks).",
+              "expect": "Disk should be listed without errors in Device Manager under Disk drives."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Review Event Viewer (System log) for Event ID 51, 153, or disk-related errors.",
+              "expect": "Identify any disk timeout, controller failure, or power state change events."
+            },
+            {
+              "action": "Run: diskpart > list disk to confirm OS-level disk detection.",
+              "expect": "Disk should be enumerated by diskpart even if File Explorer doesn't show it."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Disable USB selective suspend: Control Panel > Power Options > Change plan settings > Change advanced power settings > USB settings > USB selective suspend setting > Disabled.",
+              "expect": "Disk should remain connected without intermittent disconnections."
+            },
+            {
+              "action": "Update disk and storage controller drivers from Device Manager or vendor website.",
+              "expect": "Driver update resolves compatibility or stability issues."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Monitor the disk in File Explorer and Disk Management for stability over 24 hours.",
+              "expect": "Disk remains visible and accessible without auto-ejecting."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,134 @@
+{
+   "key": "backup",
+      "label": "Windows Server Backup",
+      "icon": "🛡",
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the backup failures first occur?",
+      "Question 2 — Is the issue affecting full backups, incremental backups, or both?",
+      "Question 3 — Is the backup target local disk, external disk, or network share?",
+      "Question 4 — Are multiple servers affected or only one?",
+      "Question 5 — Did the issue start after an OS update or patch?",
+      "Question 6 — Is the backup schedule configured through Windows Server Backup or Task Scheduler?",
+      "Question 7 — Are users reporting restore failures or only backup failures?",
+      "Question 8 — Is the backup volume encrypted or compressed?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are there Event Viewer logs showing backup errors (Event ID 517, 546, 565)?",
+      "Advanced question 2 — Is the backup target disk healthy and accessible?",
+      "Advanced question 3 — Is the backup configured for bare-metal recovery or file-level?",
+      "Advanced question 4 — Are VSS (Volume Shadow Copy Service) writers failing?",
+      "Advanced question 5 — Is the backup target part of clustered storage?",
+      "Advanced question 6 — Are there performance drops or timeouts during backup?",
+      "Advanced question 7 — Is deduplication enabled on the backup target?",
+      "Advanced question 8 — Are large files or databases failing to back up consistently?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command 1 — Open Windows Server Backup console and check job status",
+      "Command 2 — Run wbadmin get status to confirm backup state",
+      "Command 3 — Review Event Viewer → Applications and Services Logs → Microsoft → Windows → Backup",
+      "Command 4 — Verify backup target accessibility with File Explorer",
+      "Command 5 — Run wbadmin get versions to list available backups",
+      "Command 6 — Check disk space on backup target",
+      "Command 7 — Run vssadmin list writers to confirm VSS writer health",
+      "Command 8 — Validate Task Scheduler entries for backup jobs"
+    ],
+    "l2": [
+      "Advanced command 1 — Run wbadmin start backup with verbose logging",
+      "Advanced command 2 — Use vssadmin list shadows to check shadow copy creation",
+      "Advanced command 3 — Run Get-WBPolicy in PowerShell to review backup configuration",
+      "Advanced command 4 — Query cluster logs if backup is clustered",
+      "Advanced command 5 — Run wbadmin get items to confirm backup scope",
+      "Advanced command 6 — Review deduplication logs if backup target uses deduplication",
+      "Advanced command 7 — Run wbadmin start recovery to test restore process",
+      "Advanced command 8 — Use Performance Monitor counters for backup throughput"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Step 1 — Restart Windows Server Backup service",
+      "Step 2 — Verify backup target disk health and connectivity",
+      "Step 3 — Free up disk space on backup target",
+      "Step 4 — Run vssadmin list writers and restart services if writers failed",
+      "Step 5 — Reconfigure backup schedule in Windows Server Backup",
+      "Step 6 — Test manual backup with wbadmin start backup",
+      "Step 7 — Ensure backup target permissions are correct",
+      "Step 8 — Disable antivirus temporarily if interfering with backup"
+    ],
+    "l2": [
+      "Advanced fix 1 — Run wbadmin start backup with custom parameters to isolate issue",
+      "Advanced fix 2 — Repair VSS writers by restarting related services (COM+ Event System, VSS, etc.)",
+      "Advanced fix 3 — Replace or reformat corrupted backup target disk",
+      "Advanced fix 4 — Recreate backup policy with Get-WBPolicy and Set-WBPolicy",
+      "Advanced fix 5 — Validate cluster configuration if clustered backup is failing",
+      "Advanced fix 6 — Escalate to Microsoft support if VSS metadata corruption persists",
+      "Advanced fix 7 — Update storage controller firmware and drivers",
+      "Advanced fix 8 — Restore from alternate backup if primary backup is unrecoverable"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collection 1 — Export Event Viewer logs from Applications and Services Logs → Microsoft → Windows → Backup",
+      "Collection 2 — Run wbadmin get status and export results",
+      "Collection 3 — Execute wbadmin get versions output and save",
+      "Collection 4 — Capture screenshot of Windows Server Backup console",
+      "Collection 5 — Collect OS build and patch level",
+      "Collection 6 — Export vssadmin list writers output",
+      "Collection 7 — Gather disk space and health report for backup target",
+      "Collection 8 — Save Task Scheduler XML for backup jobs"
+    ],
+    "l2": [
+      "Advanced collection 1 — Export wbadmin start backup verbose logs",
+      "Advanced collection 2 — Collect vssadmin list shadows output",
+      "Advanced collection 3 — Gather cluster logs if backup is clustered",
+      "Advanced collection 4 — Export Get-WBPolicy configuration",
+      "Advanced collection 5 — Collect deduplication logs if enabled",
+      "Advanced collection 6 — Gather Performance Monitor counters for backup throughput",
+      "Advanced collection 7 — Collect firmware/driver versions for storage controllers",
+      "Advanced collection 8 — Export wbadmin start recovery test logs"
+    ]
+  },
+  "playbooks": {
+    "backup_failure": {
+      "title": "Windows Server Backup failing",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Run wbadmin get status", "expect": "Backup job shows failed or incomplete" },
+            { "action": "Check Event Viewer Backup logs", "expect": "Errors related to backup job execution" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Run vssadmin list writers", "expect": "One or more VSS writers show failed state" },
+            { "action": "Check backup target disk space", "expect": "Insufficient space or disk errors identified" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Restart VSS and Windows Server Backup services", "expect": "Writers return to stable state" },
+            { "action": "Reconfigure backup policy with Set-WBPolicy", "expect": "Backup job runs successfully" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Run wbadmin get versions", "expect": "New backup version created successfully" },
+            { "action": "Monitor Event Viewer logs", "expect": "No new backup errors reported" }
+          ]
+        }
+      ]
+    }
+  }
+}

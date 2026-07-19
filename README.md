@@ -8,7 +8,7 @@ A professional incident command platform for L1 and L2 Microsoft Unified Support
 
 ## 🎯 Purpose
 
-Nexus instantly surfaces structured guidance for active support incidents across 7 disciplines and 11+ technologies — without needing to search documentation or recall commands under pressure.
+Nexus instantly surfaces structured guidance for active support incidents across 7 disciplines and 63 technologies — without needing to search documentation or recall commands under pressure.
 
 ---
 
@@ -16,15 +16,15 @@ Nexus instantly surfaces structured guidance for active support incidents across
 
 | Discipline | Technologies |
 |---|---|
-| **Networking** | DNS Server, DNS Client, DHCP Server, DHCP Client, TCP/IP, SMB, DFS, NPS (RADIUS), 802.1x Wired, 802.1x Wireless, VPN |
-| **Directory Services** | AD DS, AD CS (PKI), AD FS, Azure AD / Entra ID, Kerberos, LDAP, Group Policy |
-| **Performance** | CPU, Memory, Disk I/O, Network Throughput, WPA / ETW Tracing, PerfMon |
-| **User Experience** | Logon & Authentication, User Profiles, App Compatibility, Azure Virtual Desktop, RDS, Printing |
-| **Device & Deployment** | Microsoft Intune, SCCM / ConfigMgr, Windows Autopilot, WSUS, WDS / MDT, Co-Management |
-| **Storage & High Availability** | Storage Spaces / S2D, Failover Clustering, Hyper-V, ReFS / NTFS, iSCSI / FC SAN, Windows Server Backup |
-| **Collaboration** | Exchange Online, Microsoft Teams, SharePoint Online, OneDrive for Business, M365 Connectivity, Hybrid Mail Flow |
+| **Networking** | DNS Server, DNS Client, DHCP Server, DHCP Client, TCP/IP, SMB, DFS, NPS (RADIUS), 802.1x Wired, 802.1x Wireless, VPN (11 technologies) |
+| **Directory Services** | AD DS, AD Replication, Group Policy, SBSL, DFSR, Account Lockout, DC Locator, AD Disaster Recovery, Kerberos, User Profile, Windows Time, Permissions/Access Control/Auditing, LDAP, Credential Guard, AD Topology, DCPromo & DC Installation, AD Domain Join, ADCS, Certificate Enrollment, SSL/TLS, Certificate Revocation Checking, Domain & Forest Trusts, Secure Channel Issues, LSASS High CPU & Performance, Folder Redirection (25 technologies) |
+| **Performance** | CPU, Memory, Noboot, Hang, Bugcheck (5 technologies) |
+| **User Experience** | Unable to take RDP, Printing (2 technologies) |
+| **Device & Deployment** | Windows Update, Windows Upgrade, Activation, BitLocker, Power Management, Device Management, Windows Servicing (7 technologies) |
+| **Storage & High Availability** | Disk Issues, Storage Spaces / S2D, Failover Clustering, Hyper-V, ReFS / NTFS, iSCSI / FC SAN, Windows Server Backup (7 technologies) |
+| **Collaboration** | Exchange Online, Microsoft Teams, SharePoint Online, OneDrive for Business, M365 Connectivity, Hybrid Mail Flow (6 technologies) |
 
-> Networking is fully populated. The remaining 6 disciplines are ready for tech lead contributions.
+> Networking and Directory Services are fully populated. The remaining 5 disciplines are ready for tech lead contributions.
 
 ---
 

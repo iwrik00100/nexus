@@ -2,13 +2,8 @@
   "key": "performance",
   "label": "Performance",
   "icon": "⚡",
-  "description": "CPU, Memory, Disk I/O, Network throughput, WPA, PerfMon, ETW tracing",
+  "description": "CPU, Memory, noboot, hang, bugcheck",
   "technologies": [
-    {
-      "key": "coming_soon",
-      "label": "Coming Soon",
-      "icon": "🚧"
-    },
     {
       "key": "cpu",
       "label": "CPU",
@@ -20,24 +15,19 @@
       "icon": "💾"
     },
     {
-      "key": "disk_io",
-      "label": "Disk I/O",
+      "key": "noboot",
+      "label": "Noboot",
       "icon": "💿"
     },
     {
-      "key": "network_perf",
-      "label": "Network Throughput",
+      "key": "hang",
+      "label": "Hang",
       "icon": "📈"
     },
     {
-      "key": "wpa",
-      "label": "WPA / ETW Tracing",
+      "key": "bugcheck",
+      "label": "Bugcheck",
       "icon": "🔬"
-    },
-    {
-      "key": "perfmon",
-      "label": "PerfMon / PAL",
-      "icon": "📊"
     }
   ]
 }

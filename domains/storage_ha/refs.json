@@ -1,0 +1,134 @@
+{
+  "key": "refs",
+  "label": "ReFS / NTFS",
+  "icon": "🗄",
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the ReFS corruption issue first appear?",
+      "Question 2 — Is the corruption isolated to one volume or multiple?",
+      "Question 3 — Are users reporting file access errors or application crashes?",
+      "Question 4 — Has the server experienced unexpected shutdowns or power loss?",
+      "Question 5 — Was the volume recently resized, migrated, or restored?",
+      "Question 6 — Are permissions or ACLs failing on affected files?",
+      "Question 7 — Is the issue impacting production workloads or test environments?",
+      "Question 8 — Are shadow copies or checkpoints failing on the volume?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are there Event Viewer logs showing ReFS errors (Event ID 100, 101)?",
+      "Advanced question 2 — Is the corruption linked to underlying disk or RAID issues?",
+      "Advanced question 3 — Is deduplication enabled on the ReFS volume?",
+      "Advanced question 4 — Is the volume part of clustered storage or Storage Spaces Direct?",
+      "Advanced question 5 — Are there metadata integrity errors reported by ReFS?",
+      "Advanced question 6 — Has BitLocker or encryption been applied?",
+      "Advanced question 7 — Is corruption reproducible after restoring from backup?",
+      "Advanced question 8 — Are applications reporting ReFS metadata errors?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command 1 — Run PowerShell Get-Volume to confirm health status",
+      "Command 2 — Check Event Viewer → System log for ReFS errors",
+      "Command 3 — Run Get-FileIntegrity to check ReFS metadata integrity",
+      "Command 4 — Verify disk health with Get-Disk",
+      "Command 5 — Attempt file access to confirm corruption symptoms",
+      "Command 6 — Review Disk Management for volume state",
+      "Command 7 — Run fsutil fsinfo volumeinfo to check filesystem details",
+      "Command 8 — Check permissions with icacls on affected files"
+    ],
+    "l2": [
+      "Advanced command 1 — Run Repair-Volume -DriveLetter X -OfflineScanAndFix for ReFS volumes",
+      "Advanced command 2 — Query cluster logs if volume is clustered",
+      "Advanced command 3 — Run Get-StoragePool and Get-VirtualDisk for underlying storage health",
+      "Advanced command 4 — Use Get-FileIntegrity -FileName <path> for specific file checks",
+      "Advanced command 5 — Review deduplication logs if enabled",
+      "Advanced command 6 — Run DISM /Online /Cleanup-Image /RestoreHealth if OS corruption suspected",
+      "Advanced command 7 — Use Performance Monitor counters for ReFS metadata operations",
+      "Advanced command 8 — Run Get-PhysicalDisk to confirm SMART health"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Step 1 — Restart the server and rerun Repair-Volume",
+      "Step 2 — Restore affected files from backup",
+      "Step 3 — Verify and reset file permissions with icacls",
+      "Step 4 — Ensure sufficient free disk space for repair operations",
+      "Step 5 — Disable deduplication temporarily if causing corruption",
+      "Step 6 — Validate disk health with vendor diagnostic tools",
+      "Step 7 — Run Get-FileIntegrity to confirm metadata integrity",
+      "Step 8 — Check cluster resource health if clustered"
+    ],
+    "l2": [
+      "Advanced fix 1 — Run Repair-Volume -OfflineScanAndFix for deeper repair",
+      "Advanced fix 2 — Rebuild RAID array if underlying disk issues detected",
+      "Advanced fix 3 — Restore volume from snapshot or checkpoint",
+      "Advanced fix 4 — Recreate corrupted ReFS volume and restore data from backup",
+      "Advanced fix 5 — Update storage controller firmware and drivers",
+      "Advanced fix 6 — Escalate to Microsoft support if ReFS metadata corruption persists",
+      "Advanced fix 7 — Perform cluster validation if clustered storage is impacted",
+      "Advanced fix 8 — Reconfigure deduplication or disable if unstable"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collection 1 — Export Event Viewer logs from System → ReFS errors",
+      "Collection 2 — Run Get-Volume and export results",
+      "Collection 3 — Execute Repair-Volume output and save",
+      "Collection 4 — Capture screenshot of Disk Management showing affected volumes",
+      "Collection 5 — Collect OS build and patch level",
+      "Collection 6 — Export fsutil fsinfo volumeinfo output",
+      "Collection 7 — Gather icacls permissions output for affected files",
+      "Collection 8 — Save SMART data from Get-PhysicalDisk"
+    ],
+    "l2": [
+      "Advanced collection 1 — Export Repair-Volume -OfflineScanAndFix detailed logs",
+      "Advanced collection 2 — Collect Get-FileIntegrity results for metadata validation",
+      "Advanced collection 3 — Gather cluster logs if volume is clustered",
+      "Advanced collection 4 — Collect RAID controller logs and config dump",
+      "Advanced collection 5 — Export deduplication logs if enabled",
+      "Advanced collection 6 — Gather DISM logs if OS corruption suspected",
+      "Advanced collection 7 — Collect firmware/driver versions for storage controllers",
+      "Advanced collection 8 — Export Performance Monitor counters for ReFS operations"
+    ]
+  },
+  "playbooks": {
+    "refs_corruption": {
+      "title": "ReFS corruption detected",
+      "severity": "critical",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Run Get-Volume to confirm health", "expect": "Volume shows degraded or unhealthy state" },
+            { "action": "Check Event Viewer System logs", "expect": "ReFS error events present" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Run Get-FileIntegrity on affected files", "expect": "Metadata integrity errors identified" },
+            { "action": "Run Repair-Volume -Scan", "expect": "Corruption confirmed at filesystem level" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Run Repair-Volume -OfflineScanAndFix", "expect": "Filesystem repaired successfully" },
+            { "action": "Restore files from backup if unrecoverable", "expect": "Data restored and accessible" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Run Get-Volume and Repair-Volume -Scan", "expect": "No further corruption detected" },
+            { "action": "Monitor Event Viewer logs", "expect": "No new ReFS errors reported" }
+          ]
+        }
+      ]
+    }
+  }
+}

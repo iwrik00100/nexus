@@ -1,0 +1,136 @@
+{
+  "key": "power_management",
+  "label": "Power Management",
+  "icon": "🔋",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Question 1 - Is the power issue affecting one device, multiple devices, or a specific hardware model or group?",
+      "Question 2 - Is the issue related to sleep, hibernate, shutdown, restart, battery drain, modern standby, wake, or power policy?",
+      "Question 3 - What Windows version, device model, BIOS version, power mode, and battery or AC state are involved?",
+      "Question 4 - Did the issue start after Windows update, driver update, BIOS update, docking change, policy change, or hardware replacement?",
+      "Question 5 - Is the device managed by Intune, Group Policy, Configuration Manager, OEM utility, or local power settings?",
+      "Question 6 - Does the issue occur on battery, AC power, docking station, VPN, connected standby, or after lid close?"
+    ],
+    "l2": [
+      "Is the platform using Modern Standby, S3 sleep, hibernate, hybrid sleep, or another firmware-supported sleep state?",
+      "Are power policies, Intune settings, Group Policy settings, OEM utilities, or registry configurations conflicting?",
+      "Are drivers, firmware, USB devices, network adapters, storage controllers, or security software preventing sleep or causing wake events?",
+      "Do powercfg reports show battery drain, sleep blockers, wake sources, device power requests, or energy efficiency warnings?",
+      "Are event logs showing kernel power, power troubleshooter, sleep study, battery, or device wake patterns?",
+      "Is the issue reproducible after clean boot, undocked testing, disconnected peripherals, or updated firmware and drivers?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - Does the device fail to sleep, wake unexpectedly, drain battery, shut down unexpectedly, or fail to resume?",
+      "Question 2 - Does the issue happen only on battery, only on AC, only when docked, or only after lid close?",
+      "Question 3 - What does 'powercfg /a' show for supported sleep states?",
+      "Question 4 - What does 'powercfg /lastwake' show after an unexpected wake event?",
+      "Question 5 - Are there active power requests shown by 'powercfg /requests'?",
+      "Question 6 - Does the issue disappear after disconnecting peripherals or testing with a clean boot?"
+    ],
+    "l2": [
+      "Does SleepStudy identify a device, driver, application, network activity, or platform component causing battery drain?",
+      "Does energy report show device power management warnings, USB selective suspend issues, or driver efficiency issues?",
+      "Do kernel power and power troubleshooter events correlate with user-reported sleep, wake, shutdown, or resume timestamps?",
+      "Are wake timers, maintenance tasks, network adapters, keyboard, mouse, or USB devices configured to wake the device?",
+      "Are modern standby components, connected standby network settings, or OEM firmware settings contributing to drain or wake behavior?",
+      "Are Intune, GPO, or OEM power settings overriding the expected local power plan configuration?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Confirm issue type, device model, Windows build, BIOS version, AC or battery state, and power policy source.",
+      "Run 'powercfg /a', 'powercfg /lastwake', and 'powercfg /requests' to identify sleep capability and active blockers.",
+      "Test without docking station, external devices, and nonessential USB or Bluetooth peripherals.",
+      "Update BIOS, chipset, graphics, storage, battery, and network drivers from the approved device vendor source.",
+      "Compare local power plan settings with policy-applied settings from Intune or Group Policy."
+    ],
+    "l2": [
+      "Generate SleepStudy, battery report, and energy report to identify drain, wake, and power efficiency patterns.",
+      "Review Kernel-Power, Power-Troubleshooter, UserModePowerService, and device event logs around the reported timestamps.",
+      "Validate wake timers, device wake permissions, network adapter power settings, and scheduled maintenance behavior.",
+      "Check Modern Standby behavior, platform sleep state support, OEM firmware settings, and driver compatibility.",
+      "Validate policy precedence when Intune, Group Policy, OEM tools, and local power settings configure overlapping options."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect the reported sleep, wake, battery drain, shutdown, or resume timestamps from the user.",
+      "Collect 'powercfg /a', 'powercfg /lastwake', 'powercfg /requests', and 'powercfg /waketimers' output.",
+      "Collect 'winver', device model, BIOS version, driver versions, and battery or AC state details.",
+      "Export System and Application event logs in .evtx format around the reported power issue timestamp."
+    ],
+    "l2": [
+      "Collect SleepStudy report using 'powercfg /sleepstudy' for Modern Standby or battery drain scenarios.",
+      "Collect battery report using 'powercfg /batteryreport' for battery health and drain analysis.",
+      "Collect energy report using 'powercfg /energy' for power efficiency and driver warnings.",
+      "Collect Intune, GPO, OEM utility, BIOS, and device driver configuration evidence when policy or firmware conflict is suspected."
+    ]
+  },
+  "playbooks": {
+    "power_management_issue": {
+      "title": "Power Management Investigation",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the power symptom, device model, Windows build, firmware level, AC or battery state, and policy source.",
+              "expect": "The issue is classified as sleep, wake, battery drain, shutdown, resume, or policy problem."
+            },
+            {
+              "action": "Run powercfg commands and collect user-reported timestamps for the observed behavior.",
+              "expect": "Supported sleep states, wake sources, and active power requests are available."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare behavior with docking removed, peripherals disconnected, clean boot testing, and a known working device.",
+              "expect": "The issue is narrowed to hardware, driver, policy, firmware, dock, application, or peripheral dependency."
+            },
+            {
+              "action": "Review SleepStudy, energy report, battery report, and power event logs around the reported timestamps.",
+              "expect": "The power blocker, drain source, or wake trigger is identified."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Update BIOS, firmware, chipset, graphics, storage, battery, and network drivers based on the identified dependency.",
+              "expect": "The platform and driver stack support expected power behavior."
+            },
+            {
+              "action": "Correct conflicting power policies, wake timers, device wake permissions, or OEM utility settings as applicable.",
+              "expect": "Power policy behavior aligns with expected sleep, wake, and battery configuration."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Reproduce the original scenario and collect post-fix powercfg or SleepStudy evidence.",
+              "expect": "The device sleeps, wakes, shuts down, resumes, or preserves battery as expected."
+            },
+            {
+              "action": "Monitor similar devices from the same model, policy, or driver baseline for recurrence.",
+              "expect": "No recurring power management pattern remains unresolved."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

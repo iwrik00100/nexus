@@ -1,0 +1,111 @@
+{
+  "key": "failover_clustering",
+  "label": "Failover Clustering",
+  "icon": "🖧",
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the cluster issue first appear?",
+      "Question 2 — Is the problem affecting all nodes or a specific one?",
+      "Question 3 — Are clustered roles failing over unexpectedly?",
+      "Question 4 — Has the cluster configuration been modified recently?",
+      "Question 5 — Is the issue intermittent or persistent?",
+      "Question 6 — Are applications reporting downtime or just warnings?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are there any recent OS patches or updates applied to nodes?",
+      "Advanced question 2 — Is the cluster quorum configuration healthy?",
+      "Advanced question 3 — Are cluster networks properly configured and redundant?",
+      "Advanced question 4 — Is shared storage accessible from all nodes?",
+      "Advanced question 5 — Are there performance drops before failovers?",
+      "Advanced question 6 — Is the issue isolated to a single cluster role or multiple?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command or question 1 — Open Failover Cluster Manager and check node status",
+      "Command or question 2 — Run PowerShell Get-ClusterNode to confirm health",
+      "Command or question 3 — Verify clustered roles with Get-ClusterGroup",
+      "Command or question 4 — Review Event Viewer for cluster-related warnings",
+      "Command or question 5 — Check cluster networks with Get-ClusterNetwork"
+    ],
+    "l2": [
+      "Advanced command 1 — Run Get-ClusterQuorum to verify quorum configuration",
+      "Advanced command 2 — Use Get-ClusterLog -UseLocalTime -Destination C:\\ClusterLog to generate detailed logs",
+      "Advanced command 3 — Run Test-Cluster to validate configuration",
+      "Advanced command 4 — Query storage connectivity with Get-ClusterResource",
+      "Advanced command 5 — Review performance counters for cluster heartbeat latency",
+      "Advanced command 6 — Check cluster registry hive consistency across nodes"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Resolution step 1 — Restart the Cluster Service on affected nodes",
+      "Resolution step 2 — Verify network connectivity between nodes",
+      "Resolution step 3 — Ensure shared storage is online and accessible",
+      "Resolution step 4 — Rebalance clustered roles manually if needed",
+      "Resolution step 5 — Confirm quorum configuration matches design"
+    ],
+    "l2": [
+      "Advanced fix 1 — Run Test-Cluster and remediate reported issues",
+      "Advanced fix 2 — Update NIC drivers and firmware for cluster networks",
+      "Advanced fix 3 — Reconfigure quorum type (Node Majority, Disk Witness, File Share Witness)",
+      "Advanced fix 4 — Validate and repair cluster database consistency",
+      "Advanced fix 5 — Escalate to Microsoft support if cluster corruption suspected",
+      "Advanced fix 6 — Perform rolling upgrade or patching across nodes to stabilize"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Step 1 — Export Event Viewer logs from Applications and Services Logs → Microsoft → Windows → FailoverClustering → Operational",
+      "Step 2 — Run Get-ClusterNode and export results",
+      "Step 3 — Execute Get-ClusterGroup and save output",
+      "Step 4 — Capture screenshot of Failover Cluster Manager",
+      "Step 5 — Collect OS build and patch level"
+    ],
+    "l2": [
+      "Advanced collection 1 — Export Get-ClusterLog -UseLocalTime -Destination C:\\ClusterLog detailed report",
+      "Advanced collection 2 — Collect Test-Cluster validation results",
+      "Advanced collection 3 — Gather performance monitor counters for cluster heartbeat",
+      "Advanced collection 4 — Export Get-ClusterQuorum configuration",
+      "Advanced collection 5 — Collect NIC firmware/driver versions for all nodes",
+      "Advanced collection 6 — Gather cluster registry hive dumps for consistency checks"
+    ]
+  },
+  "playbooks": {
+    "symptom_slug": {
+      "title": "Cluster nodes unstable or roles failing over",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Run Get-ClusterNode to confirm node state", "expect": "Node shows down or paused state" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Run Test-Cluster to validate configuration", "expect": "Errors reported in networking or storage" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Restart Cluster Service and repair quorum", "expect": "Nodes rejoin and roles stabilize" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Run Get-ClusterGroup and Get-ClusterLog", "expect": "All roles online and no new errors" }
+          ]
+        }
+      ]
+    }
+  }
+}

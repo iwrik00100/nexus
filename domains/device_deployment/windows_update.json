@@ -1,0 +1,140 @@
+{
+  "key": "windows_update",
+  "label": "Windows Update",
+  "icon": "🔄",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Question 1 - Is the Windows Update issue affecting one device or multiple devices?",
+      "Question 2 - Is the issue related to update scan, download, install, reboot, or compliance reporting?",
+      "Question 3 - What is the exact KB number, feature update version, or error code reported?",
+      "Question 4 - Which update source is expected: Windows Update, WSUS, SCCM, Intune, WUfB, or Autopatch?",
+      "Question 5 - Did the issue start after a policy, image, network, proxy, WSUS, SCCM, or Intune change?",
+      "Question 6 - Is the issue reproducible every time or does it occur intermittently?"
+    ],
+    "l2": [
+      "Are affected and working devices assigned to the same update ring, WSUS group, SCCM collection, or Intune group?",
+      "Is the device co-managed, and which workload currently controls Windows Update policy?",
+      "Are Windows Update policies conflicting between Group Policy, Intune Settings Catalog, Update Rings, SCCM, or local registry?",
+      "Is the device scanning the intended source, such as SUP or WSUS versus Windows Update cloud service?",
+      "Is the update blocked by TargetReleaseVersion, deferral, pause, safeguard hold, or unsupported edition or build?",
+      "Is the failure occurring in Windows Update Agent, Delivery Optimization, BITS, CBS, DISM, or Windows Setup phase?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Question 1 - Does Windows Update show not offered, pending download, downloading, installing, failed, or pending restart?",
+      "Question 2 - Does the same update install successfully on another device with the same build and policy?",
+      "Question 3 - Is there enough free disk space and is the device connected to a stable network?",
+      "Question 4 - Are Windows Update, BITS, Delivery Optimization, and Update Orchestrator services running?",
+      "Question 5 - Is the device using VPN, proxy, SSL inspection, firewall filtering, or metered network connection?",
+      "Question 6 - Are there errors in WindowsUpdateClient Operational, System, Application, CBS, or DISM logs?"
+    ],
+    "l2": [
+      "Does WindowsUpdate.log confirm the expected scan source and update service endpoint?",
+      "Does WUAHandler.log or ScanAgent.log show scan success, scan failure, or incorrect Software Update Point assignment?",
+      "Do registry keys such as UseWUServer, UpdateServiceUrl, DisableDualScan, or TargetReleaseVersion match the intended design?",
+      "Does CBS.log show component store corruption, missing payload, package applicability failure, or rollback activity?",
+      "For feature updates, does SetupDiag or Panther logging identify compatibility, driver, SafeOS, First Boot, or OOBE failure?",
+      "For Intune or WUfB reporting, are telemetry, Windows Health Monitoring, and device check-in prerequisites satisfied?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Confirm the update KB, error code, affected device count, OS build, and expected update source.",
+      "Run Windows Update troubleshooter when applicable and then retry update scan and installation.",
+      "Verify Windows Update related services including wuauserv, bits, dosvc, usosvc, and cryptsvc.",
+      "Check free disk space, network connectivity, proxy configuration, and firewall access to update endpoints.",
+      "Generate WindowsUpdate.log and review WindowsUpdateClient Operational events for scan or installation errors."
+    ],
+    "l2": [
+      "Validate Windows Update policy registry keys under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate.",
+      "For SCCM managed devices, review WUAHandler.log, ScanAgent.log, UpdatesDeployment.log, UpdatesHandler.log, CAS.log, and ContentTransferManager.log.",
+      "For Intune managed devices, export MDM diagnostics and review DeviceManagement-Enterprise-Diagnostics-Provider Admin events.",
+      "Run DISM and SFC health checks to detect and repair servicing stack or component store corruption.",
+      "For feature update failures, run SetupDiag and analyze Panther, Rollback, setupact.log, setuperr.log, and setupapi.dev.log."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect winver screenshot, exact KB or feature update version, error screenshot, and affected device name.",
+      "Collect WindowsUpdate.log using Get-WindowsUpdateLog and export WindowsUpdateClient Operational event log.",
+      "Collect System and Application event logs around the update failure timestamp.",
+      "Collect gpresult /h output and export Windows Update registry policy keys from the affected device."
+    ],
+    "l2": [
+      "Collect CBS.log, DISM.log, pending reboot state, installed hotfix list, and component store health command output.",
+      "For SCCM cases, collect client logs from C:\\Windows\\CCM\\Logs including WUAHandler, ScanAgent, UpdatesDeployment, UpdatesHandler, CAS, and ContentTransferManager.",
+      "For Intune cases, collect MDM diagnostic CAB, Intune policy report, update ring assignment details, and device check-in status.",
+      "For feature update cases, collect Panther logs, Rollback logs, SetupDiag output, CompatData XML, and setupapi.dev.log."
+    ]
+  },
+  "playbooks": {
+    "windows_update_failure": {
+      "title": "Windows Update Investigation",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the exact update issue, affected scope, OS build, KB number, feature update version, and error code.",
+              "expect": "The update scenario is classified as not offered, scan failure, download failure, install failure, reboot issue, or reporting mismatch."
+            },
+            {
+              "action": "Confirm the expected management source: Windows Update, WSUS, SCCM, Intune, WUfB, Autopatch, or Deployment Service.",
+              "expect": "The intended update source is known before policy and log analysis begins."
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare one affected device with one working device from the same ring, collection, group, site, or policy scope.",
+              "expect": "Differences in policy, scan source, build, network, or update applicability are identified."
+            },
+            {
+              "action": "Review WindowsUpdate.log, event logs, registry policy keys, and management tool logs for the failing stage.",
+              "expect": "The failure is isolated to policy targeting, scan source, download, installation, servicing, reboot, or reporting."
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Correct conflicting Windows Update policies, scan source configuration, update ring assignment, WSUS/SUP assignment, or co-management workload ownership.",
+              "expect": "The device scans against the intended update source and receives the expected update offering."
+            },
+            {
+              "action": "Repair servicing health using DISM and SFC when CBS or DISM logs show corruption or missing source errors.",
+              "expect": "Component store health is restored and update installation can be retried."
+            },
+            {
+              "action": "Resolve network, proxy, Delivery Optimization, BITS, or content download issues when download or content transfer errors are present.",
+              "expect": "Update content downloads successfully from the intended source or cache path."
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Run a fresh update scan and retry the failed update installation after remediation.",
+              "expect": "The device moves to installed, pending restart, or compliant state without the original failure."
+            },
+            {
+              "action": "Validate reporting in Intune, SCCM, WSUS, WUfB reports, or local update history after policy refresh and report sync.",
+              "expect": "Management reporting aligns with the local device update state."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

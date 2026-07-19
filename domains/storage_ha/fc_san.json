@@ -1,0 +1,111 @@
+{
+  "key": "iSCSI",
+  "label": "FC/SAN",
+  "icon": "🧩",
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the SAN connectivity issue first appear?",
+      "Question 2 — Is the problem affecting all LUNs or specific ones?",
+      "Question 3 — Are multiple servers experiencing the same issue?",
+      "Question 4 — Has zoning or masking been changed recently?",
+      "Question 5 — Is the issue intermittent or persistent?",
+      "Question 6 — Are applications reporting I/O errors or just disconnections?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are there any fabric changes such as switch firmware upgrades?",
+      "Advanced question 2 — Is multipath I/O (MPIO) configured and functioning correctly?",
+      "Advanced question 3 — Are HBAs (Host Bus Adapters) showing errors or degraded status?",
+      "Advanced question 4 — Is the SAN part of a clustered environment?",
+      "Advanced question 5 — Are there performance drops before disconnections?",
+      "Advanced question 6 — Is the issue isolated to a single fabric path or multiple?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command or question 1 — Check Disk Management for missing or offline LUNs",
+      "Command or question 2 — Run PowerShell Get-Disk to confirm visibility",
+      "Command or question 3 — Verify MPIO configuration with Get-MSDSMGlobalDefaultLoadBalancePolicy",
+      "Command or question 4 — Review Event Viewer for storage-related warnings",
+      "Command or question 5 — Check HBA status in Device Manager"
+    ],
+    "l2": [
+      "Advanced command 1 — Run fcinfo.exe to list HBA ports and WWNs",
+      "Advanced command 2 — Use PowerShell Get-InitiatorPort to check FC initiator status",
+      "Advanced command 3 — Query SAN switch zoning configuration",
+      "Advanced command 4 — Run Get-MPIOPath to verify active paths",
+      "Advanced command 5 — Review SAN fabric logs for port errors or link flaps",
+      "Advanced command 6 — Check performance counters for disk latency and queue length"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Resolution step 1 — Restart the server and recheck LUN visibility",
+      "Resolution step 2 — Verify HBA drivers and firmware are up to date",
+      "Resolution step 3 — Ensure correct zoning and masking for the server WWN",
+      "Resolution step 4 — Re-scan disks in Disk Management",
+      "Resolution step 5 — Confirm MPIO is installed and configured properly"
+    ],
+    "l2": [
+      "Advanced fix 1 — Replace or reseat faulty HBA if persistent errors occur",
+      "Advanced fix 2 — Validate SAN switch zoning and reconfigure if incorrect",
+      "Advanced fix 3 — Run cluster validation tests if part of a failover cluster",
+      "Advanced fix 4 — Adjust load balancing policies for MPIO if uneven path usage",
+      "Advanced fix 5 — Escalate to SAN vendor if fabric instability or metadata corruption suspected",
+      "Advanced fix 6 — Perform firmware rollback if recent upgrade caused instability"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export log — Save Event Viewer storage logs",
+      "Collect trace — Run Get-Disk and export results",
+      "Run command — Execute fcinfo.exe and save output",
+      "Step 4 — Capture screenshot of Disk Management showing LUNs",
+      "Step 5 — Collect OS build and patch level"
+    ],
+    "l2": [
+      "Advanced collection 1 — Export Get-InitiatorPort detailed report",
+      "Advanced collection 2 — Collect MPIO path configuration with Get-MPIOPath",
+      "Advanced collection 3 — Gather performance monitor counters for SAN traffic",
+      "Advanced collection 4 — Export SAN switch logs and zoning configuration",
+      "Advanced collection 5 — Collect firmware/driver versions for all HBAs",
+      "Advanced collection 6 — Gather cluster logs if part of a failover cluster"
+    ]
+  },
+  "playbooks": {
+    "symptom_slug": {
+      "title": "SAN LUNs missing or connectivity unstable",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Run Get-Disk to confirm missing LUNs", "expect": "LUNs not visible or offline" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Run fcinfo.exe and check zoning", "expect": "WWN not zoned or path errors detected" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Update HBA drivers and reconfigure zoning", "expect": "LUNs reappear and paths stabilize" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Run Get-MPIOPath and monitor Event Viewer", "expect": "Healthy multipath configuration with no new errors" }
+          ]
+        }
+      ]
+    }
+  }
+}
