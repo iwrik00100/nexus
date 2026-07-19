@@ -1,0 +1,135 @@
+{
+  
+  "key": "refs",
+   "label": "ReFS / NTFS",
+   "icon": "📁",  
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the NTFS corruption issue first appear?",
+      "Question 2 — Is the corruption isolated to one volume or multiple?",
+      "Question 3 — Are users reporting file access errors or application crashes?",
+      "Question 4 — Has the server experienced unexpected shutdowns or power loss?",
+      "Question 5 — Was the volume recently resized, migrated, or restored?",
+      "Question 6 — Are permissions or ACLs failing on affected files?",
+      "Question 7 — Is the issue impacting production workloads or test environments?",
+      "Question 8 — Are shadow copies or checkpoints failing on the volume?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are there Event Viewer logs showing NTFS errors (Event ID 55, 98)?",
+      "Advanced question 2 — Is the corruption linked to underlying disk or RAID issues?",
+      "Advanced question 3 — Is deduplication or compression enabled on the volume?",
+      "Advanced question 4 — Is the volume part of clustered storage?",
+      "Advanced question 5 — Has BitLocker or encryption been applied?",
+      "Advanced question 6 — Is corruption reproducible after restoring from backup?",
+      "Advanced question 7 — Are system files impacted by corruption?",
+      "Advanced question 8 — Are applications reporting NTFS journal errors?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command 1 — Run chkdsk /scan on NTFS volumes",
+      "Command 2 — Check Event Viewer → System log for NTFS errors",
+      "Command 3 — Run PowerShell Get-Volume to confirm health status",
+      "Command 4 — Verify disk health with Get-Disk",
+      "Command 5 — Attempt file access to confirm corruption symptoms",
+      "Command 6 — Run fsutil fsinfo volumeinfo to check filesystem details",
+      "Command 7 — Review Disk Management for volume state",
+      "Command 8 — Check permissions with icacls on affected files"
+    ],
+    "l2": [
+      "Advanced command 1 — Run chkdsk /f /r for full NTFS repair",
+      "Advanced command 2 — Use PowerShell Repair-Volume -DriveLetter X -OfflineScanAndFix",
+      "Advanced command 3 — Query cluster logs if volume is clustered",
+      "Advanced command 4 — Run Get-StoragePool and Get-VirtualDisk for underlying storage health",
+      "Advanced command 5 — Use SFC /scannow if system files are impacted",
+      "Advanced command 6 — Run DISM /Online /Cleanup-Image /RestoreHealth for OS-level corruption",
+      "Advanced command 7 — Review deduplication logs if enabled",
+      "Advanced command 8 — Run fsutil resource setautoreset true C:\\ to reset NTFS journal"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Step 1 — Restart the server and rerun chkdsk /scan",
+      "Step 2 — Run Repair-Volume for minor NTFS issues",
+      "Step 3 — Restore affected files from backup",
+      "Step 4 — Verify and reset file permissions with icacls",
+      "Step 5 — Ensure sufficient free disk space for repair operations",
+      "Step 6 — Disable deduplication temporarily if causing corruption",
+      "Step 7 — Run SFC /scannow for system file integrity",
+      "Step 8 — Validate disk health with vendor diagnostic tools"
+    ],
+    "l2": [
+      "Advanced fix 1 — Run chkdsk /f /r to repair NTFS corruption",
+      "Advanced fix 2 — Use Repair-Volume -OfflineScanAndFix for deeper repair",
+      "Advanced fix 3 — Rebuild RAID array if underlying disk issues detected",
+      "Advanced fix 4 — Restore volume from snapshot or checkpoint",
+      "Advanced fix 5 — Recreate corrupted volume and restore data from backup",
+      "Advanced fix 6 — Update storage controller firmware and drivers",
+      "Advanced fix 7 — Escalate to Microsoft support if NTFS journal corruption persists",
+      "Advanced fix 8 — Perform cluster validation if clustered storage is impacted"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collection 1 — Export Event Viewer logs from System → NTFS errors",
+      "Collection 2 — Run Get-Volume and export results",
+      "Collection 3 — Execute chkdsk /scan output and save",
+      "Collection 4 — Capture screenshot of Disk Management showing affected volumes",
+      "Collection 5 — Collect OS build and patch level",
+      "Collection 6 — Export fsutil fsinfo volumeinfo output",
+      "Collection 7 — Gather icacls permissions output for affected files",
+      "Collection 8 — Save SMART data from Get-PhysicalDisk"
+    ],
+    "l2": [
+      "Advanced collection 1 — Export chkdsk /f /r detailed logs",
+      "Advanced collection 2 — Collect Repair-Volume -OfflineScanAndFix results",
+      "Advanced collection 3 — Gather cluster logs if volume is clustered",
+      "Advanced collection 4 — Collect RAID controller logs and config dump",
+      "Advanced collection 5 — Export deduplication logs if enabled",
+      "Advanced collection 6 — Gather DISM and SFC logs for OS-level corruption",
+      "Advanced collection 7 — Collect firmware/driver versions for storage controllers",
+      "Advanced collection 8 — Export fsutil resource logs for NTFS journal"
+    ]
+  },
+  "playbooks": {
+    "ntfs_corruption": {
+      "title": "NTFS corruption detected",
+      "severity": "critical",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Run chkdsk /scan on affected volume", "expect": "Errors or corruption reported" },
+            { "action": "Check Event Viewer System logs", "expect": "NTFS error events present" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Run Get-Volume and Get-Disk", "expect": "Volume shows degraded or unhealthy state" },
+            { "action": "Check NTFS journal with fsutil", "expect": "Journal errors identified" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Run Repair-Volume or chkdsk /f /r", "expect": "Filesystem repaired successfully" },
+            { "action": "Restore files from backup if unrecoverable", "expect": "Data restored and accessible" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Run chkdsk /scan", "expect": "No further corruption detected" },
+            { "action": "Monitor Event Viewer logs", "expect": "No new NTFS errors reported" }
+          ]
+        }
+      ]
+    }
+  }
+}
