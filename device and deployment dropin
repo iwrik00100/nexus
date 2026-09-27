@@ -1,0 +1,70 @@
+{
+  "technologies": [
+    {
+      "key": "windows_update",
+      "label": "Windows Update & Servicing",
+      "icon": "🔄",
+      "description": "Update installation, cumulative updates, servicing stack, CBS/component-store issues, and Windows Update for Business."
+    },
+    {
+      "key": "windows_upgrade",
+      "label": "Windows Upgrade",
+      "icon": "⬆️",
+      "description": "Feature updates and in-place OS version upgrades (e.g. Windows 10 to 11), rollback codes, and compatibility blocks."
+    },
+    {
+      "key": "activation",
+      "label": "Activation",
+      "icon": "🔑",
+      "description": "KMS, MAK, Active Directory-based, and subscription activation licensing issues."
+    },
+    {
+      "key": "bitlocker",
+      "label": "BitLocker",
+      "icon": "🔒",
+      "description": "Disk encryption, TPM protectors, recovery key prompts, and MBAM."
+    },
+    {
+      "key": "power_management",
+      "label": "Power Management",
+      "icon": "🔋",
+      "description": "Sleep, hibernate, shutdown, Fast Startup, battery health, and GPO/Intune power policy."
+    },
+    {
+      "key": "device_management",
+      "label": "Device Management",
+      "icon": "📱",
+      "description": "Intune/MDM enrollment, policy application, compliance, Autopilot, and co-management."
+    },
+    {
+      "key": "device_drivers",
+      "label": "Device Drivers",
+      "icon": "🧩",
+      "description": "Device Manager errors, driver install/signing failures, PnP, and driver management/governance."
+    },
+    {
+      "key": "wdac",
+      "label": "WDAC",
+      "icon": "🛡️",
+      "description": "Windows Defender Application Control policy authoring, CodeIntegrity events, and HVCI interactions."
+    },
+    {
+      "key": "windows_imaging",
+      "label": "Windows Imaging",
+      "icon": "💿",
+      "description": "DISM/WIM capture, apply, mount, and offline image servicing."
+    },
+    {
+      "key": "pc_reset",
+      "label": "PC Reset",
+      "icon": "♻️",
+      "description": "Reset this PC, WinRE, and remote Autopilot Reset/wipe scenarios."
+    },
+    {
+      "key": "sysprep",
+      "label": "Sysprep",
+      "icon": "🧪",
+      "description": "Image generalization, rearm limits, answer files, and audit mode."
+    }
+  ]
+}
