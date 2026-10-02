@@ -16,6 +16,9 @@ const LS = {
 };
 
 // ─── Haptic feedback (mobile) ─────────────────────────────────────────────────
+// Note: iOS Safari does not support navigator.vibrate due to Apple restrictions.
+// Haptic feedback works on Android Chrome and other mobile browsers that support the Vibration API.
+// For iOS Safari, users will only see visual feedback (animations), which is intentional fallback behavior.
 function triggerHaptic(type = 'light') {
   if ('vibrate' in navigator) {
     switch(type) {
@@ -33,6 +36,7 @@ function triggerHaptic(type = 'light') {
         break;
     }
   }
+  // For iOS and browsers without vibration support, users still get visual feedback via CSS animations
 }
 
 const SECTION_META = {
