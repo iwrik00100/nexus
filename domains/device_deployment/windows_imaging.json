@@ -1,0 +1,251 @@
+{
+  "key": "windows_imaging",
+  "label": "Windows Imaging",
+  "icon": "💿",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Is the issue with capturing an image, applying an image, or mounting/servicing an offline image?",
+      "What imaging format is in use — WIM, VHD/VHDX, or FFU?",
+      "What deployment tool is orchestrating imaging — MDT, SCCM/ConfigMgr, or manual DISM?",
+      "What is the exact DISM error code and operation that failed?",
+      "Is the reference image being maintained/updated in place (servicing an existing WIM) or rebuilt from scratch each time?"
+    ],
+    "l2": [
+      "Is the image multi-indexed (several editions in one WIM), and if so, which index is targeted?",
+      "Is the reference image fully generalized (sysprepped) before capture, or captured live?",
+      "Is servicing being done offline (mounted WIM) or online (running OS)?",
+      "Is the destination hardware using the same firmware type (UEFI vs legacy BIOS) and partition style (GPT vs MBR) as the reference image was built for?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'Dism /Get-ImageInfo /ImageFile:<path>.wim' to list all indexes and editions contained in the image.",
+      "Run 'Dism /Get-MountedWimInfo' to check for any images left mounted from a previous session.",
+      "Check %windir%\\Logs\\DISM\\dism.log for the exact failing operation and error code.",
+      "Confirm free disk space on both the source and destination volumes before capture/apply."
+    ],
+    "l2": [
+      "Run 'Dism /Image:<mount dir> /Get-Packages' or '/Get-Drivers' to inspect exactly what is present in an offline-mounted image.",
+      "Check whether an image is stuck mounted-but-invalid using 'Dism /Cleanup-Mountpoints' candidates before assuming corruption.",
+      "For capture issues, confirm whether the reference machine was booted into Windows PE/audit mode versus a live OOBE session, which affects what gets captured.",
+      "Cross-reference dism.log timestamps against imagex/DISM capture or apply command-line parameters used, to rule out a wrong index or wrong split-WIM (.swm) reference."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Free up disk space on the source or destination and retry the capture/apply.",
+      "Unmount and discard a stuck offline image with 'Dism /Unmount-Image /MountDir:<dir> /Discard' before retrying.",
+      "Confirm the correct image index is specified with '/Index:' when applying a multi-edition WIM.",
+      "Verify the destination disk is partitioned correctly (UEFI/GPT vs BIOS/MBR) to match the image's boot requirements.",
+      "Run capture/apply operations from an elevated prompt — permission errors are a common, easily-missed cause of failed imaging operations.",
+      "If capturing to a network share, confirm the account running DISM/imagex has write access and the share has enough free space for the full WIM."
+    ],
+    "l2": [
+      "For a corrupted mount, run 'Dism /Cleanup-Mountpoints' to clear orphaned mount points system-wide, then retry the operation from a clean state.",
+      "For servicing failures inside a mounted image, treat it like the Windows Servicing CBS/component-store troubleshooting flow, but scoped to the offline image path via '/Image:' instead of '/Online'.",
+      "If capture includes unwanted user/machine-specific state, re-capture only after a proper 'sysprep /generalize /oobe /shutdown' pass on the reference machine.",
+      "For apply failures on mismatched firmware/partition style, reformat the destination disk with the matching partition style (diskpart 'convert gpt' or 'convert mbr') before reapplying."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Record the exact DISM error code and the operation (capture, apply, mount, commit) that failed.",
+      "Note the image format (WIM/VHDX/FFU) and whether it is multi-indexed.",
+      "Confirm the deployment tool in use (MDT, SCCM, manual DISM/imagex).",
+      "Note free disk space on both source and destination at the time of failure."
+    ],
+    "l2": [
+      "Collect %windir%\\Logs\\DISM\\dism.log covering the failed operation.",
+      "Collect 'Dism /Get-ImageInfo' output for the image in question.",
+      "Collect 'Dism /Get-MountedWimInfo' output to check for orphaned/stuck mounts.",
+      "If a deployment tool orchestrated the task, collect its own task sequence/log output (e.g. SMSTS.log for SCCM, BDD.log for MDT) alongside dism.log."
+    ]
+  },
+  "playbooks": {
+    "image_stuck_mounted_and_wont_unmount": {
+      "title": "An offline WIM image is stuck mounted and won't cleanly unmount",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'Dism /Get-MountedWimInfo'",
+              "expect": "Shows the image listed as mounted, possibly with an Invalid status"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Attempt a normal 'Dism /Unmount-Image /MountDir:<dir> /Discard'",
+              "expect": "Either succeeds, or fails and confirms the mount point itself is corrupted"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Run 'Dism /Cleanup-Mountpoints' to clear all orphaned/corrupted mount points system-wide",
+              "expect": "Orphaned mounts are cleared and the mount registry is reset"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-run 'Dism /Get-MountedWimInfo'",
+              "expect": "No images remain mounted; the mount directory can be reused"
+            }
+          ]
+        }
+      ]
+    },
+    "apply_fails_firmware_partition_mismatch": {
+      "title": "Image apply fails due to firmware/partition style mismatch",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check dism.log for a boot-configuration or partition-related failure during apply",
+              "expect": "Confirms the failure is tied to disk layout rather than the image content itself"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare the reference image's expected firmware type (UEFI/GPT vs legacy BIOS/MBR) against the destination disk's actual layout via diskpart",
+              "expect": "Confirms a mismatch, e.g. an MBR disk targeted for a UEFI-only image"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "In diskpart, clean the destination disk and convert it to the matching style ('convert gpt' or 'convert mbr'), then recreate the required partitions",
+              "expect": "Destination disk layout now matches the image's boot requirements"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Reapply the image",
+              "expect": "Apply completes and the device boots successfully to OOBE"
+            }
+          ]
+        }
+      ]
+    },
+    "capture_fails_disk_space_or_permissions": {
+      "title": "Image capture fails partway through — disk space or permissions",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check dism.log for the exact point of failure and whether it references disk space or access denied",
+              "expect": "Confirms whether this is a space or a permissions issue"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Confirm free space at the capture destination and the executing account's write permissions there",
+              "expect": "Identifies the specific missing resource or permission"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Free space or redirect the capture to a location with sufficient room, and/or grant the correct write permissions",
+              "expect": "Destination now has adequate space and correct permissions"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry the capture operation",
+              "expect": "Capture completes and produces a valid WIM file"
+            }
+          ]
+        }
+      ]
+    },
+    "answer_file_settings_not_applied_during_apply": {
+      "title": "Unattend.xml settings do not apply after an image is applied",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the answer file was actually referenced during apply (correct path passed to DISM/imaging tool) rather than assumed automatic",
+              "expect": "Confirms whether the file was even used in this operation"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check setupact.log/setuperr.log for the specific configuration pass (specialize, oobeSystem, etc.) where the setting should have applied",
+              "expect": "Identifies which pass failed to process the intended setting"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Validate the answer file's XML against the correct component schema for this Windows build using Windows System Image Manager, and correct the misplaced or malformed setting",
+              "expect": "Answer file validates cleanly for the target build"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Reapply the image with the corrected answer file",
+              "expect": "Setting is present and correctly applied after OOBE"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

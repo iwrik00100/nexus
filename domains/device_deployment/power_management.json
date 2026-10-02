@@ -5,73 +5,68 @@
   "domain": "device_deployment",
   "scoping": {
     "l1": [
-      "Question 1 - Is the power issue affecting one device, multiple devices, or a specific hardware model or group?",
-      "Question 2 - Is the issue related to sleep, hibernate, shutdown, restart, battery drain, modern standby, wake, or power policy?",
-      "Question 3 - What Windows version, device model, BIOS version, power mode, and battery or AC state are involved?",
-      "Question 4 - Did the issue start after Windows update, driver update, BIOS update, docking change, policy change, or hardware replacement?",
-      "Question 5 - Is the device managed by Intune, Group Policy, Configuration Manager, OEM utility, or local power settings?",
-      "Question 6 - Does the issue occur on battery, AC power, docking station, VPN, connected standby, or after lid close?"
+      "Is the issue related to sleep, hibernate, shutdown, Fast Startup, or battery drain?",
+      "Does the device use S3 Sleep or S0 Modern Standby, and does it happen on AC, battery, or both?",
+      "Is this a physical PC, laptop, or a virtual machine — VM power behaves very differently?",
+      "When did the power behavior begin, and did it follow an update, driver change, or BIOS update?",
+      "Has the user or IT team already run 'powercfg /energy' or 'powercfg /batteryreport', and if so, what did it show?",
+      "Does the symptom happen consistently, or only under specific conditions (docked vs undocked, specific app running, time of day)?"
     ],
     "l2": [
-      "Is the platform using Modern Standby, S3 sleep, hibernate, hybrid sleep, or another firmware-supported sleep state?",
-      "Are power policies, Intune settings, Group Policy settings, OEM utilities, or registry configurations conflicting?",
-      "Are drivers, firmware, USB devices, network adapters, storage controllers, or security software preventing sleep or causing wake events?",
-      "Do powercfg reports show battery drain, sleep blockers, wake sources, device power requests, or energy efficiency warnings?",
-      "Are event logs showing kernel power, power troubleshooter, sleep study, battery, or device wake patterns?",
-      "Is the issue reproducible after clean boot, undocked testing, disconnected peripherals, or updated firmware and drivers?"
+      "What power plan is active — Balanced, High Performance, Power Saver, or a custom/Ultimate Performance plan?",
+      "Are power settings enforced via Group Policy (Computer Configuration > Administrative Templates > System > Power Management) or an Intune Settings Catalog profile?",
+      "Is 'Allow wake timers' enabled or disabled for this device's intended use case?",
+      "If this is a VM, is the hypervisor's own power management (Hyper-V Save State, Azure auto-shutdown) being confused with in-guest Windows sleep?",
+      "Is this device part of a pilot group for a new GPO/Intune power policy, or already broadly deployed?"
     ]
   },
   "probing": {
     "l1": [
-      "Question 1 - Does the device fail to sleep, wake unexpectedly, drain battery, shut down unexpectedly, or fail to resume?",
-      "Question 2 - Does the issue happen only on battery, only on AC, only when docked, or only after lid close?",
-      "Question 3 - What does 'powercfg /a' show for supported sleep states?",
-      "Question 4 - What does 'powercfg /lastwake' show after an unexpected wake event?",
-      "Question 5 - Are there active power requests shown by 'powercfg /requests'?",
-      "Question 6 - Does the issue disappear after disconnecting peripherals or testing with a clean boot?"
+      "Run 'powercfg /a' to list available sleep states on the device.",
+      "Run 'powercfg /batteryreport /output C:\\battery.html' to generate a battery health report comparing Design Capacity to Full Charge Capacity.",
+      "Run 'powercfg /energy /output C:\\energy.html' for a full energy efficiency and problem-device audit.",
+      "Confirm the current power plan with 'powercfg /getactivescheme'."
     ],
     "l2": [
-      "Does SleepStudy identify a device, driver, application, network activity, or platform component causing battery drain?",
-      "Does energy report show device power management warnings, USB selective suspend issues, or driver efficiency issues?",
-      "Do kernel power and power troubleshooter events correlate with user-reported sleep, wake, shutdown, or resume timestamps?",
-      "Are wake timers, maintenance tasks, network adapters, keyboard, mouse, or USB devices configured to wake the device?",
-      "Are modern standby components, connected standby network settings, or OEM firmware settings contributing to drain or wake behavior?",
-      "Are Intune, GPO, or OEM power settings overriding the expected local power plan configuration?"
+      "Run 'powercfg /requests' to identify exactly what process, service, or driver is blocking sleep or the display timeout.",
+      "Run 'powercfg /lastwake' to identify what woke the device from its last sleep cycle.",
+      "Run 'powercfg /devicequery wake_armed' and 'powercfg /devicequery wake_from_any' to see which devices, including Wake-on-LAN NICs, can wake the PC.",
+      "Check 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power' (HibernateEnabled) to confirm hibernate/Fast Startup configuration state."
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Confirm issue type, device model, Windows build, BIOS version, AC or battery state, and power policy source.",
-      "Run 'powercfg /a', 'powercfg /lastwake', and 'powercfg /requests' to identify sleep capability and active blockers.",
-      "Test without docking station, external devices, and nonessential USB or Bluetooth peripherals.",
-      "Update BIOS, chipset, graphics, storage, battery, and network drivers from the approved device vendor source.",
-      "Compare local power plan settings with policy-applied settings from Intune or Group Policy."
+      "Reset the power plan to the default Balanced scheme with 'powercfg -restoredefaultschemes'.",
+      "Disable Fast Startup with 'powercfg /h off' (or via Control Panel) if update or shutdown-state issues are suspected.",
+      "For a wake device conflict, uncheck 'Allow this device to wake the computer' under Device Manager > Power Management for that device.",
+      "Confirm 'Turn off display' and 'Sleep after' timeouts are not set to Never when the device is expected to sleep.",
+      "If USB peripherals randomly disconnect, check Device Manager > that device > Power Management for 'Allow the computer to turn off this device to save power' and uncheck it for affected devices.",
+      "For servers/workstations that should never sleep, apply the High Performance (or Ultimate Performance where available) plan rather than leaving Balanced defaults in place."
     ],
     "l2": [
-      "Generate SleepStudy, battery report, and energy report to identify drain, wake, and power efficiency patterns.",
-      "Review Kernel-Power, Power-Troubleshooter, UserModePowerService, and device event logs around the reported timestamps.",
-      "Validate wake timers, device wake permissions, network adapter power settings, and scheduled maintenance behavior.",
-      "Check Modern Standby behavior, platform sleep state support, OEM firmware settings, and driver compatibility.",
-      "Validate policy precedence when Intune, Group Policy, OEM tools, and local power settings configure overlapping options."
+      "If wake timers are the cause, disable them per-plan via 'powercfg -waketimers' and, in a managed environment, through the 'Allow wake timers' GPO or CSP.",
+      "If Group Policy is silently overriding local settings, check Computer Configuration > Administrative Templates > System > Power Management — a GPO-enforced value always wins and greys out the local UI option.",
+      "For Intune-managed devices, check the Settings Catalog 'Power' profile, or a Custom OMA-URI under './Device/Vendor/MSFT/Policy/Config/Power/', for a conflicting assignment.",
+      "On a VM, do not troubleshoot Windows sleep/hibernate directly — S3 sleep is typically unsupported; use the hypervisor's Save State/Pause or an Azure auto-shutdown schedule instead, and always run Sysprep with '/Mode:VM' on VM-based reference images."
     ]
   },
   "datacollection": {
     "l1": [
-      "Collect the reported sleep, wake, battery drain, shutdown, or resume timestamps from the user.",
-      "Collect 'powercfg /a', 'powercfg /lastwake', 'powercfg /requests', and 'powercfg /waketimers' output.",
-      "Collect 'winver', device model, BIOS version, driver versions, and battery or AC state details.",
-      "Export System and Application event logs in .evtx format around the reported power issue timestamp."
+      "Attach the battery report generated by 'powercfg /batteryreport'.",
+      "Record the exact symptom — won't sleep, wakes randomly, battery drains fast, or updates won't apply after shutdown.",
+      "Note the current power plan and whether it is GPO/Intune-enforced or user-configurable.",
+      "Confirm whether the device is physical or virtual."
     ],
     "l2": [
-      "Collect SleepStudy report using 'powercfg /sleepstudy' for Modern Standby or battery drain scenarios.",
-      "Collect battery report using 'powercfg /batteryreport' for battery health and drain analysis.",
-      "Collect energy report using 'powercfg /energy' for power efficiency and driver warnings.",
-      "Collect Intune, GPO, OEM utility, BIOS, and device driver configuration evidence when policy or firmware conflict is suspected."
+      "Collect 'powercfg /energy' output for driver and setting inefficiencies.",
+      "Collect 'powercfg /requests' and 'powercfg /lastwake' output captured at the time of the issue.",
+      "Export the Event Viewer System log filtered on Source: Power-Troubleshooter.",
+      "Record the applicable GPO or Intune power policy path and its configured values for comparison against local settings."
     ]
   },
   "playbooks": {
-    "power_management_issue": {
-      "title": "Power Management Investigation",
+    "device_wont_sleep_or_wakes_unexpectedly": {
+      "title": "Device won't sleep, or wakes unexpectedly on its own",
       "severity": "medium",
       "phases": [
         {
@@ -79,12 +74,12 @@
           "icon": "✅",
           "steps": [
             {
-              "action": "Confirm the power symptom, device model, Windows build, firmware level, AC or battery state, and policy source.",
-              "expect": "The issue is classified as sleep, wake, battery drain, shutdown, resume, or policy problem."
+              "action": "Run 'powercfg /requests' to see what is currently blocking sleep",
+              "expect": "Lists the specific process, driver, or service holding a power request"
             },
             {
-              "action": "Run powercfg commands and collect user-reported timestamps for the observed behavior.",
-              "expect": "Supported sleep states, wake sources, and active power requests are available."
+              "action": "If the device already slept and woke unexpectedly, run 'powercfg /lastwake' instead",
+              "expect": "Names the specific device or timer that caused the wake"
             }
           ]
         },
@@ -93,12 +88,8 @@
           "icon": "🔍",
           "steps": [
             {
-              "action": "Compare behavior with docking removed, peripherals disconnected, clean boot testing, and a known working device.",
-              "expect": "The issue is narrowed to hardware, driver, policy, firmware, dock, application, or peripheral dependency."
-            },
-            {
-              "action": "Review SleepStudy, energy report, battery report, and power event logs around the reported timestamps.",
-              "expect": "The power blocker, drain source, or wake trigger is identified."
+              "action": "Cross-check the named device/process against 'powercfg /devicequery wake_armed'",
+              "expect": "Confirms whether that device is explicitly allowed to wake or block sleep"
             }
           ]
         },
@@ -107,12 +98,12 @@
           "icon": "🛠",
           "steps": [
             {
-              "action": "Update BIOS, firmware, chipset, graphics, storage, battery, and network drivers based on the identified dependency.",
-              "expect": "The platform and driver stack support expected power behavior."
+              "action": "In Device Manager > that device > Power Management, uncheck 'Allow this device to wake the computer'",
+              "expect": "Device is removed from the wake-armed list"
             },
             {
-              "action": "Correct conflicting power policies, wake timers, device wake permissions, or OEM utility settings as applicable.",
-              "expect": "Power policy behavior aligns with expected sleep, wake, and battery configuration."
+              "action": "If a scheduled task or Windows Update wake timer is the cause, disable wake timers via 'powercfg -waketimers' or GPO",
+              "expect": "Wake timer no longer fires outside of maintenance windows"
             }
           ]
         },
@@ -121,12 +112,300 @@
           "icon": "🎯",
           "steps": [
             {
-              "action": "Reproduce the original scenario and collect post-fix powercfg or SleepStudy evidence.",
-              "expect": "The device sleeps, wakes, shuts down, resumes, or preserves battery as expected."
+              "action": "Put the device to sleep and monitor for the previous behavior",
+              "expect": "Device sleeps normally and does not wake unexpectedly"
+            }
+          ]
+        }
+      ]
+    },
+    "battery_drains_unusually_fast": {
+      "title": "Laptop battery drains unusually fast",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'powercfg /batteryreport /output C:\\battery.html' and open the report",
+              "expect": "Report generates showing Design Capacity vs Full Charge Capacity"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare Full Charge Capacity against Design Capacity",
+              "expect": "A drop below roughly 70% of design capacity indicates a worn battery rather than a settings issue"
             },
             {
-              "action": "Monitor similar devices from the same model, policy, or driver baseline for recurrence.",
-              "expect": "No recurring power management pattern remains unresolved."
+              "action": "If capacity looks healthy, run 'powercfg /energy' and check Task Manager > Performance > Energy Usage",
+              "expect": "Identifies a specific background app or inefficient driver driving the drain"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "If battery health is below ~70% of design capacity, arrange a battery replacement",
+              "expect": "New battery restores expected runtime"
+            },
+            {
+              "action": "If a background app is the cause, close or update it, and confirm the power plan is Balanced or Power Saver on battery, not High Performance",
+              "expect": "Energy usage drops back to expected levels"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-run the battery report after a full charge/discharge cycle",
+              "expect": "Runtime matches expectations for the device's battery health"
+            }
+          ]
+        }
+      ]
+    },
+    "sleep_missing_from_start_menu": {
+      "title": "Sleep option is missing from the Start menu power controls",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'powercfg /availablesleepstates'",
+              "expect": "Shows whether S3 sleep is listed as available or unsupported on this hardware"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "If S3 is not listed, check the device's BIOS/UEFI for an S3 support setting",
+              "expect": "Confirms whether S3 is disabled in firmware or genuinely unsupported (common on S0 Modern Standby hardware)"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Enable S3 in BIOS/UEFI if present, or run 'powercfg /hibernate on' which sometimes restores the Sleep entry",
+              "expect": "Sleep option reappears in the Start menu power controls"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check the Start menu power options",
+              "expect": "Sleep is listed and functions correctly"
+            }
+          ]
+        }
+      ]
+    },
+    "updates_not_applying_after_shutdown": {
+      "title": "Windows Updates don't finish applying after Shut Down",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm Fast Startup is enabled (Control Panel > Power Options > Choose what the power buttons do)",
+              "expect": "Fast Startup checkbox is enabled, explaining the incomplete update behavior"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Confirm the user was using Shut Down rather than Restart to apply the update",
+              "expect": "Fast Startup only saves the kernel on Shut Down; Restart always does a full cold boot"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Instruct the user to always use Restart (not Shut Down) when applying updates",
+              "expect": "Updates that require a full cold boot complete correctly"
+            },
+            {
+              "action": "Optionally disable Fast Startup entirely with 'powercfg /h off'",
+              "expect": "Every shutdown becomes a full cold boot, avoiding the issue going forward"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check Windows Update history after the next Restart",
+              "expect": "Update shows as successfully installed with no repeat pending state"
+            }
+          ]
+        }
+      ]
+    },
+    "vm_power_settings_misapplied": {
+      "title": "Windows sleep/hibernate settings behave unexpectedly inside a VM",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the affected machine is a virtual machine (Hyper-V, VMware, or Azure), not physical hardware",
+              "expect": "Confirms VM context, since S3 sleep and battery reporting behave differently in guests"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check whether the guest OS's power plan or hibernate settings are being applied at all, given most hypervisors don't support in-guest S3/S4",
+              "expect": "Confirms whether the guest setting is simply a no-op under this hypervisor"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Switch to the hypervisor's own power controls (Hyper-V Save State, VMware Suspend, or an Azure auto-shutdown schedule) instead of in-guest sleep/hibernate",
+              "expect": "VM pauses/resumes correctly using supported hypervisor mechanisms"
+            },
+            {
+              "action": "If this VM was built as sysprepped template, confirm Sysprep was run with '/Mode:VM' to skip irrelevant physical-hardware detection",
+              "expect": "Template generalizes cleanly without hardware-detection delays"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-test the intended pause/resume behavior using the hypervisor's controls",
+              "expect": "VM behaves as expected for the intended use case"
+            }
+          ]
+        }
+      ]
+    },
+    "usb_devices_disconnect_randomly_selective_suspend": {
+      "title": "USB peripherals randomly disconnect due to selective suspend",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the disconnects correlate with idle periods rather than being constant/immediate",
+              "expect": "Confirms a power-saving suspend behavior rather than a hardware fault"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check Device Manager > Universal Serial Bus controllers > each Root Hub's Power Management tab for 'Allow the computer to turn off this device to save power'",
+              "expect": "Identifies which hub/device has selective suspend enabled"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Uncheck the power-saving option for the affected hub/device, or disable USB selective suspend fleet-wide via the advanced power plan settings",
+              "expect": "Devices stop disconnecting under idle conditions"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Leave the peripheral idle for the previous disconnect interval and confirm it stays connected",
+              "expect": "No further random disconnects"
+            }
+          ]
+        }
+      ]
+    },
+    "cpu_throttled_unexpectedly_min_max_state": {
+      "title": "CPU seems throttled/slow even under load on AC power",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check Task Manager > Performance > CPU for the current clock speed under load versus the rated base/boost speed",
+              "expect": "Confirms the CPU is actually running below expected speed"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the active power plan's Minimum/Maximum processor state settings via 'powercfg /q'",
+              "expect": "Identifies whether Maximum processor state is capped below 100%"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Set Maximum processor state back to 100% for the AC power plan (or switch to High Performance)",
+              "expect": "CPU is permitted to run at full rated speed"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check Task Manager under load",
+              "expect": "CPU reaches expected clock speeds"
             }
           ]
         }

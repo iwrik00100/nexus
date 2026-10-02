@@ -2,11 +2,11 @@
   "key": "device_deployment",
   "label": "Device & Deployment",
   "icon": "💻",
-  "description": "windows update, windows upgrade, Activation, Bitlocker, Power management, device management, windows servicing",
+  "description": "Windows update, upgrade, activation, BitLocker, power management, device management, imaging, and PC reset",
   "technologies": [
     {
       "key": "windows_update",
-      "label": "Windows Update",
+      "label": "Windows Update & Servicing",
       "icon": "🔄"
     },
     {
@@ -21,23 +21,43 @@
     },
     {
       "key": "bitlocker",
-      "label": "Bitlocker",
-      "icon": "🔐"
+      "label": "BitLocker",
+      "icon": "🔒"
     },
     {
       "key": "power_management",
       "label": "Power Management",
-      "icon": "⚡"
+      "icon": "🔋"
     },
     {
       "key": "device_management",
       "label": "Device Management",
-      "icon": "🖥️"
+      "icon": "📱"
     },
     {
-      "key": "windows_servicing",
-      "label": "Windows Servicing",
-      "icon": "🛠️"
+      "key": "device_drivers",
+      "label": "Device Drivers",
+      "icon": "🧩"
+    },
+    {
+      "key": "wdac",
+      "label": "WDAC",
+      "icon": "🛡️"
+    },
+    {
+      "key": "windows_imaging",
+      "label": "Windows Imaging",
+      "icon": "💿"
+    },
+    {
+      "key": "pc_reset",
+      "label": "PC Reset",
+      "icon": "♻️"
+    },
+    {
+      "key": "sysprep",
+      "label": "Sysprep",
+      "icon": "🧪"
     }
   ]
 }

@@ -1,90 +1,130 @@
 {
   "key": "windows_update",
-  "label": "Windows Update",
+  "label": "Windows Update & Servicing",
   "icon": "🔄",
   "domain": "device_deployment",
   "scoping": {
     "l1": [
-      "Question 1 - Is the Windows Update issue affecting one device or multiple devices?",
-      "Question 2 - Is the issue related to update scan, download, install, reboot, or compliance reporting?",
-      "Question 3 - What is the exact KB number, feature update version, or error code reported?",
-      "Question 4 - Which update source is expected: Windows Update, WSUS, SCCM, Intune, WUfB, or Autopatch?",
-      "Question 5 - Did the issue start after a policy, image, network, proxy, WSUS, SCCM, or Intune change?",
-      "Question 6 - Is the issue reproducible every time or does it occur intermittently?"
+      "What is the exact error code shown in Windows Update?",
+      "Is the failure tied to a specific KB number, such as KB5012639?",
+      "Is the device managed by WSUS, Intune, or Windows Update for Business?",
+      "Is the issue affecting one device or multiple devices in the environment?",
+      "Is this environment using Windows Update for Business (WUfB) deferral/dual-scan policies alongside WSUS or SCCM?",
+      "Is the issue related to a cumulative update (LCU), servicing stack update (SSU), or component store?",
+      "What is the KB number and exact HRESULT/error code of the failing update?",
+      "Which servicing channel is targeted — Semi-Annual Channel (SAC) or Long-Term Servicing Channel (LTSC)?",
+      "Is this a single device issue or seen across multiple devices on the same build?"
     ],
     "l2": [
-      "Are affected and working devices assigned to the same update ring, WSUS group, SCCM collection, or Intune group?",
-      "Is the device co-managed, and which workload currently controls Windows Update policy?",
-      "Are Windows Update policies conflicting between Group Policy, Intune Settings Catalog, Update Rings, SCCM, or local registry?",
-      "Is the device scanning the intended source, such as SUP or WSUS versus Windows Update cloud service?",
-      "Is the update blocked by TargetReleaseVersion, deferral, pause, safeguard hold, or unsupported edition or build?",
-      "Is the failure occurring in Windows Update Agent, Delivery Optimization, BITS, CBS, DISM, or Windows Setup phase?"
+      "What update ring or deferral policy is applied via Intune or GPO?",
+      "Does CBS.log show a CSI failure such as ERROR_SXS_ASSEMBLY_MISSING or ERROR_SXS_COMPONENT_STORE_CORRUPT?",
+      "Has the device recently undergone a hardware or firmware change?",
+      "Is the WSUS server healthy and reachable from this client?",
+      "Is Dual Scan occurring — is the client scanning against both Windows Update/Microsoft Update AND the WSUS/SCCM server on the same scheduled interval?",
+      "Is the servicing stack update (SSU) installed and current for this build?",
+      "Does CBS.log show a CSI-layer failure (look for the last (F) line and its HRESULT)?",
+      "Is there a pending.xml or PendingFileRenameOperations blocking further servicing?",
+      "Is the device using a custom WIM image with slipstreamed updates?",
+      "Has the System Update Readiness Tool (CheckSUR) been run on this build, and does checksur.log show any 'Unavailable repair files' entries?"
     ]
   },
   "probing": {
     "l1": [
-      "Question 1 - Does Windows Update show not offered, pending download, downloading, installing, failed, or pending restart?",
-      "Question 2 - Does the same update install successfully on another device with the same build and policy?",
-      "Question 3 - Is there enough free disk space and is the device connected to a stable network?",
-      "Question 4 - Are Windows Update, BITS, Delivery Optimization, and Update Orchestrator services running?",
-      "Question 5 - Is the device using VPN, proxy, SSL inspection, firewall filtering, or metered network connection?",
-      "Question 6 - Are there errors in WindowsUpdateClient Operational, System, Application, CBS, or DISM logs?"
+      "Run 'winver' to confirm current build and version.",
+      "Check Settings > Windows Update > Update history for failed entries.",
+      "Run 'Get-WindowsUpdateLog' to generate a readable WindowsUpdate.log from the ETW trace in C:\\Windows\\Logs\\WindowsUpdate.",
+      "Run 'sc query wuauserv' to confirm the Update service is running.",
+      "Run 'Get-HotFix' to list currently installed updates.",
+      "Run 'DISM /Online /Get-Packages' to review installed servicing packages.",
+      "Check Event Viewer > Setup for Event ID 3 (Microsoft-Windows-Servicing) package failures.",
+      "Confirm the servicing stack update version with 'DISM /Online /Get-CurrentEdition'."
     ],
     "l2": [
-      "Does WindowsUpdate.log confirm the expected scan source and update service endpoint?",
-      "Does WUAHandler.log or ScanAgent.log show scan success, scan failure, or incorrect Software Update Point assignment?",
-      "Do registry keys such as UseWUServer, UpdateServiceUrl, DisableDualScan, or TargetReleaseVersion match the intended design?",
-      "Does CBS.log show component store corruption, missing payload, package applicability failure, or rollback activity?",
-      "For feature updates, does SetupDiag or Panther logging identify compatibility, driver, SafeOS, First Boot, or OOBE failure?",
-      "For Intune or WUfB reporting, are telemetry, Windows Health Monitoring, and device check-in prerequisites satisfied?"
+      "Review UpdateSessionOrchestration.etl in C:\\ProgramData\\USOShared\\Logs to see whether download, install, or commit is stalling.",
+      "Check NotificationUxBroker.etl in the same USOShared\\Logs folder to confirm whether reboot/availability toasts fired.",
+      "Search CBS.log for the last (F) failure line and note the HRESULT and Facility=FACILITY_WIN32 code shown.",
+      "Run 'DISM /Online /Get-Packages' and compare the KB's package state against a known-good baseline.",
+      "Know the servicing component roles when reading logs: CSI makes the actual file/registry changes, CBS is the orchestrator, DMI handles advanced driver installation, SMI manages registry settings, DPX decompresses packages, and SQM is just reporting telemetry (usually ignorable).",
+      "If a CBS.log failure location is unclear (file vs registry), run it under Process Monitor and use Tools > Count Occurrences on the Result column, filtering for 'not found', 'access denied', or 'sharing violation' to pinpoint the exact failing operation.",
+      "In CBS.log, trace backward from the last (F) failure line to find the originating HRESULT/NTSTATUS and its Facility=FACILITY_WIN32 code (look it up in winerror.h).",
+      "Run 'Get-PendingReboot' (or check for C:\\Windows\\WinSXS\\pending.xml) to determine which reboot-pending category is active: CBServicing, WindowsUpdate, PendFileRename, or PendComputerRename.",
+      "Run 'DISM /Online /Cleanup-Image /AnalyzeComponentStore' for store health and size.",
+      "Compare installed package versions against the known-good baseline for the build using 'DISM /Online /Get-Packages'.",
+      "Walk the CBS.log transaction workflow in order — Planning, Resolving, Staging, Install/Uninstall, Completion, then Reboot Required — to find exactly which stage the failure occurred in.",
+      "Review checksur.log under C:\\Windows\\Logs\\CBS for 'Unavailable repair files:' entries — these name the specific corrupted files that DISM /RestoreHealth could not repair from local sources.",
+      "Confirm the exact enforced policy under 'Computer Configuration > Administrative Templates > Windows Components > Windows Update > Windows Update for Business' by reading the registry directly at HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate — check BranchReadinessLevel (e.g. 4 = Preview Build - Slow, 16 = Semi-Annual Channel) and DeferFeatureUpdatesPeriodInDays (max 365).",
+      "Use an RFL (Recommended Fix List) SDP report to identify whether newer versions exist for the specific binaries being updated, when it's unclear if the installed files are already current.",
+      "Use 'Spyman' (or simply 'expand' the .msu first) to inspect exactly which .cab payloads and files are bundled inside an update package before assuming a file is missing.",
+      "Search C:\\Windows\\Logs\\CBS and related setup log folders for the literal string ', error' across all files/subfolders to quickly shortlist which log files actually contain an error worth opening."
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Confirm the update KB, error code, affected device count, OS build, and expected update source.",
-      "Run Windows Update troubleshooter when applicable and then retry update scan and installation.",
-      "Verify Windows Update related services including wuauserv, bits, dosvc, usosvc, and cryptsvc.",
-      "Check free disk space, network connectivity, proxy configuration, and firewall access to update endpoints.",
-      "Generate WindowsUpdate.log and review WindowsUpdateClient Operational events for scan or installation errors."
+      "Restart the Windows Update service and BITS service.",
+      "Run the built-in Windows Update Troubleshooter.",
+      "Clear the SoftwareDistribution folder and retry the update.",
+      "Check available disk space on the system drive.",
+      "Retry the update after a clean reboot to clear pending operations.",
+      "Manually download and install the update package from the Update Catalog.",
+      "Run 'DISM /Online /Cleanup-Image /StartComponentCleanup' to reduce store size.",
+      "Confirm sufficient disk space before reattempting the servicing operation.",
+      "Run 'wuauclt /detectnow' (or trigger a scan via Settings) to force an immediate detection cycle instead of waiting for the schedule.",
+      "Rename both SoftwareDistribution and catroot2 (after stopping wuauserv, bits, and cryptsvc) if updates neither download nor recognize as already installed."
     ],
     "l2": [
-      "Validate Windows Update policy registry keys under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate.",
-      "For SCCM managed devices, review WUAHandler.log, ScanAgent.log, UpdatesDeployment.log, UpdatesHandler.log, CAS.log, and ContentTransferManager.log.",
-      "For Intune managed devices, export MDM diagnostics and review DeviceManagement-Enterprise-Diagnostics-Provider Admin events.",
-      "Run DISM and SFC health checks to detect and repair servicing stack or component store corruption.",
-      "For feature update failures, run SetupDiag and analyze Panther, Rollback, setupact.log, setuperr.log, and setupapi.dev.log."
+      "For a missing/corrupt package (e.g. 0x800F0831), manually expand the .msu with 'expand -F:* KB.msu C:\\test\\temp' and add the extracted .cab with 'DISM /Online /Add-Package /PackagePath:<cab>'.",
+      "For ERROR_SXS_ASSEMBLY_MISSING (0x80073701), download the KB that owns the missing assembly and either add or remove it offline with 'DISM /online /add-package' or '/remove-package' pointed at the extracted .cab.",
+      "For ERROR_SXS_COMPONENT_STORE_CORRUPT (0x80073712), load the COMPONENTS hive offline, locate the component under DerivedData\\Components, compare its CanonicalData\\Deployments key against a healthy machine, merge the missing binary value, then run 'DISM /Online /Cleanup-Image /RestoreHealth'.",
+      "Run DISM /Online /Cleanup-Image /RestoreHealth then SFC /scannow for general component store corruption.",
+      "For a suspected Dual Scan issue, confirm the 'DisableDualScan' policy state and check for a $MUSM = New-Object -ComObject Microsoft.Update.ServiceManager script result to see which update services are actually registered on the client.",
+      "For a stuck CBServicing pending reboot: boot to WinRE and run 'Dism /image:C:\\ /cleanup-image /revertpendingactions', or back up and delete the PendingXMLidentifier / AdvancedInstallerNeedResolving keys under HKLM\\COMPONENTS.",
+      "For installer rollback CBS_E_INSTALLERS_FAILED (0x800f0922) caused by 0KB token files: check C:\\Windows\\system32\\spp\\tokens\\skus\\<edition>\\ for zero-byte files, compare against a healthy machine, and delete the invalid ones before retrying.",
+      "For ERROR_SXS_COMPONENT_STORE_CORRUPT (0x80073712): load the offline COMPONENTS hive, compare the failing component's CanonicalData\\Deployments key against a healthy machine, merge the missing value, then run 'DISM /Online /Cleanup-Image /RestoreHealth'.",
+      "For a disk-full rollback (ERROR_DISK_FULL during BFSVC install): free system-drive space and retry; this surfaces as 0x800f0922 with a Boot File Servicing installer failure in CBS.log.",
+      "If checksur.log lists 'Unavailable repair files', manually source and place those exact files in the correct packages folder, or supply a known-good source with 'DISM /Online /Cleanup-Image /RestoreHealth /Source:<path>'.",
+      "For pre-Windows 10/Server 2016 systems, run the appropriate System Update Readiness Tool (standalone download for Windows Server 2008/2008 R2) before DISM-based repair, since older builds don't have CheckSUR built in — then follow the same checksur.log 'Unavailable repair files' remediation.",
+      "For Windows 7/Server 2008(R2) specifically, run the version-specific standalone System Update Readiness Tool (Windows 7, Server 2008 R2, or Server 2008 SP2 each have their own download) before attempting DISM-based repair, since CheckSUR isn't built in on those OSes.",
+      "Confirm the latest Servicing Stack Update (SSU) is installed before troubleshooting further — an outdated SSU is a common root cause of otherwise-unexplained update failures.",
+      "For a stuck pending-reboot/component state, the precise recovery command is 'dism /image:c:\\ /cleanup-image /revertpendingactions /scratchdir:c:\\temp' run from WinRE against the offline OS volume.",
+      "As a last-resort manual collection when tooling isn't available, gather C:\\Windows\\SoftwareDistribution directly alongside CBS.log for offline analysis."
     ]
   },
   "datacollection": {
     "l1": [
-      "Collect winver screenshot, exact KB or feature update version, error screenshot, and affected device name.",
-      "Collect WindowsUpdate.log using Get-WindowsUpdateLog and export WindowsUpdateClient Operational event log.",
-      "Collect System and Application event logs around the update failure timestamp.",
-      "Collect gpresult /h output and export Windows Update registry policy keys from the affected device."
+      "Export Settings > Windows Update > Update history as a screenshot.",
+      "Collect the exact error code and correlation ID from the UI.",
+      "Note the device's current OS build number from winver.",
+      "Record whether the device is on Wi-Fi, Ethernet, or VPN during install.",
+      "Record the KB number and exact error code for the failed update.",
+      "Note the current build number and servicing channel in use.",
+      "Confirm free disk space at the time of the failed installation.",
+      "Note whether the failure is reproducible on other devices of the same build."
     ],
     "l2": [
-      "Collect CBS.log, DISM.log, pending reboot state, installed hotfix list, and component store health command output.",
-      "For SCCM cases, collect client logs from C:\\Windows\\CCM\\Logs including WUAHandler, ScanAgent, UpdatesDeployment, UpdatesHandler, CAS, and ContentTransferManager.",
-      "For Intune cases, collect MDM diagnostic CAB, Intune policy report, update ring assignment details, and device check-in status.",
-      "For feature update cases, collect Panther logs, Rollback logs, SetupDiag output, CompatData XML, and setupapi.dev.log."
+      "Collect CBS.log and DISM.log from Windows\\Logs\\CBS and Windows\\Logs\\DISM.",
+      "Run Get-WindowsUpdateLog and capture the merged WindowsUpdate.log file.",
+      "Collect UpdateSessionOrchestration.etl and NotificationUxBroker.etl from C:\\ProgramData\\USOShared\\Logs.",
+      "If a CSI error is present, export the COMPONENTS registry hive for offline comparison against a healthy device.",
+      "Collect CBS.log and DISM.log from Windows\\Logs\\CBS and Windows\\Logs\\DISM (and any CbsPersist_*.log/.cab archives).",
+      "Collect the Setup Event Log entry for Event ID 3 (Microsoft-Windows-Servicing) with its exact package name and status code.",
+      "Collect 'Get-PendingReboot' output or confirm presence of C:\\Windows\\WinSXS\\pending.xml.",
+      "If component store corruption is suspected, export the relevant DerivedData\\Components and CanonicalData\\Deployments registry keys.",
+      "If driver updates are bundled with the package, also check the DOQ (Driver Update Queue) staging/install entries and the Critical Driver installation block in CBS.log, which run after the main package install.",
+      "Collect a Windows Setup Diagnostic Package (SDCON) where possible — it gathers most of what's needed for update/servicing escalations in one pass (not supported on Server Core), alongside the Server Manager log and ServerManagerInstallationLog.html under C:\\Windows\\Logs for pre-2012 role/feature installs."
     ]
   },
   "playbooks": {
-    "windows_update_failure": {
-      "title": "Windows Update Investigation",
-      "severity": "medium",
+    "sxs_assembly_missing_0x80073701": {
+      "title": "Update rolls back with ERROR_SXS_ASSEMBLY_MISSING (0x80073701)",
+      "severity": "high",
       "phases": [
         {
           "name": "Verify",
           "icon": "✅",
           "steps": [
             {
-              "action": "Confirm the exact update issue, affected scope, OS build, KB number, feature update version, and error code.",
-              "expect": "The update scenario is classified as not offered, scan failure, download failure, install failure, reboot issue, or reporting mismatch."
-            },
-            {
-              "action": "Confirm the expected management source: Windows Update, WSUS, SCCM, Intune, WUfB, Autopatch, or Deployment Service.",
-              "expect": "The intended update source is known before policy and log analysis begins."
+              "action": "Search CBS.log for 'Failed to pin deployment' with HRESULT 0x80073701",
+              "expect": "Log names the specific package (e.g. Package_2_for_KBxxxx) that is missing"
             }
           ]
         },
@@ -93,12 +133,8 @@
           "icon": "🔍",
           "steps": [
             {
-              "action": "Compare one affected device with one working device from the same ring, collection, group, site, or policy scope.",
-              "expect": "Differences in policy, scan source, build, network, or update applicability are identified."
-            },
-            {
-              "action": "Review WindowsUpdate.log, event logs, registry policy keys, and management tool logs for the failing stage.",
-              "expect": "The failure is isolated to policy targeting, scan source, download, installation, servicing, reboot, or reporting."
+              "action": "Identify the KB that owns the missing assembly referenced in the log",
+              "expect": "A specific KB number is confirmed as the source of the missing component"
             }
           ]
         },
@@ -107,16 +143,12 @@
           "icon": "🛠",
           "steps": [
             {
-              "action": "Correct conflicting Windows Update policies, scan source configuration, update ring assignment, WSUS/SUP assignment, or co-management workload ownership.",
-              "expect": "The device scans against the intended update source and receives the expected update offering."
+              "action": "Download and extract that KB, then run 'DISM /online /add-package /packagepath:<cab>'",
+              "expect": "Package installs and the missing assembly is restored"
             },
             {
-              "action": "Repair servicing health using DISM and SFC when CBS or DISM logs show corruption or missing source errors.",
-              "expect": "Component store health is restored and update installation can be retried."
-            },
-            {
-              "action": "Resolve network, proxy, Delivery Optimization, BITS, or content download issues when download or content transfer errors are present.",
-              "expect": "Update content downloads successfully from the intended source or cache path."
+              "action": "If add-package fails, extract the KB and run 'DISM /online /remove-package /packagepath:<cab>' instead to clear the stale reference",
+              "expect": "The stale reference is removed without error"
             }
           ]
         },
@@ -125,12 +157,500 @@
           "icon": "🎯",
           "steps": [
             {
-              "action": "Run a fresh update scan and retry the failed update installation after remediation.",
-              "expect": "The device moves to installed, pending restart, or compliant state without the original failure."
+              "action": "Retry the original failing update",
+              "expect": "Update installs without rolling back"
+            }
+          ]
+        }
+      ]
+    },
+    "component_store_corrupt_0x80073712": {
+      "title": "Component store corruption (0x80073712 / ERROR_SXS_COMPONENT_STORE_CORRUPT)",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Search CBS.log for 'Failed to EnumerateComponentDeployment' with HRESULT 0x80073712",
+              "expect": "Log names the specific corrupted component"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Load the offline COMPONENTS hive (File > Load Hive on HKLM, pointing at C:\\Windows\\System32\\Config\\COMPONENTS)",
+              "expect": "Hive loads under a temporary key such as HKLM\\Test"
             },
             {
-              "action": "Validate reporting in Intune, SCCM, WSUS, WUfB reports, or local update history after policy refresh and report sync.",
-              "expect": "Management reporting aligns with the local device update state."
+              "action": "Navigate to Test\\DerivedData\\Components and locate the failing component name",
+              "expect": "The component's registry key is found and inspected"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Compare the matching key under Test\\CanonicalData\\Deployments against a healthy reference machine",
+              "expect": "A missing REG_BINARY value (e.g. appid) is identified"
+            },
+            {
+              "action": "Export the key from the healthy machine and merge it into the broken machine's registry, then unload the hive",
+              "expect": "Key merges without error"
+            },
+            {
+              "action": "Run 'DISM /online /cleanup-image /restorehealth'",
+              "expect": "Component store repair completes successfully"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry installing the originally failing update",
+              "expect": "Update installs successfully"
+            }
+          ]
+        }
+      ]
+    },
+    "kb_missing_or_corrupt_0x800f0831": {
+      "title": "Update fails with 0x800F0831 — target package missing or corrupted",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check CBS.log for the KB named in the failure (e.g. KB5012639)",
+              "expect": "CBS.log confirms that specific package is missing or corrupted"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Manually download the failing KB's .msu package",
+              "expect": "Package downloads successfully from the Update Catalog"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Extract it with 'expand -F:* C:\\test\\KBxxxx.msu C:\\test\\temp'",
+              "expect": "A Windows-KBxxxx.cab file appears in C:\\test\\temp"
+            },
+            {
+              "action": "Install it with 'DISM /Online /Add-Package /PackagePath:C:\\test\\temp\\Windows-KBxxxx.cab'",
+              "expect": "DISM reports the operation completed successfully"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry Windows Update",
+              "expect": "The update installs without the 0x800F0831 error"
+            }
+          ]
+        }
+      ]
+    },
+    "dual_scan_conflicts_with_wsus": {
+      "title": "Client dual-scans against both Windows Update and WSUS/SCCM",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "In WindowsUpdate.log (via Get-WindowsUpdateLog), confirm a scan is firing against both Windows/Microsoft Update and the WSUS/SCCM server on the same schedule",
+              "expect": "Confirms dual scan is actually occurring, not just suspected"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Run '$MUSM = New-Object -ComObject Microsoft.Update.ServiceManager' then inspect its registered Services collection in PowerShell",
+              "expect": "Shows exactly which update services (WU, WSUS, etc.) are registered on the client"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Set the 'Do not allow update deferral policies to cause scans against Windows Update' (DisableDualScan) policy as intended for this environment",
+              "expect": "Client scans only against the intended source (WSUS/SCCM or Windows Update, not both)"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check WindowsUpdate.log on the next scheduled scan",
+              "expect": "Only one scan source fires as expected"
+            }
+          ]
+        }
+      ]
+    },
+    "cumulative_update_fails_to_install": {
+      "title": "Cumulative update repeatedly fails to install",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the exact KB number and error code from Update history",
+              "expect": "Failure details are captured accurately"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Review CBS.log around the timestamp of the failed install",
+              "expect": "Identifies the specific failing component or package"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Run DISM /Online /Cleanup-Image /RestoreHealth",
+              "expect": "Component store repair completes successfully"
+            },
+            {
+              "action": "Retry the cumulative update installation",
+              "expect": "Update installs without the prior error"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Run 'Get-HotFix' to confirm the KB is now listed as installed",
+              "expect": "KB appears in the installed updates list"
+            }
+          ]
+        }
+      ]
+    },
+    "installer_rollback_cbs_e_installers_failed_0x800f0922": {
+      "title": "Patch install rolls back with CBS_E_INSTALLERS_FAILED (0x800f0922)",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Search CBS.log for 'Failed to process advanced operation queue' with HRESULT 0x800f0922",
+              "expect": "Confirms an advanced installer failure triggered the rollback"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check C:\\Windows\\system32\\spp\\tokens\\skus\\<edition>\\ for 0 KB token files",
+              "expect": "Compared against a healthy machine, invalid zero-byte files are identified"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Delete the invalid 0KB token files",
+              "expect": "Folder now matches the healthy reference machine"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Reattempt the patch installation",
+              "expect": "Patch installs successfully without rollback"
+            }
+          ]
+        }
+      ]
+    },
+    "pending_reboot_blocking_servicing": {
+      "title": "Device is stuck in a pending-reboot state and won't take new updates",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'Get-PendingReboot' (or check for C:\\Windows\\WinSXS\\pending.xml)",
+              "expect": "Identifies which category is pending: CBServicing, WindowsUpdate, PendFileRename, or PendComputerRename"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "For CBServicing, run 'DISM /online /get-packages' and check for a package stuck in a pending state",
+              "expect": "A specific incorrectly-staged package is identified, if present"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Boot to WinRE and run 'Dism /image:C:\\ /cleanup-image /revertpendingactions'",
+              "expect": "Pending CBS actions are reverted cleanly"
+            },
+            {
+              "action": "For a stuck WindowsUpdate reboot flag, back up and delete the RebootRequired value under HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update",
+              "expect": "Reboot-pending flag clears"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-run 'Get-PendingReboot'",
+              "expect": "Reports no reboot pending; new updates can now be installed"
+            }
+          ]
+        }
+      ]
+    },
+    "cbs_transaction_workflow_triage": {
+      "title": "Using the CBS.log transaction workflow to localize a servicing failure",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Search CBS.log for 'Entering stage: Planning' for the failing package (e.g. Package_for_KBxxxxxxx)",
+              "expect": "Confirms the transaction started and shows package applicability evaluation"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Step through each stage in order — Resolving (dependency/pin deployment), Staging (payload copy), Install/Uninstall (execute chain)",
+              "expect": "Identifies the exact stage where the log stops progressing or reports failure"
+            },
+            {
+              "action": "If the package reaches Completion but a driver bundle is involved, check the DOQ Staging and Install blocks, then the Critical Driver installation block",
+              "expect": "Confirms whether a driver install, not the main package, is the actual point of failure"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Address the specific failure at the identified stage (e.g. a resolve-time dependency conflict, a staging copy error, or a driver INF failure)",
+              "expect": "The blocking condition at that specific stage is resolved"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry the update and confirm CBS.log reaches 'FinalCommitPackagesState: Started persisting state of packages' and, if applicable, 'End executing advanced installer ... Completion status: S_OK'",
+              "expect": "Transaction completes cleanly through to reboot-required or full completion"
+            }
+          ]
+        }
+      ]
+    },
+    "role_feature_install_fails_winrm_plugin_corrupt": {
+      "title": "Server role/feature install fails — WinRM plugin corrupt or missing",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Attempt the role/feature install via Server Manager and confirm the failure references the WinRM plug-in",
+              "expect": "Confirms the message 'The Server Manager WinRM plug-in might be corrupt or missing'"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Run the System Update Readiness Tool (CheckSUR) for this OS version if not already run",
+              "expect": "Checksur.log identifies any underlying component-store corruption contributing to the failure"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Resolve any 'Unavailable repair files' entries from checksur.log, then run 'DISM /Online /Cleanup-Image /RestoreHealth'",
+              "expect": "Component store repair completes cleanly"
+            },
+            {
+              "action": "Retry installing the role/feature through Server Manager or 'Install-WindowsFeature'",
+              "expect": "Role/feature installs successfully"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Confirm the role/feature shows as Installed in Server Manager",
+              "expect": "No further WinRM plug-in errors on retry"
+            }
+          ]
+        }
+      ]
+    },
+    "update_stuck_at_percentage_no_error": {
+      "title": "Update progress bar is stuck at a fixed percentage with no error shown",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the percentage hasn't moved for at least 30–60 minutes and the disk/CPU are actually idle (not just a slow install)",
+              "expect": "Confirms a genuine stall rather than a large, still-progressing install"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check Task Manager for TiWorker.exe or TrustedInstaller.exe CPU/disk activity, and check CBS.log for the last logged operation",
+              "expect": "Shows whether work is still happening quietly or has genuinely frozen"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "If genuinely frozen, let it run at least 2+ hours before intervening; if still stuck, hard-restart and let Windows attempt automatic rollback, then retry after clearing SoftwareDistribution/catroot2",
+              "expect": "Device recovers to a stable state, either completing or cleanly rolling back"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry the update after the cleanup",
+              "expect": "Update installs and completes without re-hanging at the same percentage"
+            }
+          ]
+        }
+      ]
+    },
+    "client_not_detecting_update_from_wsus_sccm": {
+      "title": "Client doesn't see or download an update approved in WSUS/SCCM",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the update is approved for the correct target group in the WSUS/SCCM console and the client is a member of that group",
+              "expect": "Approval and group targeting are correct"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check WindowsUpdate.log (via Get-WindowsUpdateLog) for the client's last scan against the WSUS/SCCM server and any reported errors",
+              "expect": "Identifies whether the client is even reaching the server, and with what result"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Force a rescan with 'wuauclt /resetauthorization /detectnow' (or trigger a Machine Policy + Software Updates Scan Cycle in SCCM), and confirm content is reachable from the distribution point/WSUS server",
+              "expect": "Client re-scans and picks up the approved update"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Check Update history / compliance state after the next scan",
+              "expect": "Update shows as installed and compliant"
             }
           ]
         }

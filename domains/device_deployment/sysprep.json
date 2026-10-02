@@ -1,0 +1,251 @@
+{
+  "key": "sysprep",
+  "label": "Sysprep",
+  "icon": "🧪",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Is Sysprep being run for image capture (/generalize), audit mode testing (/audit), or just OOBE reset (/oobe only)?",
+      "What is the exact Sysprep error and where does it point (usually setuperr.log or setupact.log)?",
+      "Is this a physical reference machine or a VM template being prepared for cloning?",
+      "Has Sysprep been run successfully before on this same base image, or is this the first attempt?",
+      "Is this Sysprep run part of an automated build pipeline (e.g. MDT/SCCM task sequence) or a manual one-off capture?"
+    ],
+    "l2": [
+      "Is an unattend.xml (answer file) being supplied to Sysprep, and if so, which pass is failing (specialize, oobeSystem, etc.)?",
+      "Has the machine exceeded the Sysprep rearm limit (default 3 rearms per installation)?",
+      "Are any Microsoft Store / provisioned AppX packages installed for a user profile other than the built-in Administrator, which commonly blocks generalize?",
+      "Is any non-Microsoft disk encryption, antivirus, or endpoint agent installed that is known to interfere with generalization?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Check C:\\Windows\\System32\\Sysprep\\Panther\\setuperr.log for the specific error and its line context.",
+      "Check C:\\Windows\\System32\\Sysprep\\Panther\\setupact.log for the full sequence of actions leading up to the failure.",
+      "Confirm the exact Sysprep command-line switches used (/generalize /oobe /shutdown /unattend:<file>).",
+      "Run 'slmgr /dlv' to check the current rearm count before attempting another generalize pass."
+    ],
+    "l2": [
+      "Search setuperr.log for 'SYSPRP Package ... was installed for a user' — this is the classic per-user AppX package blocker for generalize.",
+      "If an unattend.xml is supplied, identify which configuration pass (windowsPE, specialize, oobeSystem, etc.) the failure occurs in from setupact.log.",
+      "Check for non-Microsoft agents (AV, DLP, disk encryption) known to hook into the generalize process and either uninstall or use their documented Sysprep-safe removal/reinstall procedure.",
+      "If validation fails immediately with a generic error, run Sysprep from an elevated command prompt rather than the GUI tool to capture more verbose console output."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Re-run Sysprep after closing all open applications and ensuring no pending reboot is outstanding.",
+      "Confirm the machine has not exceeded its rearm limit; if it has, a fresh installation is required rather than another generalize attempt.",
+      "Remove any obviously non-standard user profiles before generalizing.",
+      "Retry with a minimal unattend.xml (or none) to isolate whether the answer file itself is the cause.",
+      "If Sysprep fails immediately with a generic dialog, check the Windows Event Log (Application) for a Sysprep source event with more detail than the dialog shows.",
+      "Confirm the reference machine isn't in the middle of a pending Windows Update install/reboot before running Sysprep."
+    ],
+    "l2": [
+      "For 'Package ... was installed for a user' failures, remove the offending per-user provisioned AppX package with 'Get-AppxPackage -AllUsers | Where {$_.PackageFullName -like \"*<name>*\"} | Remove-AppxPackage' before regeneralizing.",
+      "For a specialize-pass failure with a custom unattend.xml, validate the XML against the component schema for that Windows build using the Windows System Image Manager (WSIM/SIM) rather than hand-editing blind.",
+      "If a third-party agent is confirmed as the blocker, follow that vendor's documented Sysprep-compatible install/removal sequence (many require uninstall-before-capture, reinstall-after-deploy).",
+      "If the rearm limit (3 by default) has been exhausted during repeated testing, rebuild the reference VM/image from a fresh installation rather than continuing to rearm the same instance."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Record the exact Sysprep switches used and whether an unattend.xml was supplied.",
+      "Note the current rearm count from 'slmgr /dlv'.",
+      "Confirm whether this is a physical reference machine or a VM template.",
+      "Note any third-party AV, DLP, or disk-encryption agents installed on the reference machine."
+    ],
+    "l2": [
+      "Collect setuperr.log and setupact.log from C:\\Windows\\System32\\Sysprep\\Panther.",
+      "Collect the unattend.xml used, if any.",
+      "Collect 'Get-AppxPackage -AllUsers' output to check for per-user provisioned packages that could block generalize.",
+      "Collect a list of installed third-party agents/services for cross-reference against known Sysprep-incompatible software."
+    ]
+  },
+  "playbooks": {
+    "generalize_fails_appx_package_for_user": {
+      "title": "Sysprep /generalize fails — 'Package ... was installed for a user'",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check setuperr.log for the exact line naming the AppX package and the user it was installed for",
+              "expect": "Confirms the specific per-user provisioned package blocking generalize"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Run 'Get-AppxPackage -AllUsers' and confirm the named package is present for a non-default user profile",
+              "expect": "Confirms the package's install scope is the actual blocker"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Remove the package for that user with 'Remove-AppxPackage' (or remove the offending user profile entirely if it's not needed in the image)",
+              "expect": "Package no longer shows installed for a non-default user"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-run 'sysprep /generalize /oobe /shutdown'",
+              "expect": "Sysprep completes successfully and the machine shuts down cleanly for capture"
+            }
+          ]
+        }
+      ]
+    },
+    "rearm_limit_exhausted": {
+      "title": "Sysprep rearm limit has been exhausted during repeated testing",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'slmgr /dlv' and check the remaining rearm count",
+              "expect": "Confirms the rearm count has reached 0"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Confirm this VM/reference machine has been generalized and rearmed repeatedly during iterative testing",
+              "expect": "Explains why no rearms remain despite no obvious error in the process itself"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Rebuild the reference machine or VM template from a fresh installation instead of continuing to reuse the exhausted instance",
+              "expect": "New instance has a full rearm allowance available"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Run 'sysprep /generalize /oobe /shutdown' on the fresh instance",
+              "expect": "Generalize completes successfully"
+            }
+          ]
+        }
+      ]
+    },
+    "validation_failed_generic_dialog_error": {
+      "title": "Sysprep fails immediately with a generic 'Sysprep was not able to validate...' error",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check Event Viewer > Windows Logs > Application for a Sysprep-source event around the failure time",
+              "expect": "Often surfaces a more specific error than the generic dialog"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Cross-reference the specific event/error against setuperr.log in the Sysprep Panther folder",
+              "expect": "Confirms the specific blocking condition (e.g. pending update, per-user AppX package, third-party agent)"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Resolve the specific blocking condition identified (complete any pending update/reboot first, then address AppX/agent issues as needed)",
+              "expect": "Blocking condition is cleared"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-run 'sysprep /generalize /oobe /shutdown'",
+              "expect": "Sysprep completes successfully"
+            }
+          ]
+        }
+      ]
+    },
+    "audit_mode_stuck_after_ctrl_shift_f3": {
+      "title": "Machine hangs or loops when entering/exiting Audit mode",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm whether the hang occurs entering Audit mode (Ctrl+Shift+F3 at OOBE) or exiting it back to OOBE/generalize",
+              "expect": "Narrows down which transition is actually failing"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check setupact.log for the last logged action before the hang, and confirm no application installed during audit mode is holding a UI dialog open in the background",
+              "expect": "Identifies a specific blocking app/dialog or a genuine setup engine hang"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Close any blocking application dialogs, or if the engine itself is hung, restart and retry the transition; remove any recently-installed app suspected of interfering",
+              "expect": "Transition completes without hanging"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Repeat the audit mode entry/exit cycle once more to confirm stability",
+              "expect": "No repeat hang on the same transition"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
