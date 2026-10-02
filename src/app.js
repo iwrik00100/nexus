@@ -15,6 +15,26 @@ const LS = {
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
 
+// ─── Haptic feedback (mobile) ─────────────────────────────────────────────────
+function triggerHaptic(type = 'light') {
+  if ('vibrate' in navigator) {
+    switch(type) {
+      case 'light':
+        navigator.vibrate(10);
+        break;
+      case 'medium':
+        navigator.vibrate(20);
+        break;
+      case 'heavy':
+        navigator.vibrate([30, 10, 30]);
+        break;
+      case 'success':
+        navigator.vibrate([15, 50, 15]);
+        break;
+    }
+  }
+}
+
 const SECTION_META = {
   scoping:         { label: 'Scoping',        icon: '🔍', desc: 'Environment & impact questions' },
   probing:         { label: 'Probing',         icon: '🧪', desc: 'Diagnostic commands & data requests' },
@@ -164,7 +184,10 @@ function renderDomainGrid() {
           <span class="domain-card-arrow">→</span>
         </div>
       </div>`;
-    card.onclick = () => selectDomain(d.key);
+    card.onclick = () => {
+      triggerHaptic('medium');
+      selectDomain(d.key);
+    };
     grid.appendChild(card);
   });
 }
@@ -219,7 +242,10 @@ function renderTechGrid(index) {
     btn.className = 'tech-btn';
     btn.dataset.tech = t.key;
     btn.innerHTML = `<span class="tech-icon">${t.icon}</span><span class="tech-label">${t.label}</span>`;
-    btn.onclick = () => selectTech(t.key);
+    btn.onclick = () => {
+      triggerHaptic('light');
+      selectTech(t.key);
+    };
     grid.appendChild(btn);
   });
 }
@@ -335,6 +361,7 @@ function renderQuestions() {
         cb.addEventListener('change', function() {
           item.classList.toggle('checked', this.checked);
           this.checked ? _checkedKeys.add(ck) : _checkedKeys.delete(ck);
+          if (this.checked) triggerHaptic('success');
           updateProgress();
         });
 
@@ -430,6 +457,7 @@ function renderPlaybook() {
       cb.addEventListener('change', function() {
         item.classList.toggle('checked', this.checked);
         this.checked ? _pbCheckedKeys.add(pbck) : _pbCheckedKeys.delete(pbck);
+        if (this.checked) triggerHaptic('success');
         updateProgress();
       });
 
@@ -500,7 +528,10 @@ function copyPlaybook() {
     });
     out += '\n';
   });
-  navigator.clipboard.writeText(out).then(() => showToast('Playbook copied!'));
+  navigator.clipboard.writeText(out).then(() => {
+    triggerHaptic('medium');
+    showToast('Playbook copied!');
+  });
 }
 
 // ─── Checkboxes & Progress ────────────────────────────────────────────────────
@@ -613,14 +644,20 @@ function showToast(msg = 'Copied!') {
 
 // ─── Copy & Export ────────────────────────────────────────────────────────────
 function copyQuestion(text) {
-  navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+  navigator.clipboard.writeText(text).then(() => {
+    triggerHaptic('light');
+    showToast('Copied!');
+  });
 }
 
 function copyAll() {
   const lines = [...document.querySelectorAll('#questionsList .q-text')]
     .filter(el => !el.closest('.question-item').classList.contains('q-hidden'))
     .map(el => el.dataset.raw || el.textContent.trim());
-  navigator.clipboard.writeText(lines.join('\n')).then(() => showToast(`Copied ${lines.length} items`));
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    triggerHaptic('medium');
+    showToast(`Copied ${lines.length} items`);
+  });
 }
 
 function toggleExportMenu() {
