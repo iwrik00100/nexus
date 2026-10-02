@@ -5,73 +5,82 @@
   "domain": "device_deployment",
   "scoping": {
     "l1": [
-      "Question 1 - Is the activation issue affecting one device, multiple devices, or a specific device group?",
-      "Question 2 - What Windows edition, version, build, and activation channel is installed on the affected device?",
-      "Question 3 - What exact activation error code, message, or activation status is displayed to the user?",
-      "Question 4 - Is the device expected to activate using KMS, MAK, subscription activation, digital license, or OEM activation?",
-      "Question 5 - Did activation work previously on the same device before hardware, image, domain, tenant, or license changes?",
-      "Question 6 - Is the issue seen after imaging, OS upgrade, motherboard replacement, tenant migration, domain join, or license assignment change?"
+      "What activation method is expected — KMS, MAK, Active Directory-based, or subscription (E3/E5)?",
+      "What is the exact activation error code shown in Settings or from slmgr /dlv?",
+      "Is this a single device or a broader fleet activation failure?",
+      "Was this device recently re-imaged, migrated, or hardware-changed?",
+      "How many machines are affected, and did they all start failing around the same date and time?",
+      "Was the problematic machine successfully activated before, and if so, when did the issue start?",
+      "Is the customer able to reproduce the activation failure consistently, or does it resolve itself after a retry or reboot?"
     ],
     "l2": [
-      "Is the installed Windows edition eligible for the expected activation method and assigned license?",
-      "Is the device able to reach the required KMS host, Microsoft activation service, or licensing endpoint?",
-      "Are DNS SRV records, KMS host configuration, firewall rules, proxy settings, and time synchronization healthy?",
-      "Is subscription activation dependent on Entra ID join, Hybrid Entra ID join, user sign-in, or assigned Windows Enterprise license?",
-      "Are slmgr, ospp, licensing event logs, or ClipSVC/SPP logs showing token, entitlement, or activation service failures?",
-      "Is the activation issue isolated to a specific image, hardware model, OU, site, network, tenant, or license group?"
+      "Is the KMS host reachable and reporting a current count at or above the minimum threshold (25 for clients, 5 for servers)?",
+      "If using subscription activation, is the device Azure AD joined (not just Azure AD registered/workplace joined)?",
+      "Has an Enterprise E3/E5 license recently been assigned to or removed from a user on this device?",
+      "Is the device's clock in sync, and is any VPN client such as Palo Alto GlobalProtect installed?",
+      "Does the environment use Active Directory-based Activation (ADBA), and if so, was the AD activation object published from a machine with the November 2018+ rollup installed?",
+      "If this is a Hyper-V guest VM, is Automatic Virtual Machine Activation (AVMA) in use, and is the Hyper-V host itself currently activated?",
+      "If this is subscription activation, which Azure AD account was used to join the device, and does it hold an active E3/E5 (or A3/A5 for education) license?",
+      "Does the problematic machine have any 3rd-party antivirus, security lockdown, or non-Microsoft disk encryption software installed?"
     ]
   },
   "probing": {
     "l1": [
-      "Question 1 - What does Settings > System > Activation show for activation state and error details?",
-      "Question 2 - What does 'slmgr /dlv' show for license status, activation channel, partial product key, and KMS client information?",
-      "Question 3 - Is the device connected to corporate network, VPN, internet, or isolated network when activation is attempted?",
-      "Question 4 - Has the product key, edition, or license assignment changed recently?",
-      "Question 5 - Is the user signed in with the expected work account when subscription activation is expected?",
-      "Question 6 - Can a known working device in the same network, image, license group, or OU activate successfully?"
+      "Run 'slmgr /xpr' to check current activation status.",
+      "Run 'slmgr /dlv' for detailed license information, including channel and partial product key.",
+      "Check Settings > System > Activation for the exact error text.",
+      "Run 'dsregcmd /status' to confirm Azure AD join state for subscription activation scenarios.",
+      "Run 'nslookup -type=srv _vlmcs._tcp' to confirm a KMS host record is published and visible from the client."
     ],
     "l2": [
-      "Does the device resolve the expected KMS DNS SRV record and connect to the KMS host on the required port?",
-      "Does the Software Protection Platform event log show activation, token, genuine validation, or product key errors?",
-      "Does the activation channel match the intended deployment model such as KMS, MAK, ADBA, OEM, or subscription activation?",
-      "Are licensing tokens corrupted, missing, or mismatched after imaging, sysprep, cloning, or edition conversion?",
-      "Does Entra ID device state and user licensing support subscription activation for Windows Enterprise?",
-      "Are proxy, SSL inspection, firewall, DNS, or time skew issues blocking activation validation?"
+      "On the KMS host, run 'cscript slmgr.vbs /dlv all > slmgr.txt' and search for 'Current Count' under each host key.",
+      "Check DNS SRV records with 'nslookup -type=all _vlmcs._tcp' to confirm KMS host discovery.",
+      "If subscription activation reverted to Pro, compare msinfo32 OS name and slmgr /dlv (which will correctly show Pro RETAIL by design) against dsregcmd /status.",
+      "Run 'w32tm /query /status' to check for clock drift if a time-mismatch error (0xC004F074/0xC004F06C) is reported.",
+      "For MAK activation counts, check with the Microsoft Activation Call Center — MAKs and KMS host keys both carry a hard activation limit (KMS host keys: 10 activations across up to 6 machines by default).",
+      "Run 'slmgr /ao-list' to confirm whether an Active Directory activation object is visible to this client.",
+      "Check the current Forest and Domain functional/schema level if AD-based activation objects are involved.",
+      "Run 'Test-NetConnection <KMS host> -Port 1688' (or telnet on port 1688) to confirm the client can actually reach the KMS host over the network, not just resolve it in DNS."
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Confirm Windows edition, version, activation channel, exact error code, and expected activation method.",
-      "Run 'slmgr /dlv' and 'slmgr /xpr' to confirm licensing status and expiration state.",
-      "Verify network connectivity, DNS resolution, proxy settings, time synchronization, and internet or KMS reachability.",
-      "Confirm that the correct product key, license assignment, or subscription activation entitlement is applied.",
-      "Compare activation behavior with a known working device from the same image, network, and license group."
+      "Run 'slmgr /ato' to force an activation attempt.",
+      "Confirm network connectivity to the KMS host on TCP 1688.",
+      "Re-enter the correct product key if MAK-based activation is used.",
+      "Restart the Software Protection service (sppsvc) and retry.",
+      "Run the built-in Activation Troubleshooter from Settings > System > Activation > Troubleshoot before escalating.",
+      "Confirm the product key being used actually matches the installed edition (e.g. a Pro key won't activate an Enterprise install)."
     ],
     "l2": [
-      "Validate KMS discovery using DNS SRV records and confirm the KMS host is reachable from the client network.",
-      "Review Software Protection Platform and licensing events for token, entitlement, product key, or service communication failures.",
-      "Validate Entra ID join state, Hybrid join state, user sign-in, and Windows Enterprise license assignment for subscription activation.",
-      "Repair or rebuild licensing store only after confirming product key, entitlement, and activation source are correct.",
-      "Check image preparation, sysprep state, edition conversion, and cloning practices if activation failures occur immediately after deployment."
+      "KMS count below threshold (0xC004F038): force a subset of clients to point at the new host with 'slmgr /skms <host:1688>' then 'slmgr /ato', or use VAMT to bulk re-activate clients.",
+      "Time mismatch (0xC004F074 with 0xC004F06C): run 'w32tm /resync' as admin to resync against the DC or internet time source.",
+      "System/store tampered (0xC004D301, 0xC004D317) recurring: check for Palo Alto GlobalProtect VPN — uninstall or upgrade to 4.1.7+, a known trigger for false tamper detection.",
+      "Subscription activation stepping back down to Pro: confirm the user with the assigned E3/E5 license is still logging in; if intentionally staying on KMS, set HKLM\\SYSTEM\\CurrentControlSet\\Services\\ClipSVC\\Parameters\\DisableSubscription to 1 to block automatic step-up.",
+      "0xC004F009 (MAK grace period expired): the system has entered the Notifications state — install a valid MAK or convert to KMS/subscription activation, then run 'slmgr /ato'.",
+      "0x8007232B / 0x8007007B (DNS name does not exist — KMS client cannot find the KMS SRV record): verify the _vlmcs._tcp SRV record exists in DNS, or point the client directly at a host with 'slmgr /skms <host>:1688'.",
+      "0xC004C020 (MAK exceeded its activation limit): contact the Microsoft Activation Call Center for a new MAK, or migrate the affected devices to KMS/Active Directory-based activation instead.",
+      "0xC004F050 (activation servers busy, or significant hardware change such as a motherboard swap): wait and retry, or run 'slmgr /upk' on the old installation before activating the same key on the replacement hardware.",
+      "If the KMS host's Current Count never rises above 1 despite enough clients, the deployed image was likely never generalized: run 'sysprep /generalize' (or KB929829's CMID reset workaround) so each client gets a unique Client Machine ID (CMID) instead of sharing one from the master image."
     ]
   },
   "datacollection": {
     "l1": [
-      "Collect a screenshot of the Windows Activation page and exact activation error message.",
-      "Collect 'winver', 'systeminfo', and 'Get-ComputerInfo' output from the affected device.",
-      "Collect 'slmgr /dlv', 'slmgr /xpr', and 'slmgr /ato' output from the affected device.",
-      "Export System, Application, and Software Protection Platform related event logs in .evtx format."
+      "Record the output of 'slmgr /xpr' and 'slmgr /dlv'.",
+      "Note the exact error code from Settings > Activation.",
+      "Confirm the product key type in use — KMS, MAK, AD-based, or subscription.",
+      "Note whether the device is domain-joined, Azure AD joined, or hybrid."
     ],
     "l2": [
-      "Collect DNS lookup results for KMS SRV records and network connectivity test results to the KMS host or activation service.",
-      "Collect dsregcmd /status output when subscription activation or Entra ID based licensing is involved.",
-      "Collect proxy configuration, firewall path details, network traces, and time synchronization output when activation network failures are suspected.",
-      "Collect license assignment screenshots or exported tenant/device licensing evidence when subscription activation is involved."
+      "Collect 'cscript slmgr.vbs /dlv all' output from both the client and the KMS host.",
+      "Collect 'dsregcmd /status' output (from a non-elevated prompt) for subscription-activation cases.",
+      "Capture a screenshot of Settings > Accounts > Access work or school and Settings > Activation.",
+      "If tamper-related, note any VPN client software (name and version) installed on the device."
     ]
   },
   "playbooks": {
-    "activation_failure": {
-      "title": "Activation Investigation",
+    "activation_error_after_reimage": {
+      "title": "Device shows activation error after re-image",
       "severity": "medium",
       "phases": [
         {
@@ -79,12 +88,8 @@
           "icon": "✅",
           "steps": [
             {
-              "action": "Confirm the activation method, Windows edition, activation state, error code, and affected device scope.",
-              "expect": "The activation model and exact failure state are clearly identified."
-            },
-            {
-              "action": "Run licensing commands and collect activation page evidence from the affected device.",
-              "expect": "The device licensing state, channel, and activation source are available for review."
+              "action": "Run 'slmgr /xpr'",
+              "expect": "Shows the current activation state and error, if any"
             }
           ]
         },
@@ -93,12 +98,8 @@
           "icon": "🔍",
           "steps": [
             {
-              "action": "Compare activation settings, network reachability, DNS, time sync, and license assignment against a working device.",
-              "expect": "The issue is isolated to entitlement, network, KMS discovery, licensing store, image, or device state."
-            },
-            {
-              "action": "Review Software Protection Platform events and activation command output for the first meaningful failure.",
-              "expect": "A specific activation component or dependency is identified."
+              "action": "Run 'slmgr /dlv' to inspect license status and key channel",
+              "expect": "Confirms whether the wrong key channel is installed"
             }
           ]
         },
@@ -107,12 +108,12 @@
           "icon": "🛠",
           "steps": [
             {
-              "action": "Correct product key, license assignment, KMS discovery, network access, time sync, or subscription activation prerequisites as applicable.",
-              "expect": "The device has the correct activation source and required dependencies."
+              "action": "Install the correct KMS client key with 'slmgr /ipk'",
+              "expect": "Key installs without error"
             },
             {
-              "action": "Repair licensing state or reattempt activation only after entitlement and connectivity are validated.",
-              "expect": "Activation completes or returns a new actionable error."
+              "action": "Run 'slmgr /ato'",
+              "expect": "Activation succeeds and reports product activated"
             }
           ]
         },
@@ -121,12 +122,304 @@
           "icon": "🎯",
           "steps": [
             {
-              "action": "Verify activation status using Settings, slmgr output, and event logs after remediation.",
-              "expect": "The device reports activated status with the expected activation channel."
+              "action": "Re-run 'slmgr /xpr'",
+              "expect": "Displays a valid, non-expiring activated status"
+            }
+          ]
+        }
+      ]
+    },
+    "subscription_activation_reverts_to_pro": {
+      "title": "Windows 10/11 Enterprise subscription activation reverts to Pro",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check msinfo32 OS Name — if it shows Professional rather than Enterprise, the device has stepped down",
+              "expect": "Confirms the device reverted from Enterprise to Pro"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Confirm whether the user holding the E3/E5 license has logged off or had the license unassigned",
+              "expect": "Identifies the trigger for the step-down (this is expected behavior by design)"
             },
             {
-              "action": "Monitor similar devices from the same image, group, or network for recurring activation failures.",
-              "expect": "No broader activation trend remains unresolved."
+              "action": "Run 'dsregcmd /status' to confirm the device is Azure AD joined and not only Azure AD registered",
+              "expect": "Rules out an AADJ + workplace-join conflict as the cause"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Have the E3/E5-licensed user sign back in to re-trigger the automatic step-up to Enterprise",
+              "expect": "Device steps back up to Enterprise subscription activation"
+            },
+            {
+              "action": "If the environment intentionally uses KMS and wants to block automatic subscription step-up, set HKLM\\SYSTEM\\CurrentControlSet\\Services\\ClipSVC\\Parameters\\DisableSubscription to 1, reboot, then reactivate via KMS with 'slmgr /ipk NPPR9-FWDCX-D2C8J-H872K-2YT43' and 'slmgr /ato'",
+              "expect": "Device stays on KMS-activated Enterprise without subscription interference"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check Settings > Activation and msinfo32",
+              "expect": "Shows the intended edition (Enterprise) consistently"
+            }
+          ]
+        }
+      ]
+    },
+    "kms_count_below_threshold_0xc004f038": {
+      "title": "KMS clients fail with 0xC004F038 — count below minimum threshold",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "On the KMS host, run 'cscript slmgr.vbs /dlv' and check 'Current Count'",
+              "expect": "Count is below 25 (clients) or 5 (servers)"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Confirm how many client machines have actually pointed at this host recently",
+              "expect": "Identifies whether it's a discovery problem or genuinely too few clients"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "On several clients, run 'slmgr /skms <host FQDN or IP>:1688' then 'slmgr /ato' to force them to register against the host",
+              "expect": "Current Count on the host increases with each successful client activation"
+            },
+            {
+              "action": "Once past the threshold, run 'slmgr /ckms' on those clients to revert to automatic DNS-based discovery",
+              "expect": "Clients resume using standard DNS SRV discovery"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check 'Current Count' on the host and retry activation on the originally failing client",
+              "expect": "Count is at or above threshold and the client activates successfully"
+            }
+          ]
+        }
+      ]
+    },
+    "dns_kms_record_missing_0x8007232b": {
+      "title": "KMS client fails with 0x8007232B / 0x8007007B — DNS SRV record not found",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'nslookup -type=all _vlmcs._tcp' from the affected client",
+              "expect": "Confirms whether the KMS SRV record resolves in DNS"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the DNS zone for a manually published _vlmcs._tcp SRV record if auto-publishing from the KMS host is disabled",
+              "expect": "Identifies whether the record is missing, stale, or pointing at the wrong host"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Republish the SRV record from the KMS host with 'slmgr /cdns' then remove and re-add via 'net stop slsvc && net start slsvc' (or add it manually in DNS)",
+              "expect": "SRV record now resolves correctly"
+            },
+            {
+              "action": "As an interim fix, point the client directly at the host with 'slmgr /skms <host FQDN>:1688' then 'slmgr /ato'",
+              "expect": "Client activates successfully while DNS is corrected"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Run 'slmgr /xpr' on the client",
+              "expect": "Shows a valid, non-expiring activated status"
+            }
+          ]
+        }
+      ]
+    },
+    "kms_count_stuck_at_one_duplicate_cmid": {
+      "title": "KMS Current Count never rises above 1 — duplicate Client Machine IDs",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "On the KMS host, run 'slmgr /dlv' repeatedly across several clients activating and confirm Current Count stays at 1",
+              "expect": "Count does not increase even though more clients are activating"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check whether the deployed image was captured without running 'sysprep /generalize' first",
+              "expect": "Confirms client machines are sharing one Client Machine ID (CMID) from the master image"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Apply the CMID reset workaround from KB929829 on affected clients as an interim fix",
+              "expect": "Each client generates a unique CMID and registers separately with the KMS host"
+            },
+            {
+              "action": "Re-capture the reference image using 'sysprep /generalize /oobe /shutdown' before future deployments",
+              "expect": "New deployments each get a unique CMID from first boot"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check 'slmgr /dlv' Current Count on the KMS host after several clients activate",
+              "expect": "Count rises correctly as new, uniquely-identified clients activate"
+            }
+          ]
+        }
+      ]
+    },
+    "activation_troubleshooter_walkthrough": {
+      "title": "Using the built-in Activation Troubleshooter for a straightforward first pass",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Open Settings > System > Activation and confirm an error/troubleshoot option is offered",
+              "expect": "Troubleshooter is available for this scenario"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Run the troubleshooter and note which specific issue it reports (e.g. hardware change, key mismatch, subscription lapse)",
+              "expect": "Troubleshooter narrows down the likely cause automatically"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Follow the troubleshooter's suggested remediation (e.g. sign in with the Microsoft account tied to the original license)",
+              "expect": "Guided fix resolves common straightforward cases without manual slmgr work"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check Settings > Activation",
+              "expect": "Shows Windows is activated; escalate to manual slmgr-based playbooks only if this doesn't resolve it"
+            }
+          ]
+        }
+      ]
+    },
+    "generic_key_blocked_0xc004e016": {
+      "title": "Activation blocked with 0xC004E016 — generic/blocked key detected",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'slmgr /dlv' and confirm the installed key is a generic/GVLK placeholder key rather than a real MAK/KMS key",
+              "expect": "Confirms a generic key is installed instead of the intended license key"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Confirm which real key (KMS client key, MAK, or retail) should be installed for this edition and channel",
+              "expect": "Identifies the correct key to install"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Install the correct key with 'slmgr /ipk <key>' then run 'slmgr /ato'",
+              "expect": "Activation succeeds with the correct key"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Run 'slmgr /xpr'",
+              "expect": "Shows a valid, non-expiring activated status"
             }
           ]
         }

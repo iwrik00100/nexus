@@ -1,0 +1,259 @@
+{
+  "key": "wdac",
+  "label": "WDAC",
+  "icon": "🛡️",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Is the WDAC policy running in Audit mode or Enforced mode?",
+      "What is the exact file, driver, or script that is being blocked or reported?",
+      "Was this policy deployed via Group Policy, Intune (ApplicationControl CSP), or applied locally?",
+      "Did the block start after a policy change, an application update, or a new driver install?",
+      "Has this exact policy been tested successfully in Audit mode before being moved to Enforced?"
+    ],
+    "l2": [
+      "Is Hypervisor-Protected Code Integrity (HVCI) or Smart App Control also enabled alongside this WDAC policy?",
+      "Is this a single-policy (legacy, .p7b) or multiple-policy (base + supplemental, .cip) WDAC deployment?",
+      "Does the blocked file rely on a revoked or expired code-signing certificate with a lifetime signing EKU?",
+      "Is the Intelligent Security Graph (ISG) or a Managed Installer (MI) being used to authorize otherwise-unsigned files?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Check Event Viewer > Applications and Services Logs > Microsoft > Windows > CodeIntegrity > Operational for block events.",
+      "Confirm which policies are currently active under C:\\Windows\\System32\\CodeIntegrity\\CiPolicies\\Active.",
+      "Check whether the policy is in Audit or Enforced mode by inspecting the policy XML's Audit Mode rule option.",
+      "Confirm the exact file path, publisher, and hash of the blocked file from the event details."
+    ],
+    "l2": [
+      "Event ID 3076 = audit-mode block (would be blocked if enforced); Event ID 3077 = enforced-mode block (file was actually blocked) — confirm which one you're seeing.",
+      "Event ID 3033/3034 usually indicates a revoked or expired lifetime-signing certificate on the blocked file, not a policy misconfiguration.",
+      "If multiple policies appear active but only a default/unexpected one is enforcing, use wbemtest to browse the WMI Bridge (root\\Microsoft\\Windows\\DeviceGuard) for stale or duplicate CI policy instances.",
+      "Run 'Get-SystemDriver' or review the merged policy XML to confirm which specific rule (publisher, hash, path, or FilePublisher) is matching — or failing to match — the blocked file."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "If testing, temporarily set the policy to Audit mode to confirm whether it is the cause before rolling back to Enforced.",
+      "Confirm the blocking file's digital signature is valid, current, and from a trusted publisher.",
+      "Re-deploy the policy and reboot to force a refresh if the device may be running a stale policy.",
+      "Check for a duplicate or conflicting default policy that may be taking precedence over the intended one.",
+      "Check whether HVCI (Memory Integrity) is enabled alongside WDAC, since an incompatible driver can be blocked by HVCI rather than the WDAC policy itself.",
+      "Confirm the policy was actually redeployed/refreshed after editing — a stale cached policy is a common cause of 'my change didn't take effect'."
+    ],
+    "l2": [
+      "For a stale/duplicate policy taking precedence, use wbemtest to locate and delete the offending CI policy instance directly from the WMI Bridge, then reboot.",
+      "For a signature-expiry block (3033/3034), add rule option 'Enabled:Revoked Expired As Unsigned' along with rules (e.g. hash-based) that don't depend on the revoked/expired certificate.",
+      "For a legitimate new tool being blocked, add a supplemental policy rule (publisher, hash, or path) rather than disabling enforcement broadly.",
+      "Update the Microsoft recommended driver block rules (driversipolicy.p7b / a newer SiPolicy.p7b) if HVCI, Smart App Control, or S mode is blocking a specific vulnerable driver, and verify via the CodeIntegrity event log after refreshing."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Record the exact CodeIntegrity event ID and blocked file path from Event Viewer.",
+      "Note whether the policy is in Audit or Enforced mode.",
+      "Confirm the deployment method — GPO, Intune, or local policy.",
+      "Note whether the block began after a specific policy or application change."
+    ],
+    "l2": [
+      "Export the CodeIntegrity - Operational event log covering the block event(s).",
+      "Collect the deployed policy XML (or the merged policy) from C:\\Windows\\System32\\CodeIntegrity\\CiPolicies\\Active.",
+      "If a signature issue is suspected, collect the blocked file's certificate chain and signing timestamp.",
+      "If a stale policy is suspected, collect the WMI Bridge CI policy instances via wbemtest for comparison against the intended deployment."
+    ]
+  },
+  "playbooks": {
+    "legitimate_app_blocked_in_enforced_mode": {
+      "title": "A legitimate, trusted application is blocked once policy moves to Enforced mode",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm CodeIntegrity - Operational shows Event ID 3077 (enforced block) for the specific file",
+              "expect": "Confirms WDAC, not another control, is blocking the file"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the file's publisher, hash, and signing status against the active policy's rules",
+              "expect": "Identifies exactly which rule type (or its absence) is causing the block"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Add a supplemental policy rule (publisher, path, or hash) authorizing the specific application",
+              "expect": "Merged policy now includes an allow rule for the app"
+            },
+            {
+              "action": "Redeploy the updated policy and refresh (or reboot) the device",
+              "expect": "Application launches without a CodeIntegrity block"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check CodeIntegrity - Operational for the application",
+              "expect": "No further 3077 block events for this application"
+            }
+          ]
+        }
+      ]
+    },
+    "stale_default_policy_overriding_custom_policy": {
+      "title": "Device enforces the default built-in policy instead of the deployed custom policy",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check CodeIntegrity - Operational events for a Policy ID that doesn't match the custom policy's expected ID",
+              "expect": "Confirms a different (often default) policy is actually enforcing"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Use wbemtest to browse the WMI Bridge (root\\Microsoft\\Windows\\DeviceGuard) and list all CI policy instances",
+              "expect": "Identifies a duplicate or stale policy instance still present alongside the intended one"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Delete the offending stale policy instance directly from wbemtest",
+              "expect": "Only the intended policy instance remains"
+            },
+            {
+              "action": "Reboot the device",
+              "expect": "Policy re-evaluation picks up only the intended policy"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check CodeIntegrity - Operational events for the expected Policy ID",
+              "expect": "Events now reference the correct, intended policy ID"
+            }
+          ]
+        }
+      ]
+    },
+    "hvci_incompatible_driver_blocks_boot": {
+      "title": "A driver incompatible with HVCI/Memory Integrity blocks boot or causes a crash",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Boot into Safe Mode or WinRE and check whether disabling Memory Integrity (Core Isolation) resolves the boot issue",
+              "expect": "Confirms HVCI/driver incompatibility as the cause rather than a broader boot failure"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the CodeIntegrity - Operational log and Microsoft's HVCI driver compatibility guidance for the specific incompatible driver",
+              "expect": "Identifies the exact driver that isn't HVCI-compatible"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Update the driver to an HVCI-compatible version from the vendor, or if unavailable, exempt/remove that specific driver rather than disabling HVCI fleet-wide",
+              "expect": "Compatible driver is in place, or the incompatible one is removed"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-enable Memory Integrity and reboot",
+              "expect": "Device boots normally with HVCI enabled and no further crashes"
+            }
+          ]
+        }
+      ]
+    },
+    "policy_change_not_taking_effect": {
+      "title": "An edited WDAC policy doesn't seem to take effect on the device",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the policy file's version/PolicyID was actually incremented and redeployed, not just edited locally",
+              "expect": "Confirms whether a genuinely new policy was pushed"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check C:\\Windows\\System32\\CodeIntegrity\\CiPolicies\\Active for the deployed policy's timestamp and compare against the intended version",
+              "expect": "Confirms whether the device actually received the updated policy file"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Redeploy via the correct channel (GPO/Intune/manual copy) and force a policy refresh or reboot, since some policy types require a restart to take effect",
+              "expect": "Updated policy file lands and is picked up"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check the CiPolicies\\Active timestamp and test the specific rule change",
+              "expect": "New policy is active and the intended rule change is enforced"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

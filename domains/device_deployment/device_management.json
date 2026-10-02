@@ -1,0 +1,257 @@
+{
+  "key": "device_management",
+  "label": "Device Management",
+  "icon": "📱",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Is the device enrolled in Intune, co-managed, or on-prem SCCM only?",
+      "What is the exact enrollment or policy sync error shown?",
+      "Is this affecting one device or a group of devices in a policy scope?",
+      "What was the last successful check-in time for this device?",
+      "Has the device ever successfully checked in with Intune/MDM before, or has it never enrolled successfully at all?",
+      "Is this a new enrollment issue, a policy application issue, or an ongoing compliance/reporting issue?"
+    ],
+    "l2": [
+      "What Azure AD join type is used, such as AAD joined or hybrid joined?",
+      "Are there conflicting GPO and Intune policies targeting the same setting?",
+      "Is the device inside the correct dynamic group for policy assignment?",
+      "Is the co-management workload slider set correctly for this policy area?",
+      "Is the device subject to more than one management authority (e.g. GPO plus Intune, or co-management with an unclear workload split)?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Check Settings > Accounts > Access work or school for enrollment status.",
+      "Run 'dsregcmd /status' to confirm Azure AD join and MDM URL state.",
+      "Force a sync via Settings > Accounts > Info > Sync.",
+      "Check the Intune portal for the device's last check-in timestamp."
+    ],
+    "l2": [
+      "Run 'mdmdiagnosticstool.exe /area DeviceEnrollment /cab C:\\diag.cab' for full logs.",
+      "Review Event Viewer > Applications and Services > Microsoft > Windows > DeviceManagement-Enterprise-Diagnostics-Provider.",
+      "Check Intune policy assignment reports for conflict or error status.",
+      "Review co-management workload configuration in the SCCM console."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Force a manual sync from Settings > Access work or school.",
+      "Restart the device and confirm sync resumes after reboot.",
+      "Confirm the device has network connectivity to Intune endpoints.",
+      "Re-check the group membership targeting this device for the policy.",
+      "Confirm the device shows up at all in the Intune portal before troubleshooting policy application — an invisible device is an enrollment problem, not a policy problem.",
+      "For Autopilot specifically, confirm the device's hardware hash was actually uploaded and matched to the correct Autopilot profile before assuming a general enrollment fault."
+    ],
+    "l2": [
+      "Unenroll and re-enroll the device if MDM certificate is invalid or expired.",
+      "Resolve conflicting GPO settings that override the intended Intune policy.",
+      "Repair the MDM enrollment certificate via 'certutil' if expired.",
+      "Adjust the co-management workload slider to hand off the conflicting workload."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Record the exact error code from the enrollment or sync screen.",
+      "Note the device's last successful check-in time from the Intune portal.",
+      "Confirm the Azure AD join type and dsregcmd output.",
+      "Note which specific policy or app is failing to apply."
+    ],
+    "l2": [
+      "Collect the MDM diagnostics cab file via mdmdiagnosticstool.exe.",
+      "Export the DeviceManagement-Enterprise-Diagnostics-Provider event log.",
+      "Collect the Intune policy assignment and deployment status report.",
+      "Collect GPO Result output via 'gpresult /h report.html' for comparison."
+    ]
+  },
+  "playbooks": {
+    "policy_not_applying": {
+      "title": "Intune policy assigned but not applying to device",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the device is in the correct assignment group in Intune",
+              "expect": "Device appears as a member of the targeted group"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the per-device policy status in the Intune portal",
+              "expect": "Status shows Error, Conflict, or Pending with a reason"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Resolve the identified conflict, such as a competing GPO",
+              "expect": "Conflicting setting removed or aligned"
+            },
+            {
+              "action": "Force a device sync",
+              "expect": "Device check-in updates with new policy status"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Verify the setting is applied locally on the device",
+              "expect": "Local setting matches the intended Intune configuration"
+            }
+          ]
+        }
+      ]
+    },
+    "device_shows_noncompliant_unexpectedly": {
+      "title": "Device shows as Not Compliant in Intune despite meeting requirements",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check the device's Compliance status blade in Intune for which specific policy/setting is failing",
+              "expect": "Identifies the exact non-compliant setting rather than assuming a general enrollment problem"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare the device's actual local setting against what the compliance policy expects, and check the device's last compliance evaluation timestamp",
+              "expect": "Confirms whether the device is stale (hasn't reported recently) or genuinely out of compliance"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Force a sync from Settings > Access work or school, or remediate the specific out-of-compliance setting directly",
+              "expect": "Device re-evaluates and reports current, accurate state"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check the Compliance status blade after the next check-in",
+              "expect": "Device shows Compliant"
+            }
+          ]
+        }
+      ]
+    },
+    "autopilot_enrollment_fails_at_oobe": {
+      "title": "Autopilot enrollment fails or hangs during OOBE",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the device's hardware hash is registered under the correct Autopilot deployment profile in Intune",
+              "expect": "Confirms the device is recognized and correctly profiled"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check network connectivity to required Autopilot/Intune endpoints during OOBE, and review the specific OOBE error code/screen shown",
+              "expect": "Identifies whether it's a network reachability issue or a profile/policy assignment issue"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Resolve the identified blocker — fix network access, correct the Autopilot profile assignment, or re-register the hardware hash if mismatched",
+              "expect": "Blocking condition is resolved"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Reset the device and retry OOBE end-to-end",
+              "expect": "Device completes Autopilot enrollment and applies its assigned profile"
+            }
+          ]
+        }
+      ]
+    },
+    "co_management_workload_conflict": {
+      "title": "Co-managed device applies conflicting settings from SCCM and Intune",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the device is genuinely co-managed and identify the specific setting behaving inconsistently",
+              "expect": "Confirms co-management status and isolates the conflicting setting"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the co-management workload slider in the SCCM console for the workload area covering that setting (e.g. Device Configuration, Compliance)",
+              "expect": "Identifies which authority (SCCM or Intune) is currently supposed to own that workload"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Move the workload slider fully to the intended authority (Intune or SCCM/ConfigMgr) rather than leaving it split, and remove the conflicting policy from the other side",
+              "expect": "Only one authority manages that setting going forward"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Force a policy refresh and confirm the setting now applies consistently",
+              "expect": "No further conflicting policy application for that setting"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,255 @@
+{
+  "key": "pc_reset",
+  "label": "PC Reset",
+  "icon": "♻️",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "Is the customer using 'Reset this PC' from Settings, from WinRE, or a remote reset triggered via Intune/MDM?",
+      "Did they choose 'Keep my files' or 'Remove everything'?",
+      "At what stage does the reset fail or hang — preparing, resetting, or the post-reset OOBE?",
+      "Is this a physical device or a cloud-managed device using Cloud PC/Autopilot Reset?",
+      "Has the user already backed up any files they care about, in case 'Remove everything' is the only viable path forward?"
+    ],
+    "l2": [
+      "Is the recovery image being used the factory-embedded WinRE image, or a custom/replaced recovery image?",
+      "Is BitLocker enabled on the OS drive, and if so, has the recovery key been confirmed available before reset?",
+      "For an Intune-triggered remote reset, did the 'Wipe' or 'Fresh Start' action specify 'Keep enrollment state' correctly for this scenario?",
+      "Is there a factory recovery partition present and healthy (check with 'reagentc /info')?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'reagentc /info' to confirm the Windows Recovery Environment status and the recovery image location.",
+      "Check %windir%\\Logs\\CBS\\CBS.log and %windir%\\Panther\\ setup logs for reset-specific failures.",
+      "Check available free disk space — a reset needs enough free space to stage the new image alongside existing data if 'Keep my files' is selected.",
+      "Confirm whether the failure is reproducible from WinRE directly (bypassing Settings) to rule out an OS-level trigger issue."
+    ],
+    "l2": [
+      "If the recovery image is missing or corrupted, run 'reagentc /enable' after re-pointing to a valid WinRE.wim via 'reagentc /setreimage'.",
+      "Check setupact.log/setuperr.log under $Windows.~BT\\Sources\\Panther (created during reset, similar to an in-place upgrade) for the specific failing phase.",
+      "For a BitLocker-protected drive, confirm whether reset is failing because the drive couldn't be unlocked automatically — check TPM/protector status.",
+      "For Autopilot Reset / cloud-managed scenarios, check the Intune device action status and correlate with MDM diagnostic logs (mdmdiagnosticstool.exe) on the device."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Free up disk space and retry the reset.",
+      "Retry the reset directly from WinRE (Advanced Startup) if the Settings-triggered reset fails to start.",
+      "Suspend BitLocker before attempting the reset if a protector-related failure is suspected.",
+      "Confirm the correct 'Keep my files' vs 'Remove everything' choice matches what the user actually intended, since the wrong choice can look like a 'failure' to the user.",
+      "If 'Cloud download' fails, retry with 'Local reinstall' instead (or vice versa) as a quick first troubleshooting step.",
+      "Confirm the device has a stable internet connection before attempting a Cloud download reset, since it re-downloads the OS image."
+    ],
+    "l2": [
+      "If 'reagentc /info' shows the recovery environment as disabled or the image path is invalid, re-point it with 'reagentc /setreimage /path <driveletter>\\Recovery\\WindowsRE' then 'reagentc /enable'.",
+      "If reset fails partway through (similar to an in-place upgrade rollback), treat setupact.log/setuperr.log under Panther the same way as a Windows Upgrade failure — check for a driver or component blocking progress.",
+      "For remote/Autopilot Reset failures, confirm the device successfully checked in and collect mdmdiagnosticstool.exe output to see the exact stage the wipe command failed at.",
+      "As a last resort when the recovery partition itself is corrupted, perform a clean reinstall from bootable media rather than continuing to retry the built-in reset."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Record whether 'Keep my files' or 'Remove everything' was selected.",
+      "Note the exact stage and any error code/message shown during the reset.",
+      "Confirm whether this was triggered locally, from WinRE, or remotely via Intune/MDM.",
+      "Note whether BitLocker is enabled on the OS drive."
+    ],
+    "l2": [
+      "Collect 'reagentc /info' output showing WinRE status and image path.",
+      "Collect setupact.log/setuperr.log from $Windows.~BT\\Sources\\Panther generated during the reset attempt.",
+      "For remote resets, collect the Intune device action history and an mdmdiagnosticstool.exe cab from the device.",
+      "Confirm and record the recovery partition's health/size from 'reagentc /info' and diskpart's partition list."
+    ]
+  },
+  "playbooks": {
+    "reset_fails_to_start_recovery_environment_broken": {
+      "title": "Reset this PC fails to start — recovery environment is disabled or broken",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'reagentc /info'",
+              "expect": "Shows Windows RE status as Disabled, or an invalid/missing image path"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check whether the recovery partition still exists and has sufficient free space via diskpart",
+              "expect": "Confirms whether the partition itself is missing/too small or just misconfigured"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Re-point the recovery image with 'reagentc /setreimage /path <path>\\Recovery\\WindowsRE' and then run 'reagentc /enable'",
+              "expect": "Reagentc /info now reports Windows RE status: Enabled"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry 'Reset this PC' from Settings",
+              "expect": "Reset starts and proceeds normally"
+            }
+          ]
+        }
+      ]
+    },
+    "remote_autopilot_reset_stuck": {
+      "title": "Remote Autopilot Reset / Intune Wipe action stuck or not completing",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check the device action status in the Intune portal for the Wipe/Fresh Start command",
+              "expect": "Shows Pending, Failed, or no recent check-in from the device"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Collect an MDM diagnostics cab via mdmdiagnosticstool.exe from the device if it's still reachable",
+              "expect": "Identifies whether the device ever received the command or failed locally during execution"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "If the device never received the command, force a sync from Settings > Access work or school, or reissue the action from Intune",
+              "expect": "Device check-in shows the command received"
+            },
+            {
+              "action": "If it failed locally (e.g. recovery environment broken), remediate that first (see the recovery-environment playbook) before reissuing the reset",
+              "expect": "Underlying local blocker is resolved"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Confirm the device completes OOBE and re-enrolls per the Autopilot profile",
+              "expect": "Device returns to a fresh, enrolled state as expected"
+            }
+          ]
+        }
+      ]
+    },
+    "reset_stuck_at_percentage": {
+      "title": "Reset this PC progress appears stuck at a fixed percentage",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the percentage hasn't moved for a reasonable window (30–60+ minutes) given the reset type",
+              "expect": "Confirms a genuine stall rather than a slow but progressing reset"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check setupact.log/setuperr.log under $Windows.~BT\\Sources\\Panther generated by the reset for the last logged operation",
+              "expect": "Identifies the specific stage where progress stopped"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "If truly hung, force a restart and let it attempt automatic recovery; if it fails, retry with the other reset method (Cloud download vs Local reinstall)",
+              "expect": "Device recovers or the alternate reset method completes successfully"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Confirm the device reaches OOBE successfully",
+              "expect": "Reset completes and device boots to a fresh setup experience"
+            }
+          ]
+        }
+      ]
+    },
+    "cloud_download_reset_fails_network": {
+      "title": "Cloud download reset fails due to network/connectivity issues",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the device had network access at the time Cloud download was selected",
+              "expect": "Confirms connectivity as the likely cause"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check whether the failure occurred during the initial download or partway through applying the downloaded image",
+              "expect": "Identifies whether it's purely a download failure or a subsequent apply failure"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Ensure a stable wired or strong Wi-Fi connection is available, then retry Cloud download, or switch to Local reinstall if network access can't be guaranteed",
+              "expect": "Reset proceeds without a connectivity interruption"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Monitor the reset to completion",
+              "expect": "Reset completes successfully to OOBE"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

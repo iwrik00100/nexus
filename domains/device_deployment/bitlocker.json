@@ -5,86 +5,80 @@
   "domain": "device_deployment",
   "scoping": {
     "l1": [
-      "Question 1 - Is the BitLocker issue affecting one device, multiple devices, or a specific security group?",
-      "Question 2 - Is the issue related to encryption not starting, recovery prompt loop, missing recovery key, key escrow failure, or policy noncompliance?",
-      "Question 3 - What Windows version, edition, device model, TPM version, and boot mode are present on the affected device?",
-      "Question 4 - Where is the recovery key expected to be stored: Active Directory, Entra ID, Intune, MBAM, or another key escrow location?",
-      "Question 5 - Did the issue start after BIOS update, firmware change, TPM reset, motherboard replacement, boot configuration change, or Windows update?",
-      "Question 6 - Is the BitLocker policy coming from Intune, Group Policy, Configuration Manager, MBAM, or local settings?"
+      "Is the device prompting for a recovery key at boot?",
+      "Is the recovery key escrowed to Azure AD, AD, or Intune?",
+      "What triggered the recovery prompt, such as a firmware or boot change?",
+      "Is TPM present and enabled in the device's firmware settings?",
+      "Is this a Slate/tablet device where preboot keyboard input may not be available for PIN entry?"
     ],
     "l2": [
-      "Is TPM ready, owned, enabled, activated, and compatible with the configured BitLocker protector requirements?",
-      "Are protectors configured as expected, such as TPM, TPM+PIN, recovery password, startup key, or numerical password?",
-      "Is recovery caused by PCR profile changes, Secure Boot changes, boot order changes, firmware updates, or BCD changes?",
-      "Are BitLocker policies conflicting between Intune, GPO, MBAM, Configuration Manager, or local policy?",
-      "Is recovery key backup failing due to device identity, hybrid join, Entra ID registration, AD schema, permissions, or network connectivity?",
-      "Are BitLocker-API, TPM-WMI, DeviceManagement, or MDM logs showing policy, protector, encryption, or escrow errors?"
+      "What TPM version and PCR measurement profile is configured?",
+      "Is the encryption method AES-CBC (with or without Elephant Diffuser) or XTS-AES, and does it match compliance requirements?",
+      "Was Secure Boot or firmware settings recently changed on this device?",
+      "Is the device using TPM-only, TPM+PIN, or TPM+startup key protectors?",
+      "Is this environment using MBAM (Microsoft BitLocker Administration and Monitoring) for centralized recovery key storage?"
     ]
   },
   "probing": {
     "l1": [
-      "Question 1 - What does 'manage-bde -status' show for encryption percentage, protection status, and conversion status?",
-      "Question 2 - What does 'manage-bde -protectors -get C:' show for configured key protectors?",
-      "Question 3 - Is the device prompting for recovery once, repeatedly after every reboot, or only after specific hardware or firmware changes?",
-      "Question 4 - Can the expected recovery key be found in AD, Entra ID, Intune, MBAM, or the configured escrow service?",
-      "Question 5 - Is Secure Boot enabled and is the device using UEFI rather than legacy BIOS when required by policy?",
-      "Question 6 - Does a known working device with the same BitLocker policy encrypt and escrow the recovery key successfully?"
+      "Run 'manage-bde -status' to check protection status on all volumes.",
+      "Check Settings > Privacy & Security > Device Encryption for status.",
+      "Confirm TPM status via 'tpm.msc' or 'Get-Tpm' in PowerShell.",
+      "Check whether the recovery key ID matches one in Azure AD or AD.",
+      "Run 'Get-Tpm | Out-File C:\\TPM.txt' to capture TPM version and status (not supported on Windows 7)."
     ],
     "l2": [
-      "Does TPM management output show TPM readiness, ownership, lockout state, and attestation health?",
-      "Do BitLocker event logs show protector creation, escrow, recovery reason, encryption failure, or policy enforcement errors?",
-      "Does MDM diagnostic output show BitLocker CSP policy application errors or conflicting encryption settings?",
-      "Does Active Directory or Entra ID show the correct device object and recent recovery key escrow timestamp?",
-      "Do PCR validation events or firmware changes explain why BitLocker entered recovery mode?",
-      "Are there duplicate device records, stale objects, or renamed devices causing recovery key lookup confusion?"
+      "Run 'Get-BitLockerVolume' for full protector and key protector detail.",
+      "If multiple protectors are configured (e.g. recovery key + external key), confirm both decrypt to the same Volume Master Key (VMK) — a mismatch indicates decryption failure.",
+      "Check the BitLocker-API event log for suspension or lockout events.",
+      "Query Azure AD device record for the escrowed BitLocker key via Intune."
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Confirm the BitLocker symptom, affected device count, policy source, expected escrow location, and recovery prompt behavior.",
-      "Run 'manage-bde -status' and 'manage-bde -protectors -get C:' to capture encryption and protector state.",
-      "Verify TPM readiness, Secure Boot state, UEFI mode, and current recovery key availability.",
-      "Confirm whether the device recently had BIOS, TPM, Secure Boot, boot order, disk, or motherboard changes.",
-      "Compare policy assignment and encryption status with a known working device under the same policy."
+      "Enter the recovery key retrieved from the user's Microsoft account or AD.",
+      "Confirm the correct recovery key ID is being used, not a stale one.",
+      "Check for recent firmware, BIOS, or boot order changes causing the prompt.",
+      "Suspend BitLocker before planned firmware updates to avoid future prompts.",
+      "For Slate/tablet devices requiring preboot auth, ensure the policy 'Enable use of BitLocker authentication requiring preboot keyboard input on slates' is enabled — otherwise PIN/password protectors can lock the device out.",
+      "If encryption progress is stuck at a fixed percentage, check disk health (SMART status) since a failing drive can stall the encryption pass.",
+      "Confirm whether Used Space Only or Full Encryption was selected — Used Space Only completes far faster and a 'stuck' report may just be a misunderstanding of expected duration."
     ],
     "l2": [
-      "Review BitLocker-API and TPM-WMI event logs to identify encryption, protector, recovery, or escrow failures.",
-      "Validate Intune, GPO, MBAM, or Configuration Manager BitLocker policy precedence and conflicts.",
-      "Confirm recovery key backup permissions, device identity, Entra ID registration, AD object state, and escrow service connectivity.",
-      "Analyze recovery triggers such as PCR profile changes, Secure Boot DB changes, BCD changes, firmware updates, or TPM reset.",
-      "Suspend and resume BitLocker only when performing planned firmware, BIOS, boot configuration, or hardware maintenance."
+      "Clear and re-seal the TPM if repeated unexplained recovery prompts occur.",
+      "Re-escrow the recovery key to Azure AD or AD if it is missing.",
+      "Rebuild key protectors with 'manage-bde -protectors -add' after remediation.",
+      "If a 'clear key' condition is suspected (VMK stored unencrypted), re-enable full protection and rotate protectors immediately.",
+      "For advanced consultation on BitLocker internals, Microsoft's internal BitLocker engineering team maintains a discussion alias — escalate persistent/unclear cases through your normal escalation path rather than guessing at undocumented behavior."
     ]
   },
   "datacollection": {
     "l1": [
-      "Collect a screenshot or photo of the BitLocker recovery prompt or encryption error message.",
-      "Collect 'manage-bde -status' and 'manage-bde -protectors -get C:' output from the affected device.",
-      "Collect 'tpm.msc' status or 'Get-Tpm' output from the affected device.",
-      "Export System, BitLocker-API, TPM-WMI, and DeviceManagement event logs in .evtx format."
+      "Record the recovery key ID displayed on the prompt screen.",
+      "Note the exact trigger event, such as BIOS update or docking change.",
+      "Confirm where the recovery key is expected to be escrowed.",
+      "Capture the output of 'manage-bde -status' before remediation.",
+      "Run 'manage-bde -status > C:\\BDEStatus.txt' for a general encryption status export, and confirm TPM is listed under All Key Protectors."
     ],
     "l2": [
-      "Collect Intune device configuration results, MDM diagnostics, and BitLocker policy assignment details when Intune manages encryption.",
-      "Collect Group Policy results using 'gpresult /h gp.html' when GPO manages BitLocker policy.",
-      "Collect recovery key escrow evidence from AD, Entra ID, Intune, or MBAM with timestamps and device identifiers.",
-      "Collect BIOS/firmware version, Secure Boot state, boot mode, disk layout, and recent hardware or firmware change history."
+      "Export 'Get-BitLockerVolume' output for all volumes and protectors.",
+      "Collect BitLocker-API and TPM event logs around the time of the prompt.",
+      "Pull the Azure AD or AD BitLocker recovery key object for verification.",
+      "Note the configured encryption method (AES-CBC 128/256 or XTS-AES 128/256) for compliance review."
     ]
   },
   "playbooks": {
-    "bitlocker_investigation": {
-      "title": "BitLocker Investigation",
-      "severity": "medium",
+    "unexpected_recovery_prompt": {
+      "title": "Unexpected BitLocker recovery key prompt at boot",
+      "severity": "high",
       "phases": [
         {
           "name": "Verify",
           "icon": "✅",
           "steps": [
             {
-              "action": "Confirm encryption state, protector state, recovery behavior, policy source, and expected key escrow location.",
-              "expect": "The BitLocker scenario is classified as encryption, recovery, escrow, policy, or compliance issue."
-            },
-            {
-              "action": "Collect manage-bde, TPM, and event log evidence from an affected device.",
-              "expect": "The protector and platform state are available for analysis."
+              "action": "Confirm the exact recovery key ID shown on screen",
+              "expect": "Key ID is legible and recorded"
             }
           ]
         },
@@ -93,12 +87,8 @@
           "icon": "🔍",
           "steps": [
             {
-              "action": "Compare TPM, policy, protector, recovery key, and firmware state against a working device.",
-              "expect": "The cause is narrowed to TPM, policy conflict, escrow, firmware, identity, or protector configuration."
-            },
-            {
-              "action": "Review BitLocker and TPM event logs for recovery, escrow, encryption, and policy enforcement errors.",
-              "expect": "A specific BitLocker dependency or failure stage is identified."
+              "action": "Check Azure AD or AD for a matching escrowed key with that ID",
+              "expect": "Matching recovery key object is found"
             }
           ]
         },
@@ -107,12 +97,12 @@
           "icon": "🛠",
           "steps": [
             {
-              "action": "Correct policy conflicts, TPM readiness, protector configuration, recovery key backup, or device identity issues as applicable.",
-              "expect": "The device can encrypt and back up recovery information as intended."
+              "action": "Enter the recovery key to boot the device",
+              "expect": "Device boots successfully into Windows"
             },
             {
-              "action": "Suspend and resume protection around planned firmware or boot changes to avoid unnecessary recovery prompts.",
-              "expect": "BitLocker remains protected without repeated unexpected recovery prompts."
+              "action": "Investigate and remediate the root trigger, such as a firmware change",
+              "expect": "Root cause identified and corrected"
             }
           ]
         },
@@ -121,12 +111,154 @@
           "icon": "🎯",
           "steps": [
             {
-              "action": "Verify encryption status, protection status, protector list, and recovery key escrow after remediation.",
-              "expect": "BitLocker protection is on and recovery key is stored in the expected location."
+              "action": "Reboot the device once more to confirm no repeat prompt",
+              "expect": "Device boots normally without a recovery prompt"
+            }
+          ]
+        }
+      ]
+    },
+    "recovery_key_unknown_mbam_lookup": {
+      "title": "User at recovery prompt doesn't know where to find their recovery key",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the machine is genuinely stuck at the BitLocker recovery prompt and note the recovery key ID shown",
+              "expect": "Key ID is legible and recorded"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Determine whether the environment escrows keys to Azure AD/AD, or uses MBAM for centralized recovery",
+              "expect": "Identifies the correct lookup path for this environment"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "If MBAM is in use, retrieve the key via the MBAM Self-Service Portal, or have the Helpdesk pull it from the MBAM recovery and hardware database",
+              "expect": "Matching recovery key is located and provided to the user"
             },
             {
-              "action": "Monitor the affected group for recurring recovery prompts or escrow failures.",
-              "expect": "No repeated BitLocker recovery or key backup trend remains."
+              "action": "Otherwise, retrieve the key from the user's Microsoft account or the escrowed AD/Azure AD object using the key ID",
+              "expect": "Matching recovery key is located and provided to the user"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Enter the recovery key and confirm the device boots successfully",
+              "expect": "Device boots into Windows without a repeat prompt"
+            }
+          ]
+        }
+      ]
+    },
+    "tpm_owner_lockout_after_failed_attempts": {
+      "title": "TPM enters lockout after repeated failed PIN/authorization attempts",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'Get-Tpm' and check the LockoutCount / IsLockedOut properties",
+              "expect": "Confirms the TPM is actually in a lockout state, not a different failure"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Determine the TPM's configured lockout recovery time and whether an owner password/clear is required",
+              "expect": "Identifies whether waiting it out or a manual clear is the right path"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Wait out the lockout duration, or if urgent, use 'tpm.msc' > Clear TPM (requires physical presence/reboot) as a last resort — note this can require BitLocker recovery afterward",
+              "expect": "TPM lockout clears and normal authentication resumes"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check 'Get-Tpm' and attempt normal PIN entry",
+              "expect": "TPM accepts the correct PIN without further lockout"
+            }
+          ]
+        }
+      ]
+    },
+    "encryption_stuck_at_percentage": {
+      "title": "BitLocker encryption progress appears stuck at a fixed percentage",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run 'manage-bde -status' and confirm the percentage hasn't moved over a reasonable observation window",
+              "expect": "Confirms a genuine stall versus a slow but progressing full-disk encryption pass"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check disk health (SMART) and confirm whether Full Encryption (slower) rather than Used Space Only was selected",
+              "expect": "Identifies whether this is expected behavior or a genuine disk/hardware issue"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "If disk health is poor, back up data and plan for disk replacement rather than continuing to force encryption",
+              "expect": "Avoids data loss from continuing to encrypt a failing disk"
+            },
+            {
+              "action": "If disk health is fine, pause and resume encryption ('manage-bde -pause'/'-resume C:') to nudge the process",
+              "expect": "Encryption resumes progressing normally"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check 'manage-bde -status' after resuming",
+              "expect": "Percentage progresses and eventually reaches 100%"
             }
           ]
         }

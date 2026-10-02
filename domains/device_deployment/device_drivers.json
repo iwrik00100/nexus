@@ -1,0 +1,478 @@
+{
+  "key": "device_drivers",
+  "label": "Device Drivers",
+  "icon": "🧩",
+  "domain": "device_deployment",
+  "scoping": {
+    "l1": [
+      "What is the exact Code number shown in Device Manager (e.g. Code 10, 22, 28, 39, 43, 52)?",
+      "Is the affected device shown as Unknown Device, disabled, or with a yellow warning icon?",
+      "Did this begin after a Windows Update, BIOS/UEFI update, or new hardware installation?",
+      "Is the failure limited to a single peripheral, or does it affect a whole device class, such as all USB ports?",
+      "Has the customer confirmed which specific device shows the error under Device Manager > Other devices (yellow bang)?",
+      "Is this a per-device driver failure, or a driver management/governance question (e.g. which drivers WSUS/Intune is allowed to offer)?",
+      "If related to an update installation, which KB number was involved, and what is the exact make/model of the affected device?"
+    ],
+    "l2": [
+      "Is Secure Boot or Driver Signature Enforcement enabled on this device?",
+      "Is the driver WHQL-signed, attestation-signed, or test-signed only?",
+      "Are upper or lower filter drivers registered on this device's stack that could be interfering?",
+      "Does the failure affect one specific device instance ID, or every device that uses the same INF?",
+      "Are optional driver updates being managed centrally (WSUS driver approval, Intune driver update policy, or 'Do not include drivers with Windows Updates' GPO), or is each device fetching drivers independently from Windows Update?",
+      "Is the failure happening at boot (before the OS fully loads USB stacks) or during normal runtime use of the device?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Open Device Manager and check the device's General tab for the exact status and Code number.",
+      "Run 'pnputil /enum-devices /connected' to list currently connected Plug and Play devices.",
+      "Check Event Viewer > Windows Logs > System for Kernel-PnP and DriverFrameworks-UserMode events.",
+      "Confirm the driver version, date, and provider under the device's Driver tab.",
+      "On the Details tab, set the Property dropdown to Device instance path, copy the value, and include it when reporting the issue."
+    ],
+    "l2": [
+      "Review C:\\Windows\\INF\\setupapi.dev.log for INF matching, copy failures, and signature checks around the failure timestamp.",
+      "Run 'pnputil /enum-drivers' to list every third-party driver package currently staged in the driver store.",
+      "Compare the device's Hardware IDs and Compatible IDs (Details tab) against the INF file's [Models] section for a mismatch.",
+      "Check the device's class GUID key in the registry for unexpected UpperFilters or LowerFilters values sitting in the device stack.",
+      "Use SetupApiLogViewer to break down setupapi.dev.log errors quickly and confirm the time period of specific failures.",
+      "Use TextAnalysisTool.NET for fast, powerful filtering across setupapi.dev.log, CBS.log, or DISM.log when investigating driver-related servicing issues.",
+      "For advanced device control/diagnostics, Devcon (from the Windows Driver Kit / WDK) can enumerate, enable, disable, and query devices from the command line — install the architecture-matching WDK build if the customer doesn't already have it.",
+      "Check the 'Select when Preview Builds and Feature Updates are received'-style driver policies and the Intune Driver Update Management profile (Devices > Driver updates) to confirm whether a specific driver is approved, needs review, or is declined for the targeted device group.",
+      "For USB-specific issues under a kernel debugger, run '!wdfkd.wdfldr' to list loaded KMDF/UMDF drivers and their versions (e.g. usbser.sys, UsbHub3.sys, USBXHCI.SYS), then '!wdfdriverinfo <driver.sys>' for a specific driver's WDF binding details.",
+      "For host-controller-level USB investigation, run '!usb3kd.dll.xhci_info <DeviceExtension>' to dump XHCI controller state, and '!rcdrlogdump USBXHCI -a <address>' to pull the controller's internal trace ring buffer (port resets, idle timeouts, D0 exit/save-state events).",
+      "Capture a WPR (Windows Performance Recorder) trace using the USB-specific trace profile, then analyze the Device I/O Timeline by Module in WPA to correlate a failing driver (e.g. USBSTOR.SYS) against IRP major/minor codes and duration.",
+      "When a transfer fails in a WPR/ETW trace, search for 'CC_USB_TRANSACTION_ERROR' or 'USBD_STATUS_XACT_ERROR' (0xC0000011) around the failure timestamp to confirm a genuine bus-level transaction error rather than a software-only fault.",
+      "In setupapi.dev.log, a line beginning '! ndv: Queueing up error report since device has a PnP problem' flags a device PnP has already given up on — treat this as the starting point for that device's install failure trace.",
+      "For engineer-side deep dives, 'Devcon' (from the WDK) can enumerate/enable/disable/rescan devices from the command line when Device Manager's GUI isn't sufficient — install the matching architecture WDK if it isn't already on the machine."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Update the driver via Device Manager > Update driver.",
+      "Roll back to the previous driver version via Device Manager > Roll Back Driver.",
+      "Uninstall the device and use Action > Scan for hardware changes to force PnP to reinstall it.",
+      "If the device shows a black down-arrow with Code 22 (This device is disabled), enable it from Device Manager.",
+      "If a BSOD followed a recent driver update, boot into Safe Mode and roll back the driver via Device Manager before attempting further diagnosis.",
+      "Use System Restore to a point before the driver install as a fast recovery path when a specific faulting driver isn't yet confirmed."
+    ],
+    "l2": [
+      "For Code 28 (drivers not installed), stage and force-install the correct package with 'pnputil /add-driver <inf path> /install'.",
+      "For Code 39 or Code 52 (driver blocked due to signature), verify the catalog file's digital signature; only enable test signing with 'bcdedit /set testsigning on' in a development/lab environment, never in production.",
+      "For a suspected filter driver conflict, back up and remove the UpperFilters/LowerFilters values under the device's class GUID key, then reboot.",
+      "Use 'pnputil /delete-driver oemXX.inf /uninstall /force' to remove a corrupted staged driver package before installing a clean copy.",
+      "If a bad driver was already approved and pushed centrally, decline/expire it in the Intune Driver Update Management profile (or remove the WSUS approval) and use 'pnputil /delete-driver ... /uninstall /force' on already-affected devices to roll it back fleet-wide.",
+      "Cross-reference any USBD_STATUS_* code found in traces against the documented USBD_STATUS value list to translate it into a concrete failure category (e.g. XACT_ERROR = transaction/signal integrity, STALL_PID = device-side rejection) before deciding whether the fix is cable/port hardware, firmware, or driver-side."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Record the exact Code number and device name from Device Manager's General tab.",
+      "Note whether the issue began after a specific update, BIOS change, or new peripheral.",
+      "Capture a screenshot of the device's Details tab showing its Hardware IDs.",
+      "Confirm the currently installed driver version and publisher.",
+      "Capture the device's Device instance path from Device Manager > Details tab for precise identification in any escalation."
+    ],
+    "l2": [
+      "Collect C:\\Windows\\INF\\setupapi.dev.log covering the time window of the failed install.",
+      "Export 'pnputil /enum-devices /connected' and 'pnputil /enum-drivers' output.",
+      "Collect the Kernel-PnP and DriverFrameworks-UserMode event log channels.",
+      "If a BSOD occurred, collect the minidump from C:\\Windows\\Minidump for driver fault analysis.",
+      "For USB escalations, collect: Device Manager's exact Device status code and Device instance path (Details tab), a 'Device by connection' screenshot showing the device under its USB Host Controller, and — if reproducible — a WPR trace covering the failure window."
+    ]
+  },
+  "playbooks": {
+    "unknown_device_code28": {
+      "title": "Device shows Unknown Device / Code 28 — drivers not installed",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Open Device Manager and confirm the device shows Code 28 on its General tab",
+              "expect": "Confirms 'The drivers for this device are not installed' (Code 28)"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the Hardware IDs on the Details tab and search the driver store for a matching INF",
+              "expect": "Identifies whether a matching driver package exists locally or needs to be sourced"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Stage and install the correct package with 'pnputil /add-driver <path>\\device.inf /install'",
+              "expect": "PnPUtil reports the driver installed successfully"
+            },
+            {
+              "action": "Rescan hardware via Action > Scan for hardware changes",
+              "expect": "Device is detected and bound to the newly installed driver"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check Device Manager for the device",
+              "expect": "Device shows 'This device is working properly' with no Code 28"
+            }
+          ]
+        }
+      ]
+    },
+    "driver_blocked_by_signature_code52": {
+      "title": "Driver blocked due to signature enforcement (Code 52 / Code 39)",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check Device Manager General tab for Code 52 ('Windows cannot verify the digital signature')",
+              "expect": "Confirms signature enforcement is blocking the driver"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check whether the driver is WHQL-signed, attestation-signed, or an unsigned/test-signed build",
+              "expect": "Identifies the signing type and whether it is appropriate for this OS/architecture"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Obtain a properly WHQL- or attestation-signed build of the driver from the vendor",
+              "expect": "Signed package installs without Code 52"
+            },
+            {
+              "action": "In a lab/dev environment only, 'bcdedit /set testsigning on' and reboot to temporarily allow test-signed drivers",
+              "expect": "Test-signed driver loads for diagnostic purposes only"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-check Device Manager",
+              "expect": "Device shows working properly with no signature-related code"
+            }
+          ]
+        }
+      ]
+    },
+    "filter_driver_conflict": {
+      "title": "Upper/lower filter driver conflict breaks a device stack",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the device misbehaves only after a specific software install (e.g. AV, encryption, or monitoring tool)",
+              "expect": "Timeline correlates the failure with a filter-driver-installing product"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the device's class GUID registry key for UpperFilters/LowerFilters values",
+              "expect": "Identifies the specific filter driver name inserted into the stack"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Back up the registry key, then remove the offending UpperFilters/LowerFilters entry",
+              "expect": "Value is removed without affecting other devices under the same class"
+            },
+            {
+              "action": "Reboot the device",
+              "expect": "Device stack rebuilds without the filter driver"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-test the device's normal functionality",
+              "expect": "Device works properly and no longer shows the earlier error"
+            }
+          ]
+        }
+      ]
+    },
+    "setupapi_log_analysis_workflow": {
+      "title": "Using setupapi.dev.log to pinpoint a driver install failure",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Open Device Manager and confirm the device appears under 'Other devices' with a yellow warning icon",
+              "expect": "Confirms the device has an unresolved PnP/driver problem"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Open C:\\Windows\\INF\\setupapi.dev.log in SetupApiLogViewer or TextAnalysisTool.NET and locate the 'import driver package' operation for this device around the failure time",
+              "expect": "Identifies the specific INF matching or copy step that failed, e.g. an '[Exit status: FAILURE' line"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Address the specific failure identified (missing INF, signature rejection, or hardware ID mismatch) using the appropriate fix from this technology's troubleshooting steps",
+              "expect": "Underlying cause is resolved"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Rescan for hardware changes and re-check Device Manager",
+              "expect": "Device installs and shows 'This device is working properly'"
+            }
+          ]
+        }
+      ]
+    },
+    "bad_driver_pushed_via_driver_management": {
+      "title": "A centrally-approved driver update causes fleet-wide device problems",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm multiple devices show the same Code/error after the same driver version was pushed via WSUS or Intune Driver Update Management",
+              "expect": "Correlates the symptom to a specific centrally-managed driver version, not an isolated device fault"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the Intune Driver Update Management profile (or WSUS driver approvals) for the exact driver version and its approval/rollout scope",
+              "expect": "Confirms which device groups received the driver and when"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Decline or expire the offending driver in the management profile so no further devices receive it",
+              "expect": "Driver stops being offered to unaffected devices"
+            },
+            {
+              "action": "On already-affected devices, run 'pnputil /delete-driver oemXX.inf /uninstall /force' and roll back to the previous known-good driver",
+              "expect": "Affected devices return to the prior working driver version"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Monitor the device group for a few days to confirm no further devices pick up the bad driver and previously-affected devices remain stable",
+              "expect": "No new occurrences; fleet is stable on the rolled-back driver"
+            }
+          ]
+        }
+      ]
+    },
+    "usb_device_kernel_trace_analysis": {
+      "title": "Deep-dive USB device failure using kernel debugger and WPR trace analysis",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the exact Device status code from Device Manager's General tab and capture the Device instance path from the Details tab",
+              "expect": "Precise device identification is recorded before deeper investigation begins"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Under a kernel debugger, run '!wdfkd.wdfldr' then '!wdfdriverinfo' on the relevant USB driver (e.g. USBXHCI.SYS) to confirm the loaded version and WDF binding",
+              "expect": "Confirms which driver version is actually loaded and bound to the controller"
+            },
+            {
+              "action": "Run '!usb3kd.dll.xhci_info' and '!rcdrlogdump USBXHCI' against the controller's device extension to pull its internal trace ring",
+              "expect": "Surfaces low-level controller events (port resets, save-state, idle timeout) around the failure"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "If a WPR trace shows repeated CC_USB_TRANSACTION_ERROR / USBD_STATUS_XACT_ERROR on the same port, treat it as a hardware/signal-integrity issue — test a different port, cable, or hub before touching drivers",
+              "expect": "Confirms or rules out physical-layer causes"
+            },
+            {
+              "action": "If the controller trace shows a software-side fault (e.g. PoFxPowerControl failing with STATUS_NOT_SUPPORTED) rather than a bus error, update or roll back the specific KMDF/UMDF driver identified",
+              "expect": "Driver-side fault is remediated"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Reproduce the original scenario and capture a fresh WPR trace",
+              "expect": "No further USBD_STATUS_XACT_ERROR or controller fault events for this device"
+            }
+          ]
+        }
+      ]
+    },
+    "driver_update_causes_bsod_rollback": {
+      "title": "A driver update causes BSODs immediately after install",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Boot into Safe Mode and confirm the device is stable there (rules out unrelated hardware failure)",
+              "expect": "Device is stable in Safe Mode, pointing at a driver rather than hardware fault"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check the minidump under C:\\Windows\\Minidump (or use WinDbg) for the faulting module name",
+              "expect": "Identifies the specific driver file responsible for the BSOD"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Roll back the driver via Device Manager > Roll Back Driver, or use System Restore to a point before the update",
+              "expect": "Device returns to the previous known-good driver version"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Boot normally and monitor for a period under typical workload",
+              "expect": "No further BSODs referencing the same driver"
+            }
+          ]
+        }
+      ]
+    },
+    "generic_driver_troubleshooting_flowchart": {
+      "title": "General-purpose driver issue triage when the symptom doesn't match a known Code",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm exactly what the user expects the device to do, versus what it's actually doing",
+              "expect": "A clear, specific symptom is defined rather than a vague complaint"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check Device Manager for any status code, then setupapi.dev.log and Kernel-PnP events for the device's install/operation history",
+              "expect": "Either a specific Code is found (route to the matching playbook) or the device shows as working properly (points elsewhere, e.g. an application-layer issue)"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Apply the standard remediation ladder in order: update driver, roll back driver, uninstall and rescan, reinstall from a clean download",
+              "expect": "One of these standard steps resolves the issue"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-test the originally reported symptom directly with the user/customer",
+              "expect": "The originally reported behavior is confirmed resolved, not just the Device Manager status"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

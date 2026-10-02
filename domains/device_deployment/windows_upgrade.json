@@ -5,87 +5,84 @@
   "domain": "device_deployment",
   "scoping": {
     "l1": [
-      "Question 1 - Is the upgrade from a previous Windows version to a higher Windows version failing on one device or multiple devices?",
-      "Question 2 - What is the current source Windows version/build and what higher target Windows version/build is expected?",
-      "Question 3 - Is the upgrade not starting, not offered, stuck, failing before reboot, failing after reboot, or rolling back to the previous version?",
-      "Question 4 - What exact setup error code, rollback code, percentage, screen message, or SetupDiag result is observed?",
-      "Question 5 - How is the higher version upgrade being triggered: Intune Feature Update policy, SCCM in-place upgrade task sequence, ISO media, setup.exe, Autopatch, or Windows Update for Business?",
-      "Question 6 - Did the failure start after a driver, BIOS/firmware, security software, disk encryption, policy, image, or deployment change?"
+      "What is the source build and the target build of the upgrade?",
+      "What is the exact 0xC1900101 (or other) rollback error code shown?",
+      "Which of the four upgrade phases failed — Downlevel, SafeOS, First boot, or Second boot?",
+      "Did the upgrade fail during download, install, or first boot?",
+      "Is this upgrade part of a broader ring-based rollout (pilot/broad/critical rings), or a one-off manual upgrade?"
     ],
     "l2": [
-      "Which Windows Setup phase failed: downlevel, SafeOS, first boot, second boot/OOBE, uninstall, or rollback?",
-      "Are SetupDiag, setupact.log, setuperr.log, CompatData.xml, ScanResult.xml, or rollback logs showing a specific blocker?",
-      "Is the device blocked by hardware readiness, TPM, Secure Boot, CPU, storage, BIOS mode, safeguard hold, TargetReleaseVersion, or compatibility assessment?",
-      "Is the upgrade path supported from the current Windows version, edition, language, architecture, and servicing channel to the target higher version?",
-      "Are third-party antivirus, disk encryption, filter drivers, storage drivers, VPN clients, or endpoint security components present during the upgrade?",
-      "Is the same upgrade package, ISO, feature update policy, or task sequence successful on a comparable working device?"
+      "Is there a known incompatible driver, filter driver, or application blocking the upgrade?",
+      "Is the device using BitLocker, and was it suspended prior to upgrade?",
+      "Is Citrix VDA, non-Microsoft disk encryption, or antivirus software installed on this device?",
+      "Were user profile folders redirected off the OS drive (e.g. to E:)?",
+      "Does setupact.log show a device install that has been running for more than 5 minutes without closing (an unclosed '<ins>' log section)?"
     ]
   },
   "probing": {
     "l1": [
-      "Question 1 - What previous Windows version is installed now and what higher Windows version should the device upgrade to?",
-      "Question 2 - Does the upgrade fail before the first reboot, during SafeOS, during first boot, during second boot/OOBE, or after rollback?",
-      "Question 3 - Is the failure reproducible every time or does the upgrade progress further on retry?",
-      "Question 4 - Does the device have enough free disk space, stable power, working network access, and no pending reboot before upgrade begins?",
-      "Question 5 - Were nonessential peripherals, docking stations, external storage, and third-party security tools removed for testing?",
-      "Question 6 - Was a compatibility scan performed before the upgrade and did it report any hard block or warning?"
+      "Run 'winver' to confirm the current build before and after attempts.",
+      "Check $Windows.~BT\\Sources\\Panther\\setupact.log for down-level phase failures — this is the primary log for diagnosing setup issues.",
+      "Check setuperr.log (same folder) for all errors encountered during installation.",
+      "Check available free disk space — 16GB for 32-bit, 20GB for 64-bit.",
+      "Search Windows 10 setupact.log for 'Operations recap' to quickly jump to the phase and last operation that was executed, and whether it succeeded."
     ],
     "l2": [
-      "Does SetupDiag identify a matched rule, setup phase, operation, result code, extend code, or rollback reason?",
-      "Do setupact.log and setuperr.log point to the same fatal setup operation or component before rollback occurs?",
-      "Does CompatData.xml or ScanResult.xml show appraiser hard blocks, driver blocks, unsupported hardware, language mismatch, or edition mismatch?",
-      "Does setupapi.dev.log show failed device migration, problematic driver installation, or 0xC1900101 style driver failure indicators?",
-      "Do rollback logs under C:\\$WINDOWS.~BT\\Sources\\Rollback show unexpected reboot, bugcheck, migration failure, or setup platform failure?",
-      "Does the management workflow show the device received the correct higher version upgrade assignment and package content?"
+      "Run SetupDiag.exe against the failed upgrade attempt to get a documented rollback profile match and diagnosis code.",
+      "For OOBE-phase failures (0x4001C–0x4001F), check $Windows.~BT\\Sources\\Panther\\UnattendGC\\setupact.log.",
+      "For generic rollbacks (0xC1900101), check $Windows.~BT\\Sources\\Rollback for setupmem.dmp, setupapi.dev.log, and event logs.",
+      "For down-level WSUS/WU failures (e.g. 0xC1900107), check BlueBox.log in Windows\\Logs\\Mosetup.",
+      "Know the setupact.log phase tags: CONX/MOUPG (down-level UI/compatibility, MOUPG = Store upgrade), PANTHR (mostly ignorable), Setup Platform (the core non-UI upgrade engine), IBSLIB (Image Based Setup Library), MIG (the migration engine moving data between OS images), and DISM (driver/service migration).",
+      "For a suspected device-install hang, search for 'ndv: Waiting for previous device install to complete' with an unclosed '<ins>' tag — each device install has a 5-minute timeout, and once one device hangs kernel PnP, every subsequent device install will also appear to hang.",
+      "When a rollback extended error code is unclear, decode it against the documented Upgrade Error Codes reference table — e.g. MOSETUP_E_INSTALLDISKSPACE_BLOCK (0xC190020E) means insufficient disk space was the real blocker, and ERROR_ACCESS_DENIED (0x80070005) points to a permissions/lockdown conflict rather than a compatibility issue.",
+      "Search every log file under the Panther/rollback folders for the literal string ', error' to quickly shortlist which specific log actually contains the failure, then open just that one in TextAnalysisTool.NET or Notepad++ with keyword filtering (Ctrl+N to set a filter, Ctrl+H to show only filtered lines) rather than reading every log in full."
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Confirm the source version, target higher version, upgrade method, affected count, exact error code, and rollback behavior.",
-      "Run SetupDiag and review the output before deeper manual log review.",
-      "Restart the device, clear pending reboot state, verify free disk space, and retry the higher version upgrade.",
-      "Remove nonessential peripherals and temporarily remove or disable third-party security, disk encryption, and unsupported software for testing.",
-      "Confirm that the device is targeted to the correct higher version upgrade policy, task sequence, deployment, or media source."
+      "Free up disk space and retry the upgrade.",
+      "Temporarily uninstall known incompatible third-party software, especially antivirus.",
+      "Disconnect non-essential USB peripherals before retrying.",
+      "Suspend BitLocker with 'manage-bde -protectors -disable C:' before upgrading.",
+      "Run Disk Cleanup or Storage Sense to reclaim space if the compatibility scan reports insufficient disk space.",
+      "Temporarily disable or uninstall third-party antivirus/security software known to interfere with in-place upgrades, then retry."
     ],
     "l2": [
-      "Map the result code and extend code to the Windows Setup phase to identify whether failure occurred in downlevel, SafeOS, first boot, second boot, or rollback.",
-      "Analyze setupact.log and setuperr.log from the correct setup phase folder and search backward from the last fatal setup error.",
-      "Review CompatData.xml, ScanResult.xml, and appraiser outputs to identify hard blocks, driver blocks, application blocks, or unsupported upgrade path issues.",
-      "Review setupapi.dev.log and driver inventory when setup errors indicate migration failure, boot failure, or 0xC1900101 patterns.",
-      "Validate Feature Update targeting, TargetReleaseVersion, provisioning policies, SCCM task sequence logic, BIOS/firmware readiness, and upgrade package integrity."
+      "0xC1900101-0x20004/0x2000c/0x20017 (SafeOS phase): update drivers and BIOS, remove unused SATA/legacy devices, and ensure 'Download and install updates (recommended)' is accepted at upgrade start.",
+      "0xC1900101-0x30018/0x3000D (First boot phase): disconnect all peripherals except mouse/keyboard/display and update or roll back the flagged display or device driver.",
+      "0xC1900101-0x40017 with Citrix VDA installed: uninstall Citrix VDA, run the upgrade, then reinstall — or disable the CtxMcsWbc filter driver (set its Start value to 4 in the registry) as a workaround.",
+      "0x8007001F-0x3000D (First boot apply failure): check whether user profile folders were redirected to a non-OS drive; if so, correct the Profile Directory registry value back to the system drive.",
+      "For a kernel PnP device-install hang (often surfacing as ERROR_CANCELLED 0x800704C7), don't assume the first hung entry in the log is the true root cause — drvinst.exe processes acquire the mutex in a non-deterministic order, so compare timestamps; the recommended action is to remove or update the suspected driver after a rollback and retry the upgrade."
     ]
   },
   "datacollection": {
     "l1": [
-      "Collect a screenshot of the setup failure, rollback message, stuck percentage, or upgrade error screen.",
-      "Collect source Windows version/build using 'winver', 'systeminfo', and 'Get-ComputerInfo'.",
-      "Collect the target higher Windows version/build, upgrade method, deployment name, policy name, ISO source, or task sequence name.",
-      "Collect SetupDiag output such as SetupDiagResults.log or SetupDiagResults.xml from the affected device."
+      "Record the exact rollback or error code shown after failure, including the sub-code after the dash.",
+      "Note the source build, target build, and deployment method used.",
+      "Capture a screenshot of the failure screen if one is shown.",
+      "Confirm whether the device rolled back automatically to the previous build."
     ],
     "l2": [
-      "Collect C:\\$WINDOWS.~BT\\Sources\\Panther\\setupact.log and C:\\$WINDOWS.~BT\\Sources\\Panther\\setuperr.log for downlevel or pre-reboot upgrade failures.",
-      "Collect C:\\$WINDOWS.~BT\\Sources\\Rollback\\setupact.log and related rollback logs when the device returns to the previous Windows version.",
-      "Collect C:\\Windows\\Panther\\setupact.log, C:\\Windows\\Panther\\setuperr.log, C:\\Windows\\Panther\\miglog.xml, and C:\\Windows\\INF\\setupapi.dev.log when available.",
-      "Collect CompatData.xml, ScanResult.xml, appraiser logs, and BlueBox.log when upgrade readiness or compatibility assessment is involved.",
-      "Collect SCCM SMSTS logs, Intune policy reports, Feature Update policy status, exported Setup event logs, and TSS deployment logs when managed deployment is used."
+      "Collect the full $WINDOWS.~BT\\Sources\\Panther folder (setupact.log, setuperr.log, miglog.xml).",
+      "Run SetupDiag.exe and attach the generated SetupDiagResults.xml/json (from %windir%\\logs\\SetupDiag starting 2004).",
+      "Collect supplemental rollback logs from $Windows.~BT\\Sources\\Rollback: setupmem.dmp, setupapi.dev.log, and event logs (*.evtx).",
+      "In Event Viewer, search Windows Logs > Application for 'winsetupdiag02' events for a structured failure summary.",
+      "For automated log capture, use the Windows Setup Diagnostics tool (SDCON) if available in the environment, or 'copylogs.cmd' as a fallback to gather the full upgrade log set.",
+      "Understand the difference between what SetupDiag, Logs.zip, and an SDP/copylogs.cmd collection each provide: SetupDiag attempts automatic root-cause analysis, Logs.zip is the minimal raw log set, and SDP/copylogs are broader collectors — none of them retrieve everything, so cross-check what's actually needed against what each one grabbed."
     ]
   },
   "playbooks": {
-    "windows_upgrade_to_higher_version": {
-      "title": "Windows Upgrade to Higher Version Investigation",
-      "severity": "medium",
+    "upgrade_rollback_failure": {
+      "title": "Upgrade fails and rolls back automatically (generic 0xC1900101)",
+      "severity": "high",
       "phases": [
         {
           "name": "Verify",
           "icon": "✅",
           "steps": [
             {
-              "action": "Confirm the previous Windows version, target higher Windows version, upgrade method, error code, and affected device scope.",
-              "expect": "The issue is classified as not offered, readiness block, setup failure, stuck upgrade, rollback, or post-upgrade issue."
-            },
-            {
-              "action": "Run SetupDiag or collect existing SetupDiag output from the affected device after the failed upgrade attempt.",
-              "expect": "A matched rule, setup phase, result code, extend code, or rollback reason is available for investigation."
+              "action": "Confirm the device is back on the original build via winver",
+              "expect": "Rollback confirmed, device stable on prior build"
             }
           ]
         },
@@ -94,12 +91,8 @@
           "icon": "🔍",
           "steps": [
             {
-              "action": "Identify the failing Windows Setup phase using SetupDiag, setupact.log, setuperr.log, rollback logs, and setup folder location.",
-              "expect": "The failure is mapped to downlevel, SafeOS, first boot, second boot/OOBE, uninstall, or rollback."
-            },
-            {
-              "action": "Review compatibility, driver, firmware, application, storage, policy, and upgrade package indicators from setup and compatibility logs.",
-              "expect": "The likely blocker is narrowed to readiness, compatibility, driver, application, firmware, storage, policy, or package source."
+              "action": "Run SetupDiag.exe against the Panther and Rollback logs",
+              "expect": "Returns a specific matching rollback profile and reason code"
             }
           ]
         },
@@ -108,16 +101,8 @@
           "icon": "🛠",
           "steps": [
             {
-              "action": "Remove or update blocking drivers, applications, disk encryption, third-party security tools, firmware, or unsupported peripherals identified in logs.",
-              "expect": "Known compatibility and driver blockers are remediated before retrying the higher version upgrade."
-            },
-            {
-              "action": "Correct Feature Update targeting, TargetReleaseVersion, SCCM task sequence logic, upgrade package source, or policy assignment as applicable.",
-              "expect": "The device receives the intended higher version upgrade path without policy or targeting conflicts."
-            },
-            {
-              "action": "Repair servicing health, confirm disk space, update BIOS/firmware/drivers, and retry the upgrade from a validated source.",
-              "expect": "The upgrade progresses beyond the previous failure point and completes setup phases successfully."
+              "action": "Remediate the flagged driver, app, or disk space issue from SetupDiag's output",
+              "expect": "Blocking condition is resolved"
             }
           ]
         },
@@ -126,12 +111,246 @@
           "icon": "🎯",
           "steps": [
             {
-              "action": "Verify the upgraded Windows version using winver, OS build, setup logs, event logs, management console status, and application validation.",
-              "expect": "The device is running the target higher Windows version and reports successful upgrade completion."
+              "action": "Retry the upgrade attempt",
+              "expect": "Upgrade completes and device boots to the target build"
+            }
+          ]
+        }
+      ]
+    },
+    "citrix_vda_blocks_upgrade_0x40017": {
+      "title": "Upgrade rolls back with 0xC1900101-0x40017 on a Citrix VDA machine",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Confirm the machine has Citrix Virtual Delivery Agent installed",
+              "expect": "Citrix VDA is present, typically with the CtxMcsWbc filter driver"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check whether Cumulative Update for the current Windows version already includes the documented fix",
+              "expect": "Confirms whether a simple update resolves it or a workaround is needed"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Uninstall Citrix VDA using VDAWorkstationSetup, run the upgrade, then reinstall VDA afterward",
+              "expect": "Upgrade completes without the filter driver blocking disk writes"
             },
             {
-              "action": "Monitor the device group through the next deployment, reboot, policy refresh, and compliance reporting cycle.",
-              "expect": "No repeated rollback, readiness block, or post-upgrade compliance mismatch is observed."
+              "action": "Alternative: set CtxMcsWbc's Start registry value from 0 to 4 to disable the MCS cache service, then delete the CtxMcsWbc key and restart",
+              "expect": "Filter driver no longer blocks the upgrade"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry the Windows upgrade",
+              "expect": "Upgrade completes without rollback"
+            }
+          ]
+        }
+      ]
+    },
+    "profile_redirect_rollback_0x8007001f": {
+      "title": "First boot apply fails (0x8007001F-0x3000D) due to redirected user profiles",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check SetupDiag output for 'FindRollbackFailure' with Last Operation = First boot apply",
+              "expect": "Confirms error 0x8007001F-0x3000D at the First Boot phase"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Check whether user profiles were moved to a non-OS drive (e.g. E:) via the ProfilesDirectory registry value",
+              "expect": "Confirms the profile directory points off the system drive"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Correct HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\ProfilesDirectory back to the system drive",
+              "expect": "Registry value now points to the OS drive"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Retry the upgrade",
+              "expect": "First boot phase completes without the 0x8007001F rollback"
+            }
+          ]
+        }
+      ]
+    },
+    "kernel_pnp_device_install_hang_0x800704c7": {
+      "title": "Upgrade hangs/cancels with ERROR_CANCELLED (0x800704C7) during device install",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Search setupact.log for 'ndv: Waiting for previous device install to complete' with an unclosed '<ins>' tag",
+              "expect": "Confirms a specific device install never completed within its 5-minute window"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Compare timestamps across all hung/unclosed device install sections rather than trusting log order (drvinst.exe mutex order is non-deterministic)",
+              "expect": "Identifies the earliest genuine hang, which is the most likely true root cause"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "After the automatic rollback, remove or update the suspected driver identified from the earliest hang",
+              "expect": "Driver is updated or removed cleanly"
+            },
+            {
+              "action": "Retry the upgrade",
+              "expect": "Device install phase completes without exceeding the timeout"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "If it fails again, repeat isolation on the new log and consider reproducing under a kernel debugger if no new suspect driver is found",
+              "expect": "A definitive faulting driver is identified and remediated"
+            }
+          ]
+        }
+      ]
+    },
+    "insufficient_disk_space_block": {
+      "title": "Upgrade won't start — compatibility scan reports insufficient disk space",
+      "severity": "low",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check the exact free space reported versus the minimum required (typically 20–32GB depending on version)",
+              "expect": "Confirms the shortfall and how much space needs to be freed"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Run Storage Sense or 'cleanmgr /sageset:1' to identify what's consuming space (old Windows.old, temp files, hibernation file)",
+              "expect": "Identifies safe-to-remove space consumers"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Clear the identified space, or attach external/USB storage if the upgrade tool supports it for temporary staging",
+              "expect": "Free space now exceeds the minimum requirement"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Re-run the compatibility scan or restart the upgrade",
+              "expect": "Disk space check passes and the upgrade proceeds"
+            }
+          ]
+        }
+      ]
+    },
+    "antivirus_blocks_upgrade_process": {
+      "title": "Third-party antivirus blocks or repeatedly fails the upgrade",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check SetupDiag output or setupact.log for a reference to the AV product or its filter driver around the failure point",
+              "expect": "Confirms the AV software's involvement rather than an unrelated cause"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Confirm whether the AV vendor has a documented Windows-upgrade-compatible version or an uninstall/reinstall requirement",
+              "expect": "Identifies the correct remediation path for that specific product"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Uninstall the AV product (not just disable it, since drivers often remain loaded), run the upgrade, then reinstall a supported version afterward",
+              "expect": "Upgrade completes without the AV filter driver interfering"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Confirm the device is on the target build and reinstall/verify the AV product afterward",
+              "expect": "Device is upgraded and protected again"
             }
           ]
         }
