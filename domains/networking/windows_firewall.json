@@ -92,7 +92,7 @@
       "Capture firewall ETL trace: 'netsh trace start capture=yes provider=Microsoft-Windows-Windows Firewall With Advanced Security level=5 tracefile=C:\\firewall_trace.etl' — reproduce issue — 'netsh trace stop'.",
       "Export System event log: 'wevtutil epl System C:\\system_events.evtx' — contains firewall service events.",
       "Export Application event log: 'wevtutil epl Application C:\\app_events.evtx' — contains application firewall events.",
-      "TSS data collection: '.\\TSS.ps1 -Scenario NET_General' — collects comprehensive network diagnostics including firewall state."
+      "TSS data collection: '.\\TSS.ps1 -Scenario NET_Firewall' — collects comprehensive firewall diagnostics including BFE, firewall rules, network profiles, WFP state, GPO configuration, and packet traces via PktMon."
     ]
   },
   "playbooks": {

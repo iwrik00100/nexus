@@ -92,7 +92,7 @@
       "Export System event log: 'wevtutil epl System C:\\system_events.evtx' — contains system-level proxy events.",
       "Capture WinHTTP ETL trace: 'netsh trace start capture=yes provider=Microsoft-Windows-WinHTTP level=5 tracefile=C:\\winhttp_trace.etl' — reproduce issue — 'netsh trace stop'.",
       "Test proxy server connectivity: 'Test-NetConnection -ComputerName <proxy_host> -Port <proxy_port> -InformationLevel Detailed > C:\\proxy_connectivity.txt'.",
-      "TSS data collection: '.\\TSS.ps1 -Scenario NET_General' — collects comprehensive network diagnostics including proxy configuration."
+      "TSS data collection: '.\\TSS.ps1 -Scenario NET_Proxy' — collects comprehensive proxy diagnostics including WinHTTP, Winsock, NCSI, WebIO, and network state traces."
     ]
   },
   "playbooks": {
