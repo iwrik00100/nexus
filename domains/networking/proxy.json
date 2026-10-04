@@ -1,0 +1,223 @@
+{
+  "key": "proxy",
+  "label": "Proxy (WinInet/WinHTTP)",
+  "icon": "🌐",
+  "domain": "networking",
+  "scoping": {
+    "l1": [
+      "What Windows version is the affected system running? (Get-ComputerInfo | Select OsName,OsVersion,OsBuildNumber)",
+      "Is the proxy configuration manual (static), automatic (PAC/WPAD), or using no proxy?",
+      "Are you troubleshooting browser issues, application connectivity issues, or Windows Update failures?",
+      "Is the system using a corporate proxy server or direct internet connection?",
+      "Are multiple browsers or applications affected, or just one specific application?",
+      "Is the system domain-joined or standalone? Domain GPO may be pushing proxy settings."
+    ],
+    "l2": [
+      "Which proxy client stack is the affected application using? WinInet (Internet Explorer/Edge Classic), WinHTTP (Windows Update, services), or custom proxy implementation?",
+      "Is WPAD (Web Proxy Auto-Discovery) configured? Check with 'netsh winhttp show proxy' — WPAD uses DHCP option 252 or DNS wpad.domain.local.",
+      "Is a PAC (Proxy Auto-Configuration) file configured? Check with 'netsh winhttp show proxy' — PAC file contains JavaScript for proxy routing logic.",
+      "Are proxy authentication credentials configured? Applications may fail if proxy requires authentication and credentials are missing or expired.",
+      "Is the proxy server reachable? Test with 'Test-NetConnection -ComputerName <proxy_host> -Port <proxy_port>' — typically TCP 8080, 3128, or 443.",
+      "Are SSL/TLS inspection or HTTPS interception configured on the proxy? This can cause certificate trust issues.",
+      "Is IPv6 proxy configuration present alongside IPv4? Dual-stack environments may have conflicting proxy settings.",
+      "Are bypass lists configured? Check 'netsh winhttp show proxy' — bypass list includes sites that should connect directly.",
+      "Is the issue intermittent or persistent? Intermittent issues may indicate proxy server load balancing or health issues.",
+      "Are WinHTTP proxy settings different from WinInet settings? Applications using different stacks may have inconsistent proxy behavior."
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Check WinHTTP proxy settings: 'netsh winhttp show proxy' — displays current WinHTTP proxy configuration used by Windows services.",
+      "Check WinInet proxy settings: 'Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Select ProxyEnable,ProxyServer' — displays browser proxy settings.",
+      "Check automatic proxy detection: 'Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Select AutoDetect,AutoConfigURL' — displays WPAD and PAC configuration.",
+      "Test proxy server connectivity: 'Test-NetConnection -ComputerName <proxy_host> -Port <proxy_port>' — verify proxy server is reachable.",
+      "Test direct connectivity (bypass proxy): 'Test-NetConnection -ComputerName <target> -Port 443' — verify internet is reachable without proxy.",
+      "Check proxy authentication: Applications may prompt for credentials or fail with 407 Proxy Authentication Required."
+    ],
+    "l2": [
+      "Export complete WinHTTP configuration: 'netsh winhttp dump > C:\\winhttp_config.txt' — review all WinHTTP proxy settings.",
+      "Export WinInet proxy settings: 'Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Out-File C:\\wininet_settings.txt' — review browser proxy configuration.",
+      "Check proxy bypass list: 'Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Select ProxyOverride' — verify bypass list includes local addresses and intranet sites.",
+      "Check system-wide proxy settings: 'Get-ItemProperty -Path \"HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Select ProxyEnable,ProxyServer' — system-level proxy configuration.",
+      "Check WPAD DNS resolution: 'Resolve-DnsName -Name wpad.<domain> -Type A' — verify WPAD host can be resolved.",
+      "Check PAC file accessibility: 'Invoke-WebRequest -Uri <pac_url> -UseBasicParsing' — verify PAC file can be downloaded.",
+      "Check proxy authentication via registry: 'Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Select ProxyUser,ProxyPass' — if credentials are stored (not recommended).",
+      "Check proxy configuration for specific application: Application-specific proxy settings may be in app config files or registry.",
+      "Check network adapter proxy settings: 'Get-NetAdapter | Where Status -eq Up | Select Name' — verify adapter-specific proxy configuration if present.",
+      "Test with proxy temporarily disabled: 'netsh winhttp reset proxy' — resets WinHTTP to direct connection, retest, then restore.",
+      "Capture network trace: 'netsh trace start capture=yes provider=Microsoft-Windows-WinHTTP level=5 tracefile=C:\\winhttp_trace.etl' — reproduce issue, then 'netsh trace stop'."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "If WinHTTP proxy is misconfigured: Reset with 'netsh winhttp reset proxy' — clears WinHTTP proxy settings, then configure correctly with 'netsh winhttp set proxy <proxy_server>:<port>'.",
+      "If WinInet proxy is blocking: Disable temporarily via Internet Options > Connections > LAN Settings > uncheck 'Use a proxy server' — retest, then re-enable.",
+      "If WPAD is not working: Disable automatic detection via Internet Options > Connections > LAN Settings > uncheck 'Automatically detect settings' — configure proxy manually.",
+      "If PAC file is not loading: Verify PAC URL is correct and accessible — check with 'Invoke-WebRequest -Uri <pac_url>'.",
+      "If proxy server is unreachable: Check network connectivity and DNS resolution to proxy host — verify proxy server is online.",
+      "If proxy authentication fails: Verify credentials are correct — use domain credentials if proxy is domain-integrated."
+    ],
+    "l2": [
+      "If WinHTTP and WinInet settings are inconsistent: Sync them manually — set WinHTTP to match WinInet with 'netsh winhttp import proxy source=ie'.",
+      "If bypass list is not working: Add bypass entries via Internet Options > Connections > LAN Settings > Advanced > add exceptions for local addresses, intranet sites.",
+      "If WPAD DNS resolution fails: Check DHCP option 252 configuration on DHCP server — verify wpad.domain.local DNS record exists.",
+      "If PAC file has syntax errors: Validate PAC file syntax using browser developer tools or online PAC file validators — fix JavaScript errors.",
+      "If proxy SSL inspection breaks certificates: Add proxy CA certificate to Trusted Root CAs via 'certutil -addstore Root <ca_cert.cer>' — or disable SSL inspection on proxy.",
+      "If IPv6 proxy is not working: Verify proxy server supports IPv6 — configure IPv6 proxy address in proxy settings.",
+      "If application ignores proxy settings: Application may be using custom proxy implementation — check application configuration for proxy settings.",
+      "If GPO is pushing incorrect proxy settings: Check applied GPO with 'gpresult /h C:\\gpo_report.html' — review Computer/User Configuration > Windows Settings > Internet Explorer Maintenance > Connection.",
+      "If proxy authentication fails for services: Configure service account credentials in Credential Manager or use GPO to pass service credentials to proxy.",
+      "If WinHTTP proxy is not applied to services: Restart services after changing WinHTTP settings — 'Restart-Service wuauserv' for Windows Update."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export WinHTTP proxy settings: 'netsh winhttp show proxy > C:\\winhttp_proxy.txt'",
+      "Export WinInet proxy settings: 'Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Out-File C:\\wininet_proxy.txt'",
+      "Export system proxy settings: 'Get-ItemProperty -Path \"HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Out-File C:\\system_proxy.txt'",
+      "Export network adapter configuration: 'Get-NetAdapter | Export-Csv C:\\network_adapters.csv -NoTypeInformation'"
+    ],
+    "l2": [
+      "Export complete WinHTTP configuration: 'netsh winhttp dump > C:\\winhttp_dump.txt'",
+      "Export WinInet registry settings: 'reg export \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" C:\\wininet_registry.reg'",
+      "Export system proxy registry: 'reg export \"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" C:\\system_proxy_registry.reg'",
+      "Export WinHTTP registry: 'reg export \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Connections\" C:\\winhttp_registry.reg'",
+      "Export WPAD/DHCP configuration: 'ipconfig /all > C:\\ipconfig.txt' — check for WPAD configuration.",
+      "Test PAC file download: 'Invoke-WebRequest -Uri <pac_url> -OutFile C:\\pac_file.js -UseBasicParsing' — save PAC file for analysis.",
+      "Export browser proxy settings: Check Edge/Chrome proxy settings via Settings > System > Proxy or browser-specific configurations.",
+      "Export Credential Manager proxy credentials: 'cmdkey /list > C:\\credential_manager.txt' — check for stored proxy credentials.",
+      "Export GPO proxy settings: 'gpresult /h C:\\gpo_report.html' — review proxy-related GPO configuration.",
+      "Export Windows Update logs: 'Get-WinEvent -LogName \"Microsoft-Windows-WindowsUpdateClient/Operational\" -MaxEvents 50 | Out-File C:\\windows_update_logs.txt' — check for proxy-related Windows Update failures.",
+      "Export Application event log: 'wevtutil epl Application C:\\app_events.evtx' — contains application proxy failures.",
+      "Export System event log: 'wevtutil epl System C:\\system_events.evtx' — contains system-level proxy events.",
+      "Capture WinHTTP ETL trace: 'netsh trace start capture=yes provider=Microsoft-Windows-WinHTTP level=5 tracefile=C:\\winhttp_trace.etl' — reproduce issue — 'netsh trace stop'.",
+      "Test proxy server connectivity: 'Test-NetConnection -ComputerName <proxy_host> -Port <proxy_port> -InformationLevel Detailed > C:\\proxy_connectivity.txt'.",
+      "TSS data collection: '.\\TSS.ps1 -Scenario NET_General' — collects comprehensive network diagnostics including proxy configuration."
+    ]
+  },
+  "playbooks": {
+    "proxy_unreachable": {
+      "title": "Proxy server unreachable",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "netsh winhttp show proxy", "expect": "Displays configured proxy server and port" },
+            { "action": "Test-NetConnection -ComputerName <proxy_host> -Port <proxy_port>", "expect": "TcpTestSucceeded: False if proxy is unreachable" },
+            { "action": "Resolve-DnsName -Name <proxy_host>", "expect": "DNS resolution succeeds — if fails, DNS issue not proxy issue" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-NetAdapter | Where Status -eq Up | Select Name,InterfaceDescription", "expect": "Verify network adapter is connected and has IP address" },
+            { "action": "Test-NetConnection -ComputerName <internet_target> -Port 443", "expect": "Test direct internet access without proxy — if fails, network issue not proxy issue" },
+            { "action": "Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select NextHop,InterfaceAlias", "expect": "Verify default gateway is configured correctly" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Restart-Service Winmgmt", "expect": "Restart Windows Management Instrumentation service to refresh network configuration" },
+            { "action": "ipconfig /flushdns", "expect": "Flush DNS cache to clear stale proxy DNS entries" },
+            { "action": "Restart-Service Dhcp", "expect": "Restart DHCP client to renew network configuration" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName <proxy_host> -Port <proxy_port>", "expect": "TcpTestSucceeded: True — proxy server reachable" },
+            { "action": "netsh winhttp show proxy", "expect": "Proxy configuration is correct and applied" }
+          ]
+        }
+      ]
+    },
+    "wpad_failure": {
+      "title": "WPAD (Web Proxy Auto-Discovery) not working",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Select AutoDetect", "expect": "AutoDetect: 1 if WPAD is enabled" },
+            { "action": "Resolve-DnsName -Name wpad.<domain> -Type A", "expect": "WPAD host resolves to IP address" },
+            { "action": "Resolve-DnsName -Name wpad.<domain> -Type A", "expect": "If fails, WPAD DNS record missing or DNS not working" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "ipconfig /all", "expect": "Check for WPAD configuration via DHCP option 252" },
+            { "action": "Invoke-WebRequest -Uri http://wpad.<domain>/wpad.dat -UseBasicParsing", "expect": "PAC file downloads successfully" },
+            { "action": "Get-NetIPConfiguration -Detailed", "expect": "Verify DNS servers are configured correctly for WPAD resolution" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Set-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" -Name AutoDetect -Value 0", "expect": "Disable WPAD automatic detection" },
+            { "action": "Set-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" -Name AutoConfigURL -Value <pac_url>", "expect": "Configure explicit PAC file URL" },
+            { "action": "ipconfig /flushdns", "expect": "Flush DNS cache to clear WPAD DNS entries" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Select AutoDetect,AutoConfigURL", "expect": "AutoDetect disabled, AutoConfigURL configured" },
+            { "action": "Test web connectivity with browser", "expect": "Browser successfully uses proxy via PAC file" }
+          ]
+        }
+      ]
+    },
+    "authentication_failure": {
+      "title": "Proxy authentication failure",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName <proxy_host> -Port <proxy_port>", "expect": "TcpTestSucceeded: True — proxy server reachable" },
+            { "action": "cmdkey /list | findstr Proxy", "expect": "Check for stored proxy credentials" },
+            { "action": "Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" | Select ProxyEnable,ProxyServer", "expect": "Proxy is configured" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Test with browser — navigate to any website", "expect": "Browser prompts for credentials or shows 407 error" },
+            { "action": "Get-ADUser -Identity <username> | Select Enabled,PasswordExpired", "expect": "Verify domain account is enabled and password not expired" },
+            { "action": "Get-WinEvent -LogName \"Microsoft-Windows-WinHTTP/Operational\" -MaxEvents 20", "expect": "Look for authentication failure events" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "cmdkey /generic <proxy_host> /user <username> /pass <password>", "expect": "Store proxy credentials in Credential Manager" },
+            { "action": "Set-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" -Name ProxyEnable -Value 0", "expect": "Temporarily disable proxy to test direct connectivity" },
+            { "action": "Restart-Service wuauserv", "expect": "Restart Windows Update service if Windows Update is failing" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Test web connectivity with browser", "expect": "Browser successfully authenticates to proxy" },
+            { "action": "cmdkey /list | findstr Proxy", "expect": "Proxy credentials are stored correctly" }
+          ]
+        }
+      ]
+    }
+  }
+}
