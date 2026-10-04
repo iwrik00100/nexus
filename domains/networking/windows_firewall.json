@@ -1,0 +1,217 @@
+{
+  "key": "windows_firewall",
+  "label": "Windows Firewall",
+  "icon": "🔥",
+  "domain": "networking",
+  "scoping": {
+    "l1": [
+      "What Windows version is the affected system running? (Get-ComputerInfo | Select OsName,OsVersion,OsBuildNumber)",
+      "Is this a Windows client (Windows 10/11) or Windows Server? Windows Firewall with Advanced Security is available on both editions.",
+      "Are you troubleshooting inbound traffic being blocked, outbound traffic being blocked, or application connectivity issues?",
+      "Is the system domain-joined, workgroup, or Azure AD joined? Domain profile rules apply differently.",
+      "Is the issue affecting a single computer or multiple computers in the environment?",
+      "Are third-party firewalls or security agents installed alongside Windows Firewall? (Get-WmiObject -Class Win32_Product | Where Name -like '*firewall*')"
+    ],
+    "l2": [
+      "Which firewall profile is active on the affected network adapter? (Get-NetFirewallProfile | Select Name,Enabled,DefaultInboundAction,DefaultOutboundAction)",
+      "Are inbound connections blocked by default policy or specific firewall rules? (Get-NetFirewallRule | Where Direction -eq Inbound | Select Name,Enabled,Action,Profile)",
+      "Are outbound connections blocked by default policy or specific firewall rules? (Get-NetFirewallRule | Where Direction -eq Outbound | Select Name,Enabled,Action,Profile)",
+      "Is the Windows Firewall service running? (Get-Service MpsSvc | Select Status,StartType)",
+      "Are there conflicting rules that might be interfering? (Get-NetFirewallRule | Sort Priority -Descending | Select Name,Priority,Action -First 20)",
+      "Is Windows Defender Firewall Control integrated with other security components like Windows Defender ATP or Endpoint Protection?",
+      "Are you troubleshooting remote desktop (RDP), file sharing (SMB), or specific application traffic?",
+      "Is IPSec/Connection Security rules configured and causing the issue? (Get-NetIPSecRule | Select Name,Enabled,Mode,Profile)",
+      "Are network isolation or container-specific firewall rules involved?",
+      "Is the system behind a perimeter firewall or using VPN which might affect rule requirements?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Check Windows Firewall service status: 'Get-Service MpsSvc' — should be Running with Automatic or Automatic (Delayed Start) startup type.",
+      "Check active firewall profiles: 'Get-NetFirewallProfile' — verify Domain, Private, Public profiles are correctly enabled with expected default actions.",
+      "List enabled inbound rules: 'Get-NetFirewallRule -Direction Inbound -Enabled True | Select Name,Action,Profile' — identify rules blocking traffic.",
+      "List enabled outbound rules: 'Get-NetFirewallRule -Direction Outbound -Enabled True | Select Name,Action,Profile' — identify outbound restrictions.",
+      "Test connectivity with firewall enabled: 'Test-NetConnection -ComputerName <target> -Port <port>' — if fails, firewall may be blocking.",
+      "Check firewall event logs: 'Get-WinEvent -LogName \"Microsoft-Windows-Windows Firewall With Advanced Security/Firewall\" -MaxEvents 20' — look for blocked connection events."
+    ],
+    "l2": [
+      "Export complete firewall rule set: 'Get-NetFirewallRule | Export-Csv C:\\firewall_rules.csv -NoTypeInformation' — review for unexpected rules.",
+      "Check IPSec main mode rules: 'Get-NetIPSecMainModeRule | Select Name,Enabled,Profile' — verify IPSec policy configuration.",
+      "Check IPSec quick mode rules: 'Get-NetIPSecQuickModeRule | Select Name,Enabled,Profile' — verify IPSec phase 2 configuration.",
+      "Check connection security rules: 'Get-NetIPSecRule | Select Name,Enabled,Profile,Mode' — verify authentication and encryption requirements.",
+      "Check firewall state for specific application: 'Get-NetFirewallApplicationFilter | Select Program' — identify applications with specific rules.",
+      "Check firewall state for specific service: 'Get-NetFirewallServiceFilter | Select Service' — identify services with specific rules.",
+      "Check firewall state for specific port: 'Get-NetFirewallPortFilter | Select LocalPort,Protocol' — identify port-specific rules.",
+      "Check firewall state for specific address: 'Get-NetFirewallAddressFilter | Select RemoteAddress,LocalAddress' — identify address-specific rules.",
+      "Check network adapter profiles: 'Get-NetConnectionProfile | Select Name,NetworkCategory,IPv4Connectivity' — verify adapter profile assignments.",
+      "Test with firewall temporarily disabled (not recommended in production): 'Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False' — retest connectivity, then re-enable immediately.",
+      "Capture firewall ETL trace: 'netsh trace start capture=yes provider=Microsoft-Windows-Windows Firewall With Advanced Security tracefile=C:\\firewall_trace.etl' — reproduce issue, then 'netsh trace stop'."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "If Windows Firewall service is not running: Start it with 'Start-Service MpsSvc' — if it fails, check dependencies (Base Filtering Engine, IKE and AuthIP IPsec Keying Modules).",
+      "If inbound traffic is blocked: Create an allow rule for the specific port: 'New-NetFirewallRule -DisplayName \"Allow <port>\" -Direction Inbound -LocalPort <port> -Protocol TCP -Action Allow -Profile Domain,Private,Public'.",
+      "If outbound traffic is blocked: Create an allow rule for the specific application: 'New-NetFirewallRule -DisplayName \"Allow <app>\" -Direction Outbound -Program \"<path>\" -Action Allow -Profile Domain,Private,Public'.",
+      "If network profile is incorrect: Change adapter profile with 'Set-NetConnectionProfile -Name <adapter> -NetworkCategory Private' — Domain profile requires domain authentication.",
+      "If rules are missing: Restore default firewall rules with 'netsh advfirewall reset' — this restores Windows defaults but removes custom rules.",
+      "If third-party firewall conflicts: Disable third-party firewall temporarily to isolate — if Windows Firewall works after disabling, third-party is the issue."
+    ],
+    "l2": [
+      "If rule priority is causing issues: Adjust rule priority with 'Set-NetFirewallRule -Name <rule> -Priority <value>' — lower numeric value = higher priority (1-65535).",
+      "If IPSec authentication fails: Verify IKE and AuthIP service is running: 'Get-Service IKEEXT' — check computer certificates for EAP-TLS or Kerberos authentication.",
+      "If outbound default action is Block: Change to Allow with 'Set-NetFirewallProfile -Profile Domain,Private,Public -DefaultOutboundAction Allow' — use with caution, only for troubleshooting.",
+      "If rule scope is too restrictive: Modify address filters with 'Set-NetFirewallRule -Name <rule> -RemoteAddress Any' — or specify specific subnet ranges.",
+      "If application is blocked but should be allowed: Verify rule is using correct program path: 'Get-NetFirewallApplicationFilter -AssociatedNetFirewallRule <rule>' — update if path changed.",
+      "If GPO is pushing conflicting rules: Check applied GPO with 'gpresult /h C:\\gpo_report.html' — review Computer Configuration > Windows Settings > Security Settings > Windows Firewall with Advanced Security.",
+      "If container firewall is blocking: Check Docker or Windows Container firewall rules with 'Get-NetFirewallHyperVRule' or 'Get-NetFirewallHyperVVMSetting'.",
+      "If rule exists but not applied: Verify rule is enabled and matches active profile: 'Get-NetFirewallRule -Name <rule> | Select Enabled,Profile' — enable if disabled, add profile if missing.",
+      "If network location detection is wrong: Force network location with 'Set-NetConnectionProfile -NetworkCategory Private' — or use Group Policy to control network location.",
+      "If firewall blocking during boot: Check boot-time rules with 'Get-NetFirewallBoottimeRule' — these rules apply before firewall service starts."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Export all firewall rules: 'Get-NetFirewallRule | Export-Csv C:\\firewall_rules.csv -NoTypeInformation'",
+      "Export firewall profiles: 'Get-NetFirewallProfile | Export-Csv C:\\firewall_profiles.csv -NoTypeInformation'",
+      "Export firewall event logs: 'wevtutil epl \"Microsoft-Windows-Windows Firewall With Advanced Security/Firewall\" C:\\firewall_events.evtx'",
+      "Export network connection profiles: 'Get-NetConnectionProfile | Export-Csv C:\\connection_profiles.csv -NoTypeInformation'"
+    ],
+    "l2": [
+      "Export IPSec rules: 'Get-NetIPSecRule | Export-Csv C:\\ipsec_rules.csv -NoTypeInformation'",
+      "Export IPSec main mode rules: 'Get-NetIPSecMainModeRule | Export-Csv C:\\ipsec_mainmode.csv -NoTypeInformation'",
+      "Export IPSec quick mode rules: 'Get-NetIPSecQuickModeRule | Export-Csv C:\\ipsec_quickmode.csv -NoTypeInformation'",
+      "Export firewall application filters: 'Get-NetFirewallApplicationFilter | Export-Csv C:\\firewall_app_filters.csv -NoTypeInformation'",
+      "Export firewall service filters: 'Get-NetFirewallServiceFilter | Export-Csv C:\\firewall_service_filters.csv -NoTypeInformation'",
+      "Export firewall port filters: 'Get-NetFirewallPortFilter | Export-Csv C:\\firewall_port_filters.csv -NoTypeInformation'",
+      "Export firewall address filters: 'Get-NetFirewallAddressFilter | Export-Csv C:\\firewall_address_filters.csv -NoTypeInformation'",
+      "Export IPSec main mode SA: 'Get-NetIPsecMainModeSA | Export-Csv C:\\ipsec_mainmode_sa.csv -NoTypeInformation'",
+      "Export IPSec quick mode SA: 'Get-NetIPsecQuickModeSA | Export-Csv C:\\ipsec_quickmode_sa.csv -NoTypeInformation'",
+      "Export network adapter settings: 'Get-NetAdapter | Export-Csv C:\\network_adapters.csv -NoTypeInformation'",
+      "Generate GPO report: 'gpresult /h C:\\gpo_report.html' — review firewall-related GPO settings.",
+      "Capture firewall ETL trace: 'netsh trace start capture=yes provider=Microsoft-Windows-Windows Firewall With Advanced Security level=5 tracefile=C:\\firewall_trace.etl' — reproduce issue — 'netsh trace stop'.",
+      "Export System event log: 'wevtutil epl System C:\\system_events.evtx' — contains firewall service events.",
+      "Export Application event log: 'wevtutil epl Application C:\\app_events.evtx' — contains application firewall events.",
+      "TSS data collection: '.\\TSS.ps1 -Scenario NET_General' — collects comprehensive network diagnostics including firewall state."
+    ]
+  },
+  "playbooks": {
+    "inbound_blocked": {
+      "title": "Inbound traffic blocked by Windows Firewall",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Get-Service MpsSvc | Select Status,StartType", "expect": "Status: Running, StartType: Automatic or Automatic (Delayed Start)" },
+            { "action": "Get-NetFirewallProfile | Select Name,Enabled,DefaultInboundAction", "expect": "Profiles are enabled — DefaultInboundAction: Block is normal for security" },
+            { "action": "Test-NetConnection -ComputerName <target> -Port <port>", "expect": "TcpTestSucceeded: False if firewall is blocking" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-NetFirewallRule -Direction Inbound -Enabled True | Where Action -eq Block | Select Name,LocalPort,Profile", "expect": "Identify specific block rules for the target port" },
+            { "action": "Get-NetConnectionProfile | Select Name,NetworkCategory", "expect": "Verify active network profile matches rule profile scope" },
+            { "action": "Get-WinEvent -LogName \"Microsoft-Windows-Windows Firewall With Advanced Security/Firewall\" -MaxEvents 20 -Level 3", "expect": "Look for Event ID 2004-2006 indicating blocked connections" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "New-NetFirewallRule -DisplayName \"Allow <port>\" -Direction Inbound -LocalPort <port> -Protocol TCP -Action Allow -Profile Domain,Private,Public", "expect": "Rule created successfully" },
+            { "action": "Enable-NetFirewallRule -DisplayName \"Allow <port>\"", "expect": "Rule enabled if not already enabled" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName <target> -Port <port>", "expect": "TcpTestSucceeded: True — connectivity restored" },
+            { "action": "Get-NetFirewallRule -DisplayName \"Allow <port>\" | Select Enabled,Action", "expect": "Enabled: True, Action: Allow" }
+          ]
+        }
+      ]
+    },
+    "outbound_blocked": {
+      "title": "Outbound traffic blocked by Windows Firewall",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Get-NetFirewallProfile | Select Name,DefaultOutboundAction", "expect": "DefaultOutboundAction: Block indicates outbound blocking is enabled" },
+            { "action": "Test-NetConnection -ComputerName <target> -Port <port>", "expect": "TcpTestSucceeded: False if outbound traffic is blocked" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-NetFirewallRule -Direction Outbound -Enabled True | Where Action -eq Block | Select Name,Program,Profile", "expect": "Identify specific outbound block rules" },
+            { "action": "Get-NetFirewallApplicationFilter -AssociatedNetFirewallRule <rule>", "expect": "Verify application path matches the blocked application" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "New-NetFirewallRule -DisplayName \"Allow <app> outbound\" -Direction Outbound -Program \"<path>\" -Action Allow -Profile Domain,Private,Public", "expect": "Rule created successfully" },
+            { "action": "Set-NetFirewallProfile -Profile Domain,Private,Public -DefaultOutboundAction Allow", "expect": "Default outbound action changed to Allow — use with caution" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName <target> -Port <port>", "expect": "TcpTestSucceeded: True — outbound connectivity restored" }
+          ]
+        }
+      ]
+    },
+    "ipsec_failure": {
+      "title": "IPSec/Connection Security authentication failure",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Get-Service IKEEXT | Select Status,StartType", "expect": "Status: Running — IKE and AuthIP service must be operational" },
+            { "action": "Get-NetIPSecRule | Select Name,Enabled,Mode,Profile", "expect": "Verify IPSec rules are enabled and match active profile" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Get-NetIPsecMainModeSA | Select RemoteAddress,Status", "expect": "Check for failed or non-existent main mode SAs" },
+            { "action": "Get-WinEvent -LogName \"Microsoft-Windows-Windows Firewall With Advanced Security/Firewall\" -MaxEvents 20", "expect": "Look for IPSec authentication failure events" },
+            { "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Select Subject,Issuer,NotAfter", "expect": "Verify computer certificates exist for EAP-TLS authentication" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Start-Service IKEEXT", "expect": "IKE and AuthIP service started if stopped" },
+            { "action": "Restart-Service MpsSvc", "expect": "Windows Firewall service restarted to apply IPSec changes" },
+            { "action": "Set-NetIPSecRule -Name <rule> -Enabled True", "expect": "IPSec rule enabled if disabled" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Get-NetIPsecMainModeSA | Where RemoteAddress -eq <target>", "expect": "Main mode SA established with target" },
+            { "action": "Test-NetConnection -ComputerName <target> -Port <port>", "expect": "TcpTestSucceeded: True — IPSec connection successful" }
+          ]
+        }
+      ]
+    }
+  }
+}
