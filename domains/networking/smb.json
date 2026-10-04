@@ -3,165 +3,364 @@
   "label": "SMB",
   "icon": "📂",
   "domain": "networking",
+  "description": "Server Message Block (SMB) is a network file sharing protocol that provides applications with a way to read, write, and request files from remote servers over a network. SMB versions 2.x and 3.x introduce significant improvements in security, performance, and reliability compared to SMB 1.0. Key features include SMB signing for message integrity, SMB encryption for data confidentiality, SMB multichannel for aggregated bandwidth, and SMB Direct (RDMA) for low-latency high-throughput transfers. This domain covers troubleshooting SMB connectivity, authentication, permission issues, performance problems, and configuration mismatches between clients and servers running Windows.",
   "scoping": {
     "l1": [
-      "What Windows versions are on both the SMB client and the file server?",
-      "What is the exact error — Access Denied (0x5), Network Path Not Found (0x35), Network Name No Longer Available, or slow performance?",
-      "Are UNC paths (\\\\server\\share) failing, or is it a mapped drive (net use Z: \\\\server\\share)?",
-      "Is this affecting all shares on the server or only specific shares?",
-      "Is this affecting all clients or specific clients, subnets, or user accounts?",
-      "What SMB version is negotiated between this client and server? (Get-SmbConnection | Select ServerName,Dialect)",
-      "When did the issue start — security patch (especially SMB-related), GPO change, server migration, or antivirus update?",
-      "Are there errors in the SMBClient Connectivity, SMBClient Security, or SMBServer Operational event logs?",
-      "Is Kerberos or NTLM authentication in use — is the file server domain-joined?",
-      "Is this access over LAN (same site), WAN, or VPN? What is the measured RTT between client and server?"
+      "What Windows versions are on both the SMB client and the file server? (Run: [System.Environment]::OSVersion.Version on both systems; SMB 3.1.1 requires Windows 10/Server 2016+, SMB 3.0 requires Windows 8/Server 2012+)",
+      "What is the exact error — Access Denied (0x5/STATUS_ACCESS_DENIED), Network Path Not Found (0x35/STATUS_BAD_NETWORK_NAME), Network Name No Longer Available (0x64/STATUS_NETWORK_NAME_DELETED), The specified network name is no longer available (0x80004005), or slow performance?",
+      "Are UNC paths (\\\\server\\share) failing, or is it a mapped drive (net use Z: \\\\server\\share)? Mapped drives may use cached credentials; UNC paths use current session credentials.",
+      "Is this affecting all shares on the server or only specific shares? (Run: Get-SmbShare on server to list all shares; check if issue is reproducible across multiple shares)",
+      "Is this affecting all clients or specific clients, subnets, or user accounts? (Run: Get-SmbSession on server to identify affected client IPs; correlate with subnet/user account patterns)",
+      "What SMB version is negotiated between this client and server? (Run: Get-SmbConnection | Select ServerName,ShareName,Dialect,State; Dialect 3.1.1 = SMB 3.1.1, 3.0.2 = SMB 3.0, 2.1 = SMB 2.1, 2.0.2 = SMB 2.0)",
+      "When did the issue start — security patch (especially SMB-related like KB5004442/KB5005010), GPO change, server migration, or antivirus update? Check Windows Update history and Group Policy modification timestamps.",
+      "Are there errors in the SMBClient Connectivity, SMBClient Security, or SMBServer Operational event logs? (Run: Get-WinEvent -LogName Microsoft-Windows-SMBClient/Connectivity -MaxEvents 50 | Format-List TimeCreated,Id,LevelDisplayName,Message)",
+      "Is Kerberos or NTLM authentication in use — is the file server domain-joined? (Run: Test-ComputerSecureChannel -Verbose on server; Get-SmbConnection | Select UserName to see authentication type in logs)",
+      "Is this access over LAN (same site), WAN, or VPN? What is the measured RTT between client and server? (Run: Test-NetConnection -ComputerName <server> -InformationLevel Detailed; RTT > 20ms may indicate WAN/VPN)"
     ],
     "l2": [
-      "Is SMB Signing required on the server ('RequireSecuritySignature') and/or client — could a signing mismatch cause negotiation failure?",
-      "Is SMB Encryption enabled server-wide or per-share — does the client support AES-128-CCM, AES-128-GCM, or AES-256-GCM as required by the server's 'EncryptionCiphers' setting?",
-      "Are DFS Namespaces layered on top of the shares — could the DFS referral be pointing to the wrong target server, causing an access failure?",
-      "Is antivirus or EDR performing real-time file scanning on the file server, causing handle lock contention or latency?",
-      "What are the full SMB server and client configurations? (Get-SmbServerConfiguration, Get-SmbClientConfiguration)",
-      "Is SMB Multichannel active — are multiple NICs being used for parallel SMB connections? (Get-SmbMultichannelConnection)",
-      "Are there SMB Bandwidth Limit rules configured per share or globally? (Get-SmbBandwidthLimit)",
-      "Is Opportunistic Locking (OpLock) or SMB Lease caching behavior causing file corruption for specific applications (e.g., database files accessed via SMB)?",
-      "Are there open file handle conflicts on the server preventing access? (Get-SmbOpenFile)",
-      "Is this an NTFS permission issue, a Share ACL issue, or an interaction between both layers — or a Kerberos PAC/token issue for large group memberships?"
+      "Is SMB Signing required on the server ('RequireSecuritySignature') and/or client — could a signing mismatch cause negotiation failure? (Run: Get-SmbServerConfiguration | Select RequireSecuritySignature,EnableSecuritySignature; Get-SmbClientConfiguration | Select RequireSecuritySignature,EnableSecuritySignature; mismatch causes STATUS_ACCESS_DENIED)",
+      "Is SMB Encryption enabled server-wide or per-share — does the client support AES-128-CCM, AES-128-GCM, or AES-256-GCM as required by the server's 'EncryptionCiphers' setting? (Run: Get-SmbServerConfiguration | Select EncryptData,EncryptionCiphers; Get-SmbShare | Select Name,EncryptData; Windows 10 1709+ supports AES-GCM)",
+      "Are DFS Namespaces layered on top of the shares — could the DFS referral be pointing to the wrong target server, causing an access failure? (Run: dfsutil /pktinfo on client to view referral cache; Get-DfsnFolderTarget to verify target paths)",
+      "Is antivirus or EDR performing real-time file scanning on the file server, causing handle lock contention or latency? (Run: Get-Process | Where Company -like '*McAfee*' -or Company -like '*Symantec*' -or Company -like '*Microsoft*'; check AV exclusion lists)",
+      "What are the full SMB server and client configurations? (Run: Get-SmbServerConfiguration | Select *; Get-SmbClientConfiguration | Select *; compare signing, encryption, multichannel, and protocol settings)",
+      "Is SMB Multichannel active — are multiple NICs being used for parallel SMB connections? (Run: Get-SmbMultichannelConnection; Get-SmbServerNetworkInterface; Get-NetIPConfiguration to verify NIC configuration)",
+      "Are there SMB Bandwidth Limit rules configured per share or globally? (Run: Get-SmbBandwidthLimit | Select ShareName,BytesPerSecond,Category; check if limits are throttling throughput)",
+      "Is Opportunistic Locking (OpLock) or SMB Lease caching behavior causing file corruption for specific applications (e.g., database files accessed via SMB)? (Run: Get-SmbShare | Select Name,CachingMode,FolderEnumerationMode; test with CachingMode None for database files)",
+      "Are there open file handle conflicts on the server preventing access? (Run: Get-SmbOpenFile | Select SessionId,FileId,ClientComputerName,Path,Locks; check for locks on target files)",
+      "Is this an NTFS permission issue, a Share ACL issue, or an interaction between both layers — or a Kerberos PAC/token issue for large group memberships? (Run: icacls '<path>'; Get-SmbShareAccess -Name '<share>'; whoami /groups to check token size; MaxTokenSize registry key may need adjustment)"
     ]
   },
   "probing": {
     "l1": [
-      "Run 'net use \\\\<server>\\<share>' on the affected client — share the exact error code and message.",
-      "Run 'Test-NetConnection -ComputerName <server> -Port 445' — is TCP 445 reachable?",
-      "Run 'Get-SmbConnection | Select ServerName,ShareName,Dialect,Signing,Encrypted,UserName' — are active sessions present?",
-      "On the server: 'Get-SmbSession | Where ClientComputerName -eq \"<client IP>\" | Format-List'",
-      "Try accessing by IP instead of hostname: '\\\\<server IP>\\<share>' — isolates DNS from SMB auth.",
-      "Review SMBClient Connectivity event log: 'Get-WinEvent -LogName Microsoft-Windows-SMBClient/Connectivity | Select -First 20 | Format-List'",
-      "Run 'Get-SmbShare -Name \"<share>\" | Format-List' on the server — confirm share exists and path is valid.",
-      "Run 'Get-NetFirewallRule | Where DisplayName -like \"*File and Printer*\" | Select DisplayName,Enabled,Direction,Action'"
+      "Run 'net use \\\\<server>\\<share>' on the affected client — share the exact error code and message. Common errors: System error 5 (Access Denied), System error 53 (Network path not found), System error 67 (Network name cannot be found), System error 1219 (Multiple connections to same server with different credentials).",
+      "Run 'Test-NetConnection -ComputerName <server> -Port 445' — is TCP 445 reachable? If TcpTestSucceeded is False, check network connectivity, firewall rules, and that the Server service is running on the target.",
+      "Run 'Get-SmbConnection | Select ServerName,ShareName,Dialect,Signing,Encrypted,UserName,State' — are active sessions present? Verify Dialect is 3.1.1 or 3.0.2 for optimal security and performance.",
+      "On the server: 'Get-SmbSession | Where ClientComputerName -eq \"<client IP>\" | Format-List SessionId,ClientComputerName,ClientUserName,Dialect,NumOpens' — check if server sees the client session.",
+      "Try accessing by IP instead of hostname: '\\\\<server IP>\\<share>' — isolates DNS from SMB auth. If IP works but hostname fails, check DNS resolution and Kerberos SPN registration (setspn -Q cifs/<server>).",
+      "Review SMBClient Connectivity event log: 'Get-WinEvent -LogName Microsoft-Windows-SMBClient/Connectivity -MaxEvents 20 | Format-List TimeCreated,Id,LevelDisplayName,Message' — look for connection establishment failures, timeout events, or dialect negotiation issues.",
+      "Run 'Get-SmbShare -Name \"<share>\" | Format-List' on the server — confirm share exists, path is valid, and share is not paused or offline. Check Special property (True for ADMIN$, IPC$, etc.).",
+      "Run 'Get-NetFirewallRule | Where DisplayName -like \"*File and Printer*\" | Select DisplayName,Enabled,Direction,Action,Profile' — verify File and Printer Sharing rules are enabled for the appropriate network profile (Domain/Private/Public)."
     ],
     "l2": [
-      "Run 'Get-SmbServerConfiguration | Select *' — share RequireSecuritySignature, EnableSMB1Protocol, EnableSMB2Protocol, EncryptData, RejectUnencryptedAccess, EncryptionCiphers.",
-      "Run 'Get-SmbClientConfiguration | Select *' — share RequireSecuritySignature, EnableBandwidthThrottling, EnableLargeMtu, EnableMultiChannel.",
-      "Run 'Get-SmbMultichannelConnection | Select ServerName,ClientInterfaceIndex,ServerInterfaceIndex,State,Throughput,Latency'",
-      "Capture simultaneous network traces on client and server: 'netsh trace start capture=yes provider=Microsoft-Windows-SMBClient tracefile=C:\\smb_client.etl' and on server with 'provider=Microsoft-Windows-SMBServer'.",
-      "Run 'Get-SmbOpenFile | Where ClientComputerName -eq \"<client IP>\" | Select FileId,SessionId,ClientComputerName,Path,Locks'",
-      "Run 'Get-SmbBandwidthLimit | Format-List'",
-      "Inspect SMB dialect negotiation and auth in packet trace — look for STATUS_ACCESS_DENIED (0xC0000022), STATUS_LOGON_FAILURE (0xC000006D), STATUS_BAD_NETWORK_NAME (0xC00000CC).",
-      "Run 'whoami /all' on the affected client — note all SID values in the security token.",
-      "On the server: 'icacls \"<share path>\"' — show NTFS permissions; 'Get-SmbShareAccess -Name \"<share>\"' — show share permissions.",
-      "Run 'Get-SmbServerNetworkInterface | Select InterfaceIndex,RSS,RDMA,Speed,IPAddress'"
+      "Run 'Get-SmbServerConfiguration | Select *' — document RequireSecuritySignature, EnableSecuritySignature, EnableSMB1Protocol, EnableSMB2Protocol, EnableSMB3Protocol, EncryptData, RejectUnencryptedAccess, EncryptionCiphers, EnableMultiChannel, EnableLeasing, EnableLargeMtu, EnableWintegrity.",
+      "Run 'Get-SmbClientConfiguration | Select *' — document RequireSecuritySignature, EnableSecuritySignature, EnableBandwidthThrottling, EnableLargeMtu, EnableMultiChannel, EnableExtendedSignature, EnableCOMpression, EnableNetworkLevelAutodisconnect, SessionTimeout.",
+      "Run 'Get-SmbMultichannelConnection | Select ServerName,ClientInterfaceIndex,ServerInterfaceIndex,State,Throughput,Latency, RSSCapable, RDMACapable' — verify multichannel is negotiating across multiple NICs and achieving expected throughput aggregation.",
+      "Capture simultaneous network traces on client and server: 'netsh trace start capture=yes provider=Microsoft-Windows-SMBClient tracefile=C:\\smb_client.etl' on client and 'netsh trace start capture=yes provider=Microsoft-Windows-SMBServer tracefile=C:\\smb_server.etl' on server — reproduce issue — stop with 'netsh trace stop'. Analyze with Message Analyzer or Wireshark.",
+      "Run 'Get-SmbOpenFile | Where ClientComputerName -eq \"<client IP>\" | Select FileId,SessionId,ClientComputerName,Path,Locks,Permissions' — identify open file handles and lock conflicts that may prevent access or deletion.",
+      "Run 'Get-SmbBandwidthLimit | Format-List' — check if per-share or global bandwidth limits are configured. Categories: Default, VirtualMachine, LiveMigration, Storage (SMB 3.0+).",
+      "Inspect SMB dialect negotiation and auth in packet trace — filter on 'smb2' in Wireshark — examine Negotiate Protocol Response (DialectRevision), SessionSetup (Kerberos/NTLM blob), TreeConnect (ShareName), and look for NTSTATUS codes: STATUS_ACCESS_DENIED (0xC0000022), STATUS_LOGON_FAILURE (0xC000006D), STATUS_BAD_NETWORK_NAME (0xC00000CC), STATUS_NOT_SUPPORTED (0xC00000BB).",
+      "Run 'whoami /all' on the affected client — note all SID values in the security token, group memberships, and token size. Large token size (>12000 bytes) can cause PAC validation failures.",
+      "On the server: 'icacls \"<share path>\"' — show NTFS permissions with inheritance flags; 'Get-SmbShareAccess -Name \"<share>\"' — show share permissions. Both layers must grant access — share ACL is checked first, then NTFS ACL.",
+      "Run 'Get-SmbServerNetworkInterface | Select InterfaceIndex,RSS,RDMA,Speed,IPAddress,LinkState' — verify server NICs have RSS (Receive Side Scaling) enabled for multichannel, RDMA capability if using SMB Direct, and sufficient link speed (10Gbps+ recommended for multichannel).",
+      "Check SMB witness status for continuous availability: 'Get-SmbWitnessClient | Select ServerName,ShareName,State,Flags' — verify SMB 3.0+ continuous availability is working for Failover Clusters.",
+      "Verify SMB compression status: 'Get-SmbShare | Select Name,CompressData' — SMB 3.1.1+ compression can improve WAN performance but may increase CPU utilization."
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Verify TCP 445 is reachable from client: 'Test-NetConnection -ComputerName <server> -Port 445'",
-      "Confirm share exists: 'Get-SmbShare -Name \"<share>\"' — check path, description, and status.",
-      "For Access Denied: minimum Share ACL 'Everyone: Read' — apply fine-grained permissions via NTFS ACL on the underlying folder.",
-      "Confirm SMB1 is disabled (security hardening): 'Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force' — unless legacy clients explicitly require it.",
-      "Restart the Server service on the file server: 'Restart-Service LanmanServer' — resolves some session state issues.",
-      "Flush Kerberos tickets on the client: 'klist purge' — retest access — often resolves 'Access Denied' after password or group membership changes."
+      "Verify TCP 445 is reachable from client: 'Test-NetConnection -ComputerName <server> -Port 445'. If blocked, check Windows Firewall (netsh advfirewall firewall show rule name=all | findstr 445), network firewalls, and that the Server service is running (Get-Service LanmanServer).",
+      "Confirm share exists: 'Get-SmbShare -Name \"<share>\" | Format-List' — check path, description, status, and folder enumeration mode. For hidden shares (share name ending with $), ensure the user has administrative privileges.",
+      "For Access Denied: minimum Share ACL 'Everyone: Read' — apply fine-grained permissions via NTFS ACL on the underlying folder. Remember: Share ACL is the outer security boundary (minimum access), NTFS ACL is the inner boundary (final access decision). Both must allow the requested operation.",
+      "Confirm SMB1 is disabled (security hardening): 'Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force' — unless legacy clients explicitly require it. SMB1 is deprecated and vulnerable to WannaCry/Petya ransomware. Check if SMB1 is still in use: 'Get-SmbServerConfiguration | Select EnableSMB1Protocol' and 'Get-WinEvent -LogName Microsoft-Windows-SMBServer/Operational | Where Message -like \"*SMB1*\"'.",
+      "Restart the Server service on the file server: 'Restart-Service LanmanServer -Force' — resolves some session state issues, but will disconnect all active SMB sessions. Use with caution on production servers.",
+      "Flush Kerberos tickets on the client: 'klist purge' then 'klist get <FQDN of server>' — retest access — often resolves 'Access Denied' after password or group membership changes. Also clear DNS cache: 'Clear-DnsClientCache'.",
+      "Check for multiple credential connections: 'net use' — if multiple connections to the same server with different credentials exist, error 1219 occurs. Disconnect all with 'net use * /delete /y' and reconnect with single credential set."
     ],
     "l2": [
-      "For SMB Signing mismatch (STATUS_ACCESS_DENIED due to signing policy): align server/client signing — 'Set-SmbServerConfiguration -RequireSecuritySignature $true' on both, or disable requirement for testing.",
-      "For SMB Encryption cipher mismatch: check 'Get-SmbServerConfiguration | Select EncryptionCiphers' vs. client OS capabilities — Windows 10/2019+ support AES-128-GCM; older clients only AES-128-CCM.",
-      "For Multichannel not negotiating: verify both NICs have valid routes to each other — 'Get-SmbMultichannelConnection -IncludeNotSelected' — ensure NICs are not on the same subnet.",
-      "For OpLock/Lease issues causing application-level corruption: 'Set-SmbShare -Name \"<share>\" -CachingMode None' — disables client-side caching — test with the application.",
-      "For stale sessions blocking file access: 'Close-SmbSession -Force -SessionId (Get-SmbSession | Where ClientComputerName -eq \"<IP>\").SessionId'",
-      "For SMB Encryption failures with RejectUnencryptedAccess: confirm client OS supports AES-256-GCM (Windows 11/2022+); downgrade cipher to AES-128-CCM if legacy clients must connect.",
-      "Analyze SMB packet trace: filter on 'smb2' in Wireshark — examine SessionSetup exchange (Kerberos/NTLM blob), TreeConnect response, and IOCTL/Create response error codes.",
-      "For AV handle locks causing latency: add the file server share path to the AV exclusion list — test with real-time protection temporarily disabled on the server."
+      "For SMB Signing mismatch (STATUS_ACCESS_DENIED due to signing policy): align server/client signing settings. Check server: 'Get-SmbServerConfiguration | Select RequireSecuritySignature,EnableSecuritySignature'. Check client: 'Get-SmbClientConfiguration | Select RequireSecuritySignature,EnableSecuritySignature'. If server requires signing but client has it disabled, set 'Set-SmbClientConfiguration -EnableSecuritySignature $true -RequireSecuritySignature $true -Confirm:$false'. For domain-joined systems, verify GPO settings: 'Microsoft network client/server: Digitally sign communications (always/if client agrees)' under Computer Configuration > Policies > Windows Settings > Security Settings > Local Policies > Security Options.",
+      "For SMB Encryption cipher mismatch: check 'Get-SmbServerConfiguration | Select EncryptData,EncryptionCiphers,RejectUnencryptedAccess'. Server EncryptionCiphers order: AES-256-GCM (Windows 11/Server 2022+), AES-128-GCM (Windows 10 1709+), AES-128-CCM (Windows 8/Server 2012+). If server requires AES-GCM but client only supports AES-CCM, either upgrade client OS or downgrade server cipher: 'Set-SmbServerConfiguration -EncryptionCiphers AES_128_CCM -Confirm:$false'. For per-share encryption: 'Set-SmbShare -Name \"<share>\" -EncryptData $true'.",
+      "For Multichannel not negotiating: verify both NICs have valid routes to each other. Check server: 'Get-SmbServerNetworkInterface | Select InterfaceIndex,IPAddress,Speed,RSS,RDMA'. Check client: 'Get-NetIPConfiguration | Select InterfaceAlias,IPv4Address'. Ensure client has multiple NICs or IP addresses that can reach the server. Use 'Get-SmbMultichannelConstraint -ServerName <server>' to verify constraints. For testing: 'Set-SmbClientConfiguration -EnableMultiChannel $true -Confirm:$false' and 'Set-SmbServerConfiguration -EnableMultiChannel $true -Confirm:$false'. Verify RSS is enabled on NICs: 'Get-NetAdapterRss | Select Name,Enabled'. Multichannel requires different subnets or VLANs between client and server NICs.",
+      "For OpLock/Lease issues causing application-level corruption (common with databases like SQL, Oracle, QuickBooks): disable client-side caching on the share: 'Set-SmbShare -Name \"<share>\" -CachingMode None -Confirm:$false'. Also disable opportunistic locking server-wide if needed: 'Set-SmbServerConfiguration -EnableOplocks $false -Confirm:$false'. For SMB 3.0+, check leasing: 'Set-SmbServerConfiguration -EnableLeasing $false -Confirm:$false'. Test with application to verify corruption is resolved.",
+      "For stale sessions blocking file access: 'Get-SmbSession | Where ClientComputerName -eq \"<client IP>\"' to identify sessions, then 'Close-SmbSession -SessionId <SessionId> -Force'. For specific file locks: 'Get-SmbOpenFile | Where Path -like \"*<filename>*\"' then 'Close-SmbOpenFile -FileId <FileId> -Force'. Use with caution as this forcibly disconnects users.",
+      "For SMB Encryption failures with RejectUnencryptedAccess: if server has 'RejectUnencryptedAccess = $true', all clients must support encryption. Windows 7/Server 2008 R2 do not support SMB encryption. Either upgrade clients or disable requirement: 'Set-SmbServerConfiguration -RejectUnencryptedAccess $false -Confirm:$false'. For selective encryption, use per-share encryption instead of server-wide.",
+      "Analyze SMB packet trace: filter on 'smb2' in Wireshark. Key frames to examine: Negotiate Protocol Response (check DialectRevision, MaxTransactSize, MaxReadSize, MaxWriteSize), SessionSetup Request/Response (check authentication mechanism Kerberos vs NTLM, NTSTATUS code), TreeConnect Request/Response (check ShareName, STATUS_SUCCESS or error), and CREATE/IOCTL requests (check file handle creation, STATUS_ACCESS_DENIED). Use 'smb2.cmd == SMB2_SESSION_SETUP' filter to focus on authentication.",
+      "For AV handle locks causing latency: add the file server share path to the AV exclusion list. For Microsoft Defender: 'Add-MpPreference -ExclusionPath \"<share path>\"' and 'Add-MpPreference -ExclusionProcess \"<application.exe>\"'. For third-party AV, check vendor documentation. Test with real-time protection temporarily disabled: 'Set-MpPreference -DisableRealtimeMonitoring $true' (use only in controlled environment). Monitor with 'Get-SmbOpenFile' to see if lock counts decrease.",
+      "For Kerberos PAC validation failures with large group memberships (MaxTokenSize issue): check token size with 'whoami /groups' and count bytes. If >12000 bytes, increase MaxTokenSize on both client and server: 'Set-ItemProperty -Path HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa\\Kerberos\\Parameters -Name MaxTokenSize -Value 48000 -Type DWord'. Also check 'MaxPacketSize' registry value. Test with 'klist purge' and re-authentication.",
+      "For slow SMB performance over WAN/VPN: enable SMB compression (SMB 3.1.1+): 'Set-SmbShare -Name \"<share>\" -CompressData $true -Confirm:$false'. Increase client session timeout: 'Set-SmbClientConfiguration -SessionTimeout 300 -Confirm:$false' (default is 60 seconds). Disable bandwidth throttling: 'Set-SmbClientConfiguration -EnableBandwidthThrottling $false -Confirm:$false'. Consider using SMB over QUIC for internet-based access (Windows Server 2022+).",
+      "For SMB Direct (RDMA) not working: verify RDMA-capable NICs are installed: 'Get-NetAdapterRdma | Select Name,Enabled'. Check RSS and RDMA settings: 'Get-NetAdapterRss', 'Get-NetAdapterRdma'. Ensure RDMA is enabled in SMB configuration: 'Set-SmbServerConfiguration -EnableSMB2Protocol $true -EnableSMB3Protocol $true -Confirm:$false'. Use 'Get-SmbMultichannelConnection' to verify RDMA-capable connections show RDMACapable = True. Requires Windows Server 2012+ and RoCE v2 or iWARP NICs.",
+      "For DFS Namespace referral issues: clear client referral cache: 'dfsutil /pktinfo' to view, 'dfsutil /flush' to clear. Verify DFS namespace health: 'dfsutil /root:<namespace> /view' and 'dfsutil /root:<namespace> /state'. Check domain-based vs. standalone namespace configuration. Ensure DFS Replication is healthy if using replication: 'dfsrdiag pollad' and review Event ID 4004/4008 in DFS Replication event log."
     ]
   },
   "datacollection": {
     "l1": [
-      "Export SMBClient Connectivity log: 'wevtutil epl Microsoft-Windows-SMBClient/Connectivity C:\\SMBClient_Conn.evtx'",
-      "Run 'Get-SmbConnection | Out-File C:\\smb_connections.txt'",
-      "Run 'Get-SmbShare | Out-File C:\\smb_shares.txt'",
-      "Run 'Get-SmbSession | Out-File C:\\smb_sessions.txt'"
+      "Export SMBClient Connectivity log: 'wevtutil epl Microsoft-Windows-SMBClient/Connectivity C:\\SMBClient_Conn.evtx' — contains connection establishment, dialect negotiation, and disconnection events.",
+      "Export SMBClient Security log: 'wevtutil epl Microsoft-Windows-SMBClient/Security C:\\SMBClient_Security.evtx' — contains authentication failures, signing issues, and encryption events.",
+      "Export SMBServer Operational log: 'wevtutil epl Microsoft-Windows-SMBServer/Operational C:\\SMBServer_Ops.evtx' — contains share access, session management, and operational events.",
+      "Export SMBServer Connectivity log: 'wevtutil epl Microsoft-Windows-SMBServer/Connectivity C:\\SMBServer_Conn.evtx' — contains server-side connection events.",
+      "Run 'Get-SmbConnection | Select-Object * | Out-File C:\\smb_connections.txt' — document all active SMB connections including dialect, signing, encryption state.",
+      "Run 'Get-SmbShare | Select-Object * | Out-File C:\\smb_shares.txt' — document all shares including paths, permissions, caching modes, and encryption settings.",
+      "Run 'Get-SmbSession | Select-Object * | Out-File C:\\smb_sessions.txt' — document all active sessions including client IPs, usernames, and open file counts.",
+      "Run 'Get-SmbOpenFile | Select-Object * | Out-File C:\\smb_openfiles.txt' — document all open file handles including locks and client information.",
+      "Run 'ipconfig /all > C:\\ipconfig.txt' and 'route print > C:\\route.txt' — document network configuration for troubleshooting routing issues.",
+      "Run 'net use > C:\\netuse.txt' — document mapped drives and persistent connections."
     ],
     "l2": [
-      "Capture client SMB trace: 'netsh trace start capture=yes provider=Microsoft-Windows-SMBClient tracefile=C:\\smb_client.etl' — reproduce — stop.",
-      "Capture server SMB trace: same on server with 'provider=Microsoft-Windows-SMBServer tracefile=C:\\smb_server.etl'",
-      "Run 'Get-SmbServerConfiguration | Out-File C:\\smb_server_config.txt'",
-      "Run 'Get-SmbClientConfiguration | Out-File C:\\smb_client_config.txt'",
-      "Run 'Get-SmbMultichannelConnection | Out-File C:\\smb_multichannel.txt'",
-      "Run 'Get-WinEvent -LogName Microsoft-Windows-SmbServer/Operational | Export-Clixml C:\\smb_server_events.xml'",
-      "Run 'Get-WinEvent -LogName Microsoft-Windows-SMBClient/Security | Export-Clixml C:\\smb_client_security_events.xml'",
-      "TSS full data collection — choose based on scenario: '.\\TSS.ps1 -Scenario NET_SMB' (collect from both client AND server simultaneously for end-to-end trace), '.\\TSS.ps1 -Scenario NET_SMBcli' (client-side only — use when issue is access, mapping, or client behaviour), '.\\TSS.ps1 -Scenario NET_SMBsrv' (server-side only — use when issue is share access, performance, or open file handles on the server)"
+      "Capture client SMB trace: 'netsh trace start capture=yes provider=Microsoft-Windows-SMBClient provider=Microsoft-Windows-TCPIP tracefile=C:\\smb_client.etl report=yes correlation=yes' — reproduce issue — stop with 'netsh trace stop'. Includes SMB protocol, TCP/IP, and correlation data.",
+      "Capture server SMB trace: same on server with 'netsh trace start capture=yes provider=Microsoft-Windows-SMBServer provider=Microsoft-Windows-TCPIP tracefile=C:\\smb_server.etl report=yes correlation=yes' — reproduce — stop. For RDMA issues, add 'provider=Microsoft-Windows-NetworkAdapter'.",
+      "Run 'Get-SmbServerConfiguration | Select-Object * | Out-File C:\\smb_server_config.txt' — document complete server configuration including all signing, encryption, multichannel, and protocol settings.",
+      "Run 'Get-SmbClientConfiguration | Select-Object * | Out-File C:\\smb_client_config.txt' — document complete client configuration including all timeout, throttling, and capability settings.",
+      "Run 'Get-SmbMultichannelConnection | Select-Object * | Out-File C:\\smb_multichannel.txt' — document multichannel status including interface indices, throughput, latency, and RSS/RDMA capabilities.",
+      "Run 'Get-SmbServerNetworkInterface | Select-Object * | Out-File C:\\smb_server_nics.txt' — document server NIC configuration including RSS, RDMA, speed, and IP addresses.",
+      "Run 'Get-SmbBandwidthLimit | Select-Object * | Out-File C:\\smb_bandwidth.txt' — document any bandwidth limit rules configured per share or category.",
+      "Run 'Get-WinEvent -LogName Microsoft-Windows-SmbServer/Operational -MaxEvents 1000 | Export-Clixml C:\\smb_server_events.xml' — export server operational events for detailed analysis.",
+      "Run 'Get-WinEvent -LogName Microsoft-Windows-SMBClient/Security -MaxEvents 1000 | Export-Clixml C:\\smb_client_security_events.xml' — export client security events for authentication analysis.",
+      "Export registry SMB settings: 'reg export HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters C:\\smb_server_registry.reg' and 'reg export HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanWorkstation\\Parameters C:\\smb_client_registry.reg'.",
+      "Export Group Policy settings related to SMB: 'gpresult /h C:\\gpresult.html' — check 'Microsoft network client/server' security options and SMB signing policies.",
+      "Collect network adapter configuration: 'Get-NetAdapter | Select-Object * | Out-File C:\\netadapters.txt' and 'Get-NetAdapterAdvancedProperty | Out-File C:\\netadapter_advanced.txt' — check RSS, Jumbo Frames, and Offload settings.",
+      "Collect DFS information if applicable: 'dfsutil /root: /view > C:\\dfs_roots.txt' and 'dfsutil /pktinfo > C:\\dfs_pktinfo.txt' — document DFS namespace configuration and referral cache.",
+      "TSS full data collection — choose based on scenario: '.\\TSS.ps1 -Scenario NET_SMB' (collect from both client AND server simultaneously for end-to-end trace), '.\\TSS.ps1 -Scenario NET_SMBcli' (client-side only — use when issue is access, mapping, or client behaviour), '.\\TSS.ps1 -Scenario NET_SMBsrv' (server-side only — use when issue is share access, performance, or open file handles on the server). TSS collects logs, registry, configuration, and performance counters in a single package.",
+      "Collect performance counters for SMB: 'Get-Counter -Counter \"\\Server Work Queues(*)\\Queue Length\",\"\\Server Work Queues(*)\\Active Threads\",\"\\SMB Client(*)\\Data Bytes/sec\",\"\\SMB Client(*)\\Read Bytes/sec\",\"\\SMB Client(*)\\Write Bytes/sec\",\"\\SMB Server(*)\\Data Bytes/sec\",\"\\SMB Server(*)\\Read Bytes/sec\",\"\\SMB Server(*)\\Write Bytes/sec\" -SampleInterval 5 -MaxSamples 60 | Export-Clixml C:\\smb_performance.xml' — 5-minute performance snapshot.",
+      "Document Windows version and patch level: 'winver > C:\\winver.txt' and 'wmic qfe list brief > C:\\hotfixes.txt' — important for SMB capability compatibility (e.g., AES-GCM support requires specific builds)."
     ]
   },
   "playbooks": {
     "access_denied": {
       "title": "Access Denied connecting to SMB share",
+      "description": "Troubleshoot SMB access denied errors (0x5/STATUS_ACCESS_DENIED) by systematically checking network connectivity, authentication, share permissions, NTFS permissions, and SMB signing/encryption requirements. This playbook covers the most common causes including credential issues, permission mismatches, SMB signing policy conflicts, and Kerberos token size problems.",
       "severity": "high",
       "phases": [
         {
           "name": "Verify", "icon": "✅",
+          "description": "Confirm basic network connectivity and SMB service availability before diving into permission issues.",
           "steps": [
-            { "action": "Test-NetConnection -ComputerName <server> -Port 445", "expect": "TcpTestSucceeded: True — if False, network or firewall is blocking port 445" },
-            { "action": "net use \\\\<server>\\<share>", "expect": "Note exact error code — 0x5 = Access Denied, 0x35 = Path Not Found" },
-            { "action": "Try accessing by IP: \\\\<server IP>\\<share>", "expect": "If works by IP but not hostname, DNS or Kerberos SPN issue" }
+            { "action": "Test-NetConnection -ComputerName <server> -Port 445", "expect": "TcpTestSucceeded: True — if False, check network connectivity, Windows Firewall rules, and that Server service is running (Get-Service LanmanServer)" },
+            { "action": "Test-NetConnection -ComputerName <server> -CommonTCPPort SMB", "expect": "Same as port 445 test — provides SMB-specific results including SMB dialect information if available" },
+            { "action": "net use \\\\<server>\\<share>", "expect": "Note exact error code — 0x5 = Access Denied, 0x35 = Path Not Found, 0x67 = Network name cannot be found, 0x1219 = Multiple connections with different credentials" },
+            { "action": "Try accessing by IP: \\\\<server IP>\\<share>", "expect": "If works by IP but not hostname, DNS resolution issue or Kerberos SPN problem (check with setspn -Q cifs/<server>)" },
+            { "action": "Get-SmbShare -Name '<share>' on server", "expect": "Share exists and Path is valid — if share not found, check share name spelling or if share is hidden (ends with $)" }
           ]
         },
         {
           "name": "Isolate", "icon": "🔍",
+          "description": "Identify whether the issue is authentication-related, permission-related, or configuration-related.",
           "steps": [
-            { "action": "klist purge then retry access", "expect": "If access restored after purge, stale Kerberos ticket was the cause" },
-            { "action": "Get-SmbShareAccess -Name '<share>'", "expect": "Confirm user or group has at least Read permission at share level" },
-            { "action": "icacls '<share path>' on the server", "expect": "Confirm NTFS permissions grant access to the user — both share AND NTFS must allow" },
-            { "action": "whoami /all on the affected client", "expect": "Confirm user is member of the expected groups — token may not reflect recent group changes" }
+            { "action": "klist purge then klist get <FQDN of server> and retry access", "expect": "If access restored after purge, stale Kerberos ticket or group membership change was the cause — indicates Kerberos authentication issue" },
+            { "action": "net use", "expect": "Check for multiple connections to same server with different credentials — if present, disconnect all with 'net use * /delete /y' to resolve error 1219" },
+            { "action": "Get-SmbShareAccess -Name '<share>' on server", "expect": "Confirm user or group has at least Read permission at share level — check both AccessRight and AccountName" },
+            { "action": "icacls '<share path>' on server", "expect": "Confirm NTFS permissions grant access to the user — both share AND NTFS must allow the requested operation. Look for (OI)(CI) inheritance flags" },
+            { "action": "whoami /all on affected client", "expect": "Confirm user is member of expected groups — check token size; if >12000 bytes, may need MaxTokenSize registry adjustment" },
+            { "action": "Get-SmbServerConfiguration | Select RequireSecuritySignature,EnableSecuritySignature", "expect": "Check if server requires SMB signing — client must have matching signing configuration" },
+            { "action": "Get-SmbClientConfiguration | Select RequireSecuritySignature,EnableSecuritySignature", "expect": "Compare with server settings — mismatch causes STATUS_ACCESS_DENIED during session setup" }
           ]
         },
         {
           "name": "Fix", "icon": "🛠",
+          "description": "Apply the appropriate fix based on isolation findings.",
           "steps": [
-            { "action": "Grant-SmbShareAccess -Name '<share>' -AccountName '<user or group>' -AccessRight Full", "expect": "Share-level permission granted" },
-            { "action": "icacls '<path>' /grant '<user>:(OI)(CI)M' on the server", "expect": "NTFS permission granted — both layers now allow access" },
-            { "action": "klist purge on client then retry", "expect": "Fresh Kerberos ticket obtained with updated group membership" }
+            { "action": "For share permission issue: Grant-SmbShareAccess -Name '<share>' -AccountName '<user or group>' -AccessRight Full -Confirm:$false", "expect": "Share-level permission granted — user now has at least Read access at share boundary" },
+            { "action": "For NTFS permission issue: icacls '<path>' /grant '<user>:(OI)(CI)M' on server", "expect": "NTFS permission granted with inheritance — both share and NTFS layers now allow access" },
+            { "action": "For SMB signing mismatch: Set-SmbClientConfiguration -EnableSecuritySignature $true -RequireSecuritySignature $true -Confirm:$false", "expect": "Client signing configuration aligned with server — resolves signing-related access denied" },
+            { "action": "For Kerberos token size issue: Set-ItemProperty -Path HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Lsa\\Kerberos\\Parameters -Name MaxTokenSize -Value 48000 -Type DWord", "expect": "MaxTokenSize increased — requires reboot and 'klist purge' to take effect" },
+            { "action": "klist purge on client then retry access", "expect": "Fresh Kerberos ticket obtained with updated group membership and token size" },
+            { "action": "Clear-DnsClientCache on client", "expect": "DNS cache cleared — resolves stale DNS records that may cause authentication issues" }
           ]
         },
         {
           "name": "Confirm", "icon": "🎯",
+          "description": "Verify the fix resolves the issue and document the resolution.",
           "steps": [
-            { "action": "net use \\\\<server>\\<share>", "expect": "Command completes successfully — no error code" },
-            { "action": "Get-SmbConnection | Where ShareName -eq '<share>'", "expect": "Active session present with correct UserName" }
+            { "action": "net use \\\\<server>\\<share>", "expect": "Command completes successfully — no error code, share accessible" },
+            { "action": "Get-SmbConnection | Where ShareName -eq '<share>'", "expect": "Active session present with correct UserName, expected Dialect (3.1.1 or 3.0.2), and proper Signing/Encrypted state" },
+            { "action": "Test file operations: create, read, write, delete a test file", "expect": "All operations succeed — confirms full functionality, not just read access" },
+            { "action": "Document root cause and resolution for future reference", "expect": "Resolution documented — prevents recurrence and aids in similar troubleshooting" }
           ]
         }
       ]
     },
     "slow_performance": {
       "title": "SMB file transfer slow or high latency",
+      "description": "Troubleshoot SMB performance issues including slow file transfers, high latency, and poor throughput. This playbook covers SMB dialect negotiation, multichannel configuration, SMB encryption overhead, antivirus interference, bandwidth throttling, and network-level issues. Focus on SMB 3.x features like multichannel and compression for optimal performance.",
       "severity": "medium",
       "phases": [
         {
           "name": "Verify", "icon": "✅",
+          "description": "Establish baseline performance metrics and identify current SMB configuration.",
           "steps": [
-            { "action": "Get-SmbConnection | Select ServerName,Dialect,Signing,Encrypted,NumOpens", "expect": "Dialect should be 3.1.1 or 3.0.2 — if 1.0 or 2.0, negotiation fell back to older version" },
-            { "action": "Get-SmbMultichannelConnection | Select ServerName,State,Throughput,Latency", "expect": "State: Connected with multiple entries if Multichannel is active" }
+            { "action": "Get-SmbConnection | Select ServerName,ShareName,Dialect,Signing,Encrypted,NumOpens", "expect": "Dialect should be 3.1.1 or 3.0.2 — if 1.0 or 2.0, negotiation fell back to older version with lower performance" },
+            { "action": "Get-SmbMultichannelConnection | Select ServerName,State,Throughput,Latency,RSSCapable,RDMACapable", "expect": "State: Connected with multiple entries if Multichannel is active — throughput should aggregate across interfaces" },
+            { "action": "Measure baseline: Measure-Command { Copy-Item '\\\\<server>\\<share>\\largefile.dat' C:\\localfile.dat }", "expect": "Record transfer time and calculate throughput (bytes/second) — compare against expected network bandwidth" },
+            { "action": "Test-NetConnection -ComputerName <server> -InformationLevel Detailed", "expect": "Check RTT (round-trip time) — RTT > 20ms indicates WAN/VPN which may limit SMB performance" },
+            { "action": "Get-SmbServerNetworkInterface | Select InterfaceIndex,Speed,RSS,RDMA", "expect": "Verify server NIC speeds — 10Gbps+ recommended for multichannel, RSS should be enabled" }
           ]
         },
         {
           "name": "Isolate", "icon": "🔍",
+          "description": "Identify performance bottlenecks at various layers: SMB configuration, network, storage, or antivirus.",
           "steps": [
-            { "action": "Get-SmbClientConfiguration | Select EnableMultiChannel,EnableLargeMtu", "expect": "Both should be True — if False, Multichannel and large MTU are disabled" },
-            { "action": "Get-SmbBandwidthLimit", "expect": "Check if bandwidth throttling rules are limiting throughput" },
-            { "action": "Check if AV is scanning files in real time on the server", "expect": "AV exclusion for share path may be needed — test with real-time protection temporarily disabled" }
+            { "action": "Get-SmbClientConfiguration | Select EnableMultiChannel,EnableLargeMtu,EnableBandwidthThrottling", "expect": "EnableMultiChannel and EnableLargeMtu should be True — if False, performance features are disabled" },
+            { "action": "Get-SmbServerConfiguration | Select EnableMultiChannel,EnableLargeMtu,MaxMpxCount", "expect": "Server should also have multichannel and large MTU enabled for optimal performance" },
+            { "action": "Get-SmbBandwidthLimit | Select ShareName,BytesPerSecond,Category", "expect": "Check if bandwidth throttling rules are limiting throughput — BytesPerSecond may be set too low" },
+            { "action": "Get-Process | Where Company -like '*McAfee*' -or Company -like '*Symantec*' -or Company -like '*Microsoft*'", "expect": "Identify running AV/EDR products — real-time scanning can cause significant file access latency" },
+            { "action": "Get-SmbShare | Select Name,EncryptData,CompressData,CachingMode", "expect": "Check if encryption or compression is enabled — encryption adds CPU overhead, compression may help WAN performance" },
+            { "action": "Check disk performance on server: Get-PhysicalDisk | Select DeviceId,FriendlyName,MediaType,HealthStatus", "expect": "Verify storage is not bottleneck — HDD vs SSD, health status, and latency" },
+            { "action": "Get-NetAdapter | Where Status -eq 'Up' | Select Name,InterfaceDescription,LinkSpeed", "expect": "Verify NIC link speeds match expectations — auto-negotiation may have fallen back to lower speed" }
           ]
         },
         {
           "name": "Fix", "icon": "🛠",
+          "description": "Apply performance optimizations based on identified bottlenecks.",
           "steps": [
-            { "action": "Set-SmbClientConfiguration -EnableMultiChannel $true -Confirm:$false", "expect": "Multichannel enabled — requires both client and server NICs to have valid routes to each other" },
-            { "action": "Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force", "expect": "SMB1 disabled — forces negotiation to SMB2/3 which has better performance" },
-            { "action": "Add share path to AV exclusion list on the server", "expect": "AV no longer scanning every file access — latency drops significantly" }
+            { "action": "Enable multichannel: Set-SmbClientConfiguration -EnableMultiChannel $true -Confirm:$false", "expect": "Multichannel enabled on client — requires server also enabled and multiple NICs/IPs with valid routes" },
+            { "action": "Enable multichannel on server: Set-SmbServerConfiguration -EnableMultiChannel $true -Confirm:$false", "expect": "Multichannel enabled on server — both ends must be enabled for negotiation" },
+            { "action": "Disable SMB1 to force SMB2/3: Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force", "expect": "SMB1 disabled — forces negotiation to SMB2/3 which has better performance and security" },
+            { "action": "Enable large MTU: Set-SmbClientConfiguration -EnableLargeMtu $true -Confirm:$false", "expect": "Large MTU enabled — reduces packet overhead, requires jumbo frames configured on network switches" },
+            { "action": "Disable bandwidth throttling: Set-SmbClientConfiguration -EnableBandwidthThrottling $false -Confirm:$false", "expect": "Bandwidth throttling disabled — allows full network bandwidth utilization" },
+            { "action": "Add share path to AV exclusion on server: Add-MpPreference -ExclusionPath '<share path>'", "expect": "AV exclusion added — real-time scanning no longer delays file operations" },
+            { "action": "For WAN/VPN: Enable SMB compression: Set-SmbShare -Name '<share>' -CompressData $true -Confirm:$false", "expect": "SMB compression enabled — reduces data transferred over high-latency links (SMB 3.1.1+ only)" },
+            { "action": "Increase session timeout for high-latency networks: Set-SmbClientConfiguration -SessionTimeout 300 -Confirm:$false", "expect": "Session timeout increased to 300 seconds — prevents timeouts on slow networks" }
           ]
         },
         {
           "name": "Confirm", "icon": "🎯",
+          "description": "Verify performance improvements and document optimization results.",
           "steps": [
-            { "action": "Get-SmbMultichannelConnection", "expect": "Multiple connections active with higher aggregate Throughput" },
-            { "action": "Copy a large file and measure transfer rate", "expect": "Transfer rate matches expected network bandwidth" }
+            { "action": "Get-SmbMultichannelConnection", "expect": "Multiple connections active with higher aggregate Throughput — verify RSS and RDMA capabilities if applicable" },
+            { "action": "Measure transfer rate again with same test file", "expect": "Transfer rate improved — should be closer to expected network bandwidth (e.g., 80-90% of link speed)" },
+            { "action": "Monitor performance counters: Get-Counter -Counter '\\SMB Server(*)\\Data Bytes/sec' -SampleInterval 5 -MaxSamples 12", "expect": "Sustained throughput observed during file operations — no significant drops" },
+            { "action": "Document configuration changes and before/after metrics", "expect": "Performance optimization documented — provides baseline for future troubleshooting" }
+          ]
+        }
+      ]
+    },
+    "smb_signing_issues": {
+      "title": "SMB Signing configuration mismatch",
+      "description": "Troubleshoot SMB signing issues that cause access denied errors or prevent secure connections. SMB signing ensures message integrity but can cause compatibility issues when client and server signing requirements are misaligned. This playbook covers signing configuration, GPO settings, and compatibility between different Windows versions.",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify", "icon": "✅",
+          "description": "Document current SMB signing configuration on both client and server.",
+          "steps": [
+            { "action": "Get-SmbServerConfiguration | Select RequireSecuritySignature,EnableSecuritySignature", "expect": "Document server signing settings — RequireSecuritySignature = $true enforces signing, EnableSecuritySignature = $true allows signing" },
+            { "action": "Get-SmbClientConfiguration | Select RequireSecuritySignature,EnableSecuritySignature", "expect": "Document client signing settings — compare with server to identify mismatch" },
+            { "action": "Check GPO settings: gpresult /h C:\\gpresult.html", "expect": "Review 'Microsoft network client/server: Digitally sign communications (always/if client agrees)' under Security Options" },
+            { "action": "Get-SmbConnection | Select ServerName,Signing", "expect": "Check Signing status on active connections — should show True if signing is active" }
+          ]
+        },
+        {
+          "name": "Isolate", "icon": "🔍",
+          "description": "Identify the signing configuration mismatch causing the issue.",
+          "steps": [
+            { "action": "Compare server and client RequireSecuritySignature settings", "expect": "If server requires signing but client has it disabled, mismatch causes STATUS_ACCESS_DENIED" },
+            { "action": "Check for GPO-enforced signing requirements", "expect": "Domain GPO may override local settings — verify GPO precedence" },
+            { "action": "Review SMBClient Security event log for signing errors", "expect": "Look for Event ID 1006 or similar indicating signing negotiation failure" },
+            { "action": "Test with signing disabled temporarily: Set-SmbClientConfiguration -RequireSecuritySignature $false -EnableSecuritySignature $false -Confirm:$false", "expect": "If access works with signing disabled, confirms signing mismatch is the cause" }
+          ]
+        },
+        {
+          "name": "Fix", "icon": "🛠",
+          "description": "Align signing configuration between client and server for security and compatibility.",
+          "steps": [
+            { "action": "Preferred: Enable signing on both: Set-SmbClientConfiguration -EnableSecuritySignature $true -RequireSecuritySignature $true -Confirm:$false", "expect": "Client signing enabled and required — recommended for security" },
+            { "action": "Enable signing on server: Set-SmbServerConfiguration -EnableSecuritySignature $true -RequireSecuritySignature $true -Confirm:$false", "expect": "Server signing enabled and required — both ends now match" },
+            { "action": "Alternative: Disable signing requirement (less secure): Set-SmbServerConfiguration -RequireSecuritySignature $false -Confirm:$false", "expect": "Server no longer requires signing — use only if legacy clients cannot support signing" },
+            { "action": "Restart SMB service for changes to take effect: Restart-Service LanmanServer -Force", "expect": "SMB service restarted — new signing configuration now active" },
+            { "action": "For GPO issues: Modify GPO to align signing requirements", "expect": "GPO updated — run 'gpupdate /force' on affected systems" }
+          ]
+        },
+        {
+          "name": "Confirm", "icon": "🎯",
+          "description": "Verify signing is working correctly and access is restored.",
+          "steps": [
+            { "action": "Test share access: net use \\\\<server>\\<share>", "expect": "Access successful — no signing-related errors" },
+            { "action": "Get-SmbConnection | Select ServerName,Signing", "expect": "Signing shows True — confirms signed connections are established" },
+            { "action": "Capture network trace and verify signed packets", "expect": "SMB2 flags show SIGNING_REQUIRED or SIGNING_ENABLED in packet headers" }
+          ]
+        }
+      ]
+    },
+    "smb_encryption_issues": {
+      "title": "SMB Encryption cipher mismatch",
+      "description": "Troubleshoot SMB encryption issues that prevent connections when server requires encryption but client lacks cipher support. SMB encryption protects data in transit but requires compatible cipher suites. This playbook covers encryption configuration, cipher compatibility, and OS version requirements.",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify", "icon": "✅",
+          "description": "Document SMB encryption configuration and client capabilities.",
+          "steps": [
+            { "action": "Get-SmbServerConfiguration | Select EncryptData,RejectUnencryptedAccess,EncryptionCiphers", "expect": "Document server encryption settings and cipher order (AES-256-GCM, AES-128-GCM, AES-128-CCM)" },
+            { "action": "Get-SmbShare | Select Name,EncryptData", "expect": "Check if encryption is enabled per-share — overrides server-wide setting" },
+            { "action": "Check client OS version: [System.Environment]::OSVersion.Version", "expect": "Windows 11/Server 2022+ supports AES-256-GCM, Windows 10 1709+ supports AES-128-GCM, older versions only AES-128-CCM" },
+            { "action": "Get-SmbConnection | Select ServerName,Encrypted", "expect": "Check if existing connections are encrypted — should show True if encryption is active" }
+          ]
+        },
+        {
+          "name": "Isolate", "icon": "🔍",
+          "description": "Identify cipher compatibility issues between server and client.",
+          "steps": [
+            { "action": "Compare server EncryptionCiphers with client OS capabilities", "expect": "If server requires AES-GCM but client only supports AES-CCM, connection fails" },
+            { "action": "Check RejectUnencryptedAccess setting", "expect": "If $true, all clients must support encryption — Windows 7/Server 2008 R2 cannot connect" },
+            { "action": "Review SMBClient Security event log for encryption errors", "expect": "Look for cipher negotiation failures or STATUS_NOT_SUPPORTED errors" },
+            { "action": "Test with encryption disabled on share: Set-SmbShare -Name '<share>' -EncryptData $false -Confirm:$false", "expect": "If access works with encryption disabled, confirms cipher mismatch is the cause" }
+          ]
+        },
+        {
+          "name": "Fix", "icon": "🛠",
+          "description": "Resolve encryption compatibility issues by adjusting ciphers or upgrading clients.",
+          "steps": [
+            { "action": "Preferred: Upgrade client OS to support server ciphers", "expect": "Client upgraded to Windows 10 1709+ or Windows 11 for AES-GCM support" },
+            { "action": "Alternative: Downgrade server cipher for legacy clients: Set-SmbServerConfiguration -EncryptionCiphers AES_128_CCM -Confirm:$false", "expect": "Server now accepts AES-128-CCM — compatible with older clients" },
+            { "action": "Disable RejectUnencryptedAccess for mixed environments: Set-SmbServerConfiguration -RejectUnencryptedAccess $false -Confirm:$false", "expect": "Server now allows unencrypted connections — use per-share encryption for sensitive data" },
+            { "action": "Use per-share encryption for selective protection: Set-SmbShare -Name '<share>' -EncryptData $true -Confirm:$false", "expect": "Only specific shares require encryption — allows mixed client environment" },
+            { "action": "Restart SMB service: Restart-Service LanmanServer -Force", "expect": "Configuration changes applied" }
+          ]
+        },
+        {
+          "name": "Confirm", "icon": "🎯",
+          "description": "Verify encryption is working correctly with compatible ciphers.",
+          "steps": [
+            { "action": "Test share access: net use \\\\<server>\\<share>", "expect": "Access successful — no encryption-related errors" },
+            { "action": "Get-SmbConnection | Select ServerName,Encrypted", "expect": "Encrypted shows True — confirms encrypted connection is established" },
+            { "action": "Capture network trace and verify encrypted SMB traffic", "expect": "SMB2 flags show ENCRYPTED in packet headers, payload is not readable in clear text" }
+          ]
+        }
+      ]
+    },
+    "multichannel_not_working": {
+      "title": "SMB Multichannel not negotiating",
+      "description": "Troubleshoot SMB multichannel issues where multiple network interfaces are not being used for aggregated bandwidth. Multichannel requires proper NIC configuration, RSS support, and valid routing between client and server. This playbook covers multichannel prerequisites, NIC configuration, and troubleshooting steps.",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify", "icon": "✅",
+          "description": "Document multichannel configuration and current status.",
+          "steps": [
+            { "action": "Get-SmbMultichannelConnection | Select ServerName,ClientInterfaceIndex,ServerInterfaceIndex,State,Throughput,Latency", "expect": "Check if multichannel is active — should show multiple entries if working" },
+            { "action": "Get-SmbClientConfiguration | Select EnableMultiChannel", "expect": "Verify multichannel is enabled on client" },
+            { "action": "Get-SmbServerConfiguration | Select EnableMultiChannel", "expect": "Verify multichannel is enabled on server" },
+            { "action": "Get-SmbServerNetworkInterface | Select InterfaceIndex,IPAddress,Speed,RSS,RDMA", "expect": "Document server NICs — should have multiple interfaces with RSS enabled" }
+          ]
+        },
+        {
+          "name": "Isolate", "icon": "🔍",
+          "description": "Identify why multichannel is not negotiating.",
+          "steps": [
+            { "action": "Check client NIC configuration: Get-NetIPConfiguration | Select InterfaceAlias,IPv4Address", "expect": "Client should have multiple NICs or IP addresses to negotiate multichannel" },
+            { "action": "Verify RSS is enabled on NICs: Get-NetAdapterRss | Select Name,Enabled", "expect": "RSS should be enabled on all NICs for multichannel to work" },
+            { "action": "Check routing between client and server NICs: Test-NetConnection -ComputerName <server> -TraceRoute", "expect": "Verify client can reach server via multiple paths — same subnet prevents multichannel" },
+            { "action": "Get-SmbMultichannelConstraint -ServerName <server>", "expect": "Check if manual constraints are blocking multichannel" },
+            { "action": "Check NIC link speeds: Get-NetAdapter | Where Status -eq 'Up' | Select Name,LinkSpeed", "expect": "All NICs should have compatible link speeds — multichannel may fail with mismatched speeds" }
+          ]
+        },
+        {
+          "name": "Fix", "icon": "🛠",
+          "description": "Resolve multichannel configuration issues.",
+          "steps": [
+            { "action": "Enable multichannel on client: Set-SmbClientConfiguration -EnableMultiChannel $true -Confirm:$false", "expect": "Multichannel enabled on client" },
+            { "action": "Enable multichannel on server: Set-SmbServerConfiguration -EnableMultiChannel $true -Confirm:$false", "expect": "Multichannel enabled on server" },
+            { "action": "Enable RSS on NICs: Enable-NetAdapterRss -Name '<NIC Name>'", "expect": "RSS enabled on NIC — required for multichannel" },
+            { "action": "Configure NICs on different subnets/VLANs", "expect": "Client and server NICs now on different subnets — allows multichannel negotiation" },
+            { "action": "Remove multichannel constraints if present: Remove-SmbMultichannelConstraint -ServerName <server>", "expect": "Constraints removed — allows automatic multichannel negotiation" },
+            { "action": "Restart SMB service: Restart-Service LanmanServer -Force", "expect": "Configuration changes applied" }
+          ]
+        },
+        {
+          "name": "Confirm", "icon": "🎯",
+          "description": "Verify multichannel is working and providing bandwidth aggregation.",
+          "steps": [
+            { "action": "Get-SmbMultichannelConnection", "expect": "Multiple connections active with different interface indices" },
+            { "action": "Measure transfer rate with large file", "expect": "Throughput aggregated across multiple NICs — should approach sum of NIC speeds" },
+            { "action": "Check RSS and RDMA capabilities in connection output", "expect": "RSSCapable shows True, RDMACapable shows True if RDMA NICs are present" }
           ]
         }
       ]

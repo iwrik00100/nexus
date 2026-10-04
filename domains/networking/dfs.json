@@ -3,194 +3,283 @@
   "label": "DFS",
   "icon": "🗃️",
   "domain": "networking",
+  "description": "Distributed File System (DFS) includes two role services: DFS Namespaces (DFSN) and DFS Replication (DFSR). DFSN groups shared folders from multiple servers into a single logical namespace (e.g., \\\\domain.com\\data) providing automatic site-aware referral and load balancing. DFSR is a multi-master replication engine that synchronizes data across servers using the Remote Differential Compression (RDC) algorithm for efficient bandwidth usage. DFSR is also used for replicating SYSVOL (required for Group Policy and logon scripts) in domains with Windows Server 2008 R2 or later domain controllers. Common issues include namespace inaccessibility, incorrect site referrals, replication backlog, staging quota exhaustion, conflict file accumulation, and SYSVOL replication failures.",
   "scoping": {
     "l1": [
-      "Is this a DFS Namespace (DFSN / DFS-N) issue, a DFS Replication (DFSR / DFS-R) issue, or both?",
-      "What Windows Server version are the DFS namespace servers and replication members running?",
-      "Is the namespace domain-based (\\\\domain.com\\namespace) or standalone (\\\\server\\namespace)?",
-      "What is the exact symptom — namespace root inaccessible, wrong folder target returned (wrong site), replication backlog growing, data mismatch, or SYSVOL replication failure?",
-      "Is the issue affecting all clients or only specific clients, sites, or subnets?",
-      "Are the DFS Namespace service (Dfs) and DFS Replication service (DFSR) running on affected servers?",
-      "When did the issue start — DC promotion or demotion, namespace server decommission, AD replication failure, or network outage?",
-      "Are there errors in the DFS Namespace or DFS Replication event logs?",
-      "Is this the SYSVOL namespace used for Group Policy and logon scripts (\\\\domain\\SYSVOL or \\\\domain\\NETLOGON)?"
+      "Is this a DFS Namespace (DFSN / DFS-N) issue, a DFS Replication (DFSR / DFS-R) issue, or both? Run 'Get-WindowsFeature -Name FS-DFS-Namespace,FS-DFS-Replication' to confirm installed roles.",
+      "What Windows Server version are the DFS namespace servers and replication members running? Run 'Get-ComputerInfo | Select WindowsProductName,WindowsVersion,OsHardwareAbstractionLayer' on each server.",
+      "Is the namespace domain-based (\\\\domain.com\\namespace) or standalone (\\\\server\\namespace)? Run 'Get-DfsnRoot | Select Path,Type,State' to identify namespace type and state.",
+      "What is the exact symptom — namespace root inaccessible, wrong folder target returned (wrong site), replication backlog growing, data mismatch, or SYSVOL replication failure? Test with 'Test-Path \\\\<domain>\\<namespace>' and 'dfsutil /pktinfo'.",
+      "Is the issue affecting all clients or only specific clients, sites, or subnets? Check client site assignment with 'nltest /dsgetsite:<client>' and 'Get-ADDomainController -Filter * | Select Name,Site'.",
+      "Are the DFS Namespace service (Dfs) and DFS Replication service (DFSR) running on affected servers? Run 'Get-Service Dfs,DFSR | Select Name,Status,StartType,MachineName' on each server.",
+      "When did the issue start — DC promotion or demotion, namespace server decommission, AD replication failure, or network outage? Check event logs: 'Get-WinEvent -LogName \"DFS Replication\" -MaxEvents 50 | Where TimeCreated -gt (Get-Date).AddDays(-7)'.",
+      "Are there errors in the DFS Namespace or DFS Replication event logs? Run 'Get-WinEvent -LogName \"DFS Replication\" -Level 2,3 -MaxEvents 20' and 'Get-WinEvent -LogName \"Microsoft-Windows-DFSN-Server/Operational\" -Level 2,3 -MaxEvents 20'.",
+      "Is this the SYSVOL namespace used for Group Policy and logon scripts (\\\\domain\\SYSVOL or \\\\domain\\NETLOGON)? Run 'Get-DfsnRoot | Where Path -like \"*SYSVOL*\"' and 'Test-Path \\\\<domain>\\SYSVOL'."
     ],
     "l2": [
-      "What DFS Replication topology is configured — hub-and-spoke, full mesh, or a custom multi-tier topology?",
-      "What are the replication group schedule (bandwidth window), bandwidth throttling setting, and connection interval?",
-      "What is the current replication backlog count between affected members? (dfsrdiag backlog)",
-      "Is the DFS staging area nearing its quota limit on any member — what is the StagingSizeInMb vs. CurrentStageSizeInMb?",
-      "Are files accumulating in the ConflictAndDeleted or PreExisting folders on any replication member?",
-      "Is Active Directory replication healthy across all DCs — domain-based DFS namespace objects are stored in the domain partition?",
-      "Are locked files (held open by applications or AV) preventing DFSR from staging or installing replicated changes?",
-      "Is DFS referral ordering configured for lowest-cost (site cost) or random order? Is client site assignment correct?",
-      "Is DFSR SYSVOL migration fully completed from FRS to DFSR on all DCs? (DFSRMIG /getglobalstate)"
+      "What DFS Replication topology is configured — hub-and-spoke, full mesh, or a custom multi-tier topology? Run 'Get-DfsrConnection | Select GroupName,SourceComputerName,DestinationComputerName,Enabled' to map topology.",
+      "What are the replication group schedule (bandwidth window), bandwidth throttling setting, and connection interval? Run 'Get-DfsrGroupSchedule -GroupName <group>' and 'Get-DfsrMembership | Select GroupName,ComputerName,RdcEnabled'.",
+      "What is the current replication backlog count between affected members? Run 'dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<group> /rfname:<folder>' for each connection.",
+      "Is the DFS staging area nearing its quota limit on any member? Run 'Get-DfsrMembership | Select ComputerName,FolderName,StagingSizeInMb,CurrentStageSizeInMb,ConflictSizeInMb | Where {($_.CurrentStageSizeInMb / $_.StagingSizeInMb) -gt 0.8}'.",
+      "Are files accumulating in the ConflictAndDeleted or PreExisting folders on any replication member? Run 'Get-ChildItem \"C:\\Windows\\Sysvol_DFSR\\ConflictAndDeleted\" -Recurse | Measure-Object' and check 'Get-DfsrMembership | Select ConflictSizeInMb'.",
+      "Is Active Directory replication healthy across all DCs? Domain-based DFS namespace objects are stored in the domain partition. Run 'repadmin /showrepl * *' and 'repadmin /replsummary'.",
+      "Are locked files (held open by applications or AV) preventing DFSR from staging or installing replicated changes? Run 'openfiles /query /v' on replication members and check Event ID 5008 in DFSR event log.",
+      "Is DFS referral ordering configured for lowest-cost (site cost) or random order? Run 'Get-DfsnFolder -Path \\\\<domain>\\<namespace>\\* | Get-DfsnFolderTarget | Select Path,ReferralPriorityClass,ReferralPriorityRank'.",
+      "Is client site assignment correct? Run 'nltest /dsgetsite' on affected client and verify in AD Sites and Services with 'Get-ADReplicationSite -Filter * | Select Name'.",
+      "Is DFSR SYSVOL migration fully completed from FRS to DFSR on all DCs? Run 'DFSRMIG /getglobalstate' on PDC Emulator — all DCs should show state 3 (Eliminated)."
     ]
   },
   "probing": {
     "l1": [
-      "Run 'dfsutil /root:\\\\<domain>\\<namespace> /siteinfo' — share namespace root targets and site affinity information.",
-      "Run 'Get-DfsnRoot | Select Path,State,Type,TimeToLive' — confirm root state.",
-      "Run 'Get-DfsnFolder -Path \\\\<domain>\\<namespace>\\* | Select Path,State,TimeToLive'",
-      "Run 'dfsdiag /testreferral /dfspath:\\\\<domain>\\<namespace>\\<folder> /full' — share complete referral diagnostics.",
-      "Run 'Get-Service Dfs,DFSR | Select Name,Status,StartType'",
-      "From an affected client: 'dfsutil /pktinfo' — share the cached DFS referral packet table.",
-      "Review DFS Replication event log: 'Get-WinEvent -LogName \"DFS Replication\" | Sort TimeCreated -Descending | Select -First 30 | Format-List'"
+      "Run 'dfsutil /root:\\\\<domain>\\<namespace> /siteinfo' — share namespace root targets and site affinity information. Output shows which servers host the namespace and their AD site assignments.",
+      "Run 'Get-DfsnRoot | Select Path,State,Type,TimeToLive,Flags' — confirm root state. State should be Online; Type indicates domain-based (0x800) or standalone (0x100).",
+      "Run 'Get-DfsnFolder -Path \\\\<domain>\\<namespace>\\* | Select Path,State,TimeToLive | Format-Table -AutoSize' — verify all folders in namespace are accessible.",
+      "Run 'dfsdiag /testreferral /dfspath:\\\\<domain>\\<namespace>\\<folder> /full' — share complete referral diagnostics. Tests namespace server availability, referral response, and target reachability.",
+      "Run 'Get-Service Dfs,DFSR | Select Name,Status,StartType,MachineName | Format-Table -AutoSize' — verify both DFS services are running on all relevant servers.",
+      "From an affected client: 'dfsutil /pktinfo' — share the cached DFS referral packet table. Shows cached referrals, expiration times, and which targets are being used.",
+      "Review DFS Replication event log: 'Get-WinEvent -LogName \"DFS Replication\" -MaxEvents 50 | Sort TimeCreated -Descending | Select TimeCreated,Id,LevelDisplayName,Message | Format-Table -Wrap' — focus on Event IDs 2004 (initial replication), 2212 (database corruption), 5008 (file locked), 5014 (RPC error).",
+      "Check DFS Namespace operational log: 'Get-WinEvent -LogName \"Microsoft-Windows-DFSN-Server/Operational\" -MaxEvents 30 | Format-List' — look for referral processing errors and namespace configuration changes."
     ],
     "l2": [
-      "Run 'dfsrdiag replicationstate /member:<server>' for each replication member and share output.",
-      "Run 'dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<replication group> /rfname:<replicated folder>' — share backlog count.",
-      "Run 'Get-DfsrMembership | Select GroupName,ComputerName,Enabled,State,ContentPath,ReadOnly'",
-      "Run 'Get-DfsrConnection | Select GroupName,SourceComputerName,DestinationComputerName,State,Enabled,RdcEnabled,LastSuccessfulSync'",
-      "Run 'Get-DfsrMembership | Select ComputerName,FolderName,StagingPath,StagingSizeInMb,CurrentStageSizeInMb,ConflictSizeInMb'",
-      "Run 'repadmin /showrepl' and 'dcdiag /test:replications' — confirm AD replication is healthy.",
-      "Run 'Get-DfsnServerConfiguration -Path \\\\<server>\\<namespace>' — review namespace server settings.",
-      "Run 'dfsrdiag syncnow /partner:<partner server> /rgname:<group> /rfname:<folder> /time:1' — force an immediate sync and observe state change.",
-      "Run 'DFSRMIG /getmigrationstate' — confirm SYSVOL migration state on all DCs.",
-      "Check DFSR debug logs on affected members: C:\\Windows\\debug\\dfsr*.log — filter for ERROR or WARNING events."
+      "Run 'dfsrdiag replicationstate /member:<server>' for each replication member and share output. Shows inbound/outbound replication state, ongoing updates, and any errors.",
+      "Run 'dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<replication group> /rfname:<replicated folder>' — share backlog count. Large or growing backlog indicates replication lag.",
+      "Run 'Get-DfsrMembership | Select GroupName,ComputerName,Enabled,State,ContentPath,ReadOnly,PrimaryMember | Format-Table -AutoSize' — verify membership configuration and state (Normal vs. Error).",
+      "Run 'Get-DfsrConnection | Select GroupName,SourceComputerName,DestinationComputerName,State,Enabled,RdcEnabled,LastSuccessfulSync,MinimumRdcFileSizeInKB | Format-Table -AutoSize' — check connection health and RDC optimization.",
+      "Run 'Get-DfsrMembership | Select ComputerName,FolderName,StagingPath,StagingSizeInMb,CurrentStageSizeInMb,ConflictSizeInMb,D deletesInMb | Format-Table -AutoSize' — identify staging quota pressure and conflict/deleted accumulation.",
+      "Run 'repadmin /showrepl * *' and 'repadmin /replsummary' — confirm AD replication is healthy. Domain-based DFS configuration is stored in AD; broken AD replication prevents DFS consistency.",
+      "Run 'Get-DfsnServerConfiguration -ComputerName <server> | Select ComputerName,EnableSiteCosting,EnableInsiteReferrals,SyncIntervalInSeconds' — review namespace server settings including site costing and referral behavior.",
+      "Run 'dfsrdiag syncnow /partner:<partner server> /rgname:<group> /rfname:<folder> /time:1' — force an immediate sync and observe state change. Useful for testing connectivity after configuration changes.",
+      "Run 'DFSRMIG /getmigrationstate' on PDC Emulator — confirm SYSVOL migration state on all DCs. All DCs should be in state 3 (Eliminated) for completed FRS to DFSR migration.",
+      "Check DFSR debug logs on affected members: 'Get-Content C:\\Windows\\debug\\dfsr*.log | Select-String \"ERROR|WARNING|CORRUPT|STALE\" | Select-Object -Last 50' — filter for critical events that may not appear in event logs.",
+      "Run 'Get-DfsrIdRecord -ComputerName <server> -GroupName <group> | Where Version -gt 1 | Sort Version -Descending | Select -First 20' — identify recently modified files to understand replication activity.",
+      "Check DFSR database health: 'dfsrdiag idrecord' on affected members to verify database integrity and detect corruption."
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Start DFS services if stopped: 'Start-Service Dfs,DFSR'",
-      "For namespace root inaccessible: confirm namespace servers are reachable on TCP 445 and the Dfs service is running.",
-      "For wrong folder target (wrong site): 'dfsutil /pktinfo' on client — confirm site is being resolved correctly; check that the client's site assignment in AD Sites and Services is correct.",
-      "For DFSR SYSVOL issues: 'dfsrdiag pollad /member:<server>' — forces DFSR to re-read its configuration from AD.",
-      "Confirm AD replication is healthy: 'repadmin /showrepl' — DFSR cannot sync if AD replication is broken.",
-      "Confirm namespace root folder share exists: 'Get-SmbShare | Where Name -eq \"<namespace>\"'"
+      "Start DFS services if stopped: 'Start-Service Dfs,DFSR -PassThru | Select Name,Status' — verify both services start successfully and remain running.",
+      "For namespace root inaccessible: confirm namespace servers are reachable on TCP 445 with 'Test-NetConnection -ComputerName <server> -Port 445 -InformationLevel Detailed' and verify Dfs service is running with 'Get-Service Dfs -ComputerName <server>'.",
+      "For wrong folder target (wrong site): run 'dfsutil /pktinfo' on client to confirm site resolution, then verify client site assignment with 'nltest /dsgetsite' and 'Get-ADComputer <client> -Properties DistinguishedName | Select DistinguishedName'. Check AD Sites and Services to ensure subnets are correctly mapped.",
+      "For DFSR SYSVOL issues: run 'dfsrdiag pollad /member:<server>' to force DFSR to re-read its configuration from AD. Then run 'Get-DfsrMembership | Where GroupName -like \"*SYSVOL*\"' to verify membership state returns to Normal.",
+      "Confirm AD replication is healthy: run 'repadmin /showrepl * * /errorsonly' to identify any replication failures, and 'repadmin /replsummary' to get overall health. DFSR cannot sync if AD replication is broken since DFSR configuration is stored in AD.",
+      "Confirm namespace root folder share exists: run 'Get-SmbShare -CimSession <server> | Where Name -eq \"<namespace>\"' — if missing, recreate with 'New-SmbShare -Name <namespace> -Path <path> -FullAccess \"DOMAIN\\Domain Admins\"'.",
+      "For DFS namespace configuration not propagating: run 'dfsutil /root:\\\\<domain>\\<namespace> /propagate' to force namespace configuration refresh to all namespace servers.",
+      "For clients unable to resolve DFS paths: check DNS with 'Resolve-DnsName -Name <domain> -Type A' and verify AD DS service records with 'Get-DnsServerResourceRecord -ZoneName <domain> -RRType Srv | Where RecordData -like \"*_ldap*\"'."
     ],
     "l2": [
-      "For growing staging area: increase quota — 'Set-DfsrMembership -GroupName <g> -FolderName <f> -ComputerName <m> -StagingPathQuotaInMB 16384 -Force' — monitor staging usage.",
-      "For DFSR member in IN ERROR state: perform non-authoritative restore — stop DFSR, set registry BurFlags D2 at HKLM\\SYSTEM\\CurrentControlSet\\Services\\DFSR\\Parameters\\SysVols\\Seeding SysVol — restart DFSR.",
-      "For frequent conflict files: identify the last writer using 'Get-DfsrIdRecord' and review ConflictAndDeleted\\ConflictAndDeletedManifest.xml on affected members.",
-      "For stale namespace targets: 'Remove-DfsnFolderTarget -Path <path> -TargetPath <old target>' and 'New-DfsnFolderTarget -Path <path> -TargetPath <new target> -State Online'",
-      "For DFS referral ordering: 'Set-DfsnFolder -Path <path> -ReferralPriorityClass sitecost-high' — ensure clients prefer local site targets.",
-      "For SYSVOL DFSR migration completing: run 'DFSRMIG /setglobalstate 3' (Eliminated) on PDC emulator — then 'DFSRMIG /getmigrationstate' to confirm all DCs are in state 3.",
-      "For AD partition DFS objects corruption: use ADSIEdit — CN=Dfs-Configuration,CN=System,DC=<domain> — look for orphaned or duplicate DfsRoot objects.",
-      "Analyze DFSR debug log — grep for 'STALE\\|CORRUPT\\|RPC\\|ERROR' in C:\\Windows\\debug\\dfsr*.log — correlate with event log timestamps."
+      "For growing staging area nearing quota: increase quota with 'Set-DfsrMembership -GroupName <g> -FolderName <f> -ComputerName <m> -StagingPathQuotaInMB 16384 -Force', then monitor with 'Get-DfsrMembership | Select ComputerName,FolderName,StagingSizeInMb,CurrentStageSizeInMb'. Recommended staging quota is 10-20% of replicated folder size.",
+      "For DFSR member in IN ERROR state: perform non-authoritative restore. Stop DFSR service ('Stop-Service DFSR'), set registry BurFlags D2 at 'HKLM\\SYSTEM\\CurrentControlSet\\Services\\DFSR\\Parameters\\SysVols\\Seeding SysVol' (for SYSVOL) or appropriate replication group path, then restart DFSR ('Start-Service DFSR'). Monitor with 'Get-WinEvent -LogName \"DFS Replication\" -MaxEvents 20'.",
+      "For frequent conflict files: identify the last writer using 'Get-DfsrIdRecord -ComputerName <server> -GroupName <group> | Sort Version -Descending | Select -First 10 | Format-List'. Review 'ConflictAndDeleted\\ConflictAndDeletedManifest.xml' on affected members to understand conflict patterns. Address root cause by eliminating concurrent writes to same files.",
+      "For stale namespace targets: remove old targets with 'Remove-DfsnFolderTarget -Path <path> -TargetPath <old target> -Force', then add new targets with 'New-DfsnFolderTarget -Path <path> -TargetPath <new target> -State Online'. Verify with 'Get-DfsnFolderTarget -Path <path>'.",
+      "For DFS referral ordering issues: configure site-cost priorities with 'Set-DfsnFolderTarget -Path <path> -TargetPath <target> -ReferralPriorityClass sitecost-high' for local targets and 'sitecost-low' for remote targets. Ensure clients prefer local site targets. Verify with 'Get-DfsnFolderTarget -Path <path>'.",
+      "For SYSVOL DFSR migration stuck in progress: run 'DFSRMIG /setglobalstate 3' (Eliminated) on PDC Emulator FSMO role holder, then monitor with 'DFSRMIG /getmigrationstate'. Wait for all DCs to reach state 3 before proceeding. If stuck, check Event ID 8016 in DFSR event log.",
+      "For AD partition DFS objects corruption: use ADSIEdit to navigate to 'CN=Dfs-Configuration,CN=System,DC=<domain>' and look for orphaned or duplicate DfsRoot objects. Backup before deletion. Alternatively, run 'dfsutil /root:\\\\<domain>\\<namespace> /clean' to clean namespace metadata.",
+      "Analyze DFSR debug log for replication failures: run 'Get-Content C:\\Windows\\debug\\dfsr*.log | Select-String \"STAGE_FAIL|INSTALL_FAIL|RPC_ERROR|DATABASE_CORRUPT\" | Select-Object -Last 30' and correlate timestamps with event log entries using 'Get-WinEvent -LogName \"DFS Replication\" -MaxEvents 50'.",
+      "For DFSR database corruption detected by Event ID 2212: run 'dfsrdiag databaserepair /rgname:<group> /rfname:<folder> /member:<server> /full' to rebuild the DFSR database. This is a disruptive operation that requires initial replication after completion.",
+      "For excessive bandwidth consumption: adjust RDC settings with 'Set-DfsrMembership -GroupName <g> -FolderName <f> -ComputerName <m> -DisableRdc $false -MinimumRdcFileSizeInKB 64' to enable Remote Differential Compression for files larger than 64KB. Configure bandwidth throttling with 'Set-DfsrGroupSchedule -GroupName <g> -BandwidthDetail 1000' to limit to 1 Gbps during schedule.",
+      "For DFSR connection in Disconnected state: verify network connectivity with 'Test-NetConnection -ComputerName <partner> -Port 445', check firewall rules with 'Get-NetFirewallRule -DisplayGroup \"File and Printer Sharing\" | Select Name,Enabled,Direction', and ensure DFSR service is running on both partners. Restart connection with 'Start-DfsrConnection -GroupName <g> -SourceComputerName <A> -DestinationComputerName <B>'."
     ]
   },
   "datacollection": {
     "l1": [
-      "Export DFS Replication event log: 'wevtutil epl \"DFS Replication\" C:\\DFSR_Events.evtx'",
-      "Run 'Get-DfsrMembership | Out-File C:\\dfsr_membership.txt'",
-      "Run 'dfsrdiag replicationstate /member:<each server> >> C:\\dfsr_replication_state.txt'",
-      "Run 'Get-DfsnRoot | Out-File C:\\dfsn_roots.txt'"
+      "Export DFS Replication event log: 'wevtutil epl \"DFS Replication\" C:\\DFSR_Events.evtx' — collect from all replication members for comprehensive analysis.",
+      "Export DFS Namespace operational log: 'wevtutil epl \"Microsoft-Windows-DFSN-Server/Operational\" C:\\DFSN_Operational.evtx' — collect from all namespace servers.",
+      "Export DFSR Admin event log: 'wevtutil epl \"DFS Replication Admin\" C:\\DFSR_Admin_Events.evtx' — contains administrative actions and configuration changes.",
+      "Run 'Get-DfsrMembership | Select * | Out-File C:\\dfsr_membership.txt -Encoding UTF8' — capture complete membership configuration including quotas and paths.",
+      "Run 'Get-DfsnRoot | Select * | Out-File C:\\dfsn_roots.txt -Encoding UTF8' — capture all namespace roots with full configuration details.",
+      "Run 'Get-DfsnFolder -Path \\\\<domain>\\<namespace>\\* | Select * | Out-File C:\\dfsn_folders.txt -Encoding UTF8' — capture all folder targets and referral settings.",
+      "Run 'dfsrdiag replicationstate /member:<each server> >> C:\\dfsr_replication_state.txt' — collect replication state from all members for comparison.",
+      "Run 'Get-Service Dfs,DFSR | Select Name,Status,StartType,MachineName | Out-File C:\\dfs_service_status.txt -Encoding UTF8' — document service states across all servers."
     ],
     "l2": [
-      "Collect DFSR debug logs from all members: 'Copy-Item C:\\Windows\\debug\\dfsr*.log C:\\DFSR_Debug_Logs\\'",
-      "Run 'dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<g> /rfname:<f> | Out-File C:\\dfsr_backlog.txt'",
-      "Run 'Get-DfsrConnection | Out-File C:\\dfsr_connections.txt'",
-      "Run 'repadmin /showrepl > C:\\repadmin_showrepl.txt'",
-      "Run 'DFSRMIG /getmigrationstate > C:\\dfsrmig_state.txt'",
-      "Export DFS Namespace Operational log: 'wevtutil epl Microsoft-Windows-DFSN-Server/Operational C:\\DFSN_Operational.evtx'",
-      "Run 'Get-DfsnServerConfiguration | Out-File C:\\dfsn_server_config.txt'",
-      "TSS full data collection — choose based on scenario: '.\\TSS.ps1 -Scenario NET_DFSsrv' (server-side — use for namespace root issues, DFSR replication failures, or SYSVOL replication problems — run on the DFS namespace/replication server), '.\\TSS.ps1 -Scenario NET_DFScli' (client-side — use when clients cannot access DFS paths or receive wrong referrals — run on the affected client)"
+      "Collect DFSR debug logs from all members: 'Copy-Item C:\\Windows\\debug\\dfsr*.log C:\\DFSR_Debug_Logs\\' — these logs contain detailed replication diagnostics not in event logs.",
+      "Run 'dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<g> /rfname:<f> | Out-File C:\\dfsr_backlog.txt -Append' — collect backlog counts for all replication connections.",
+      "Run 'Get-DfsrConnection | Select * | Out-File C:\\dfsr_connections.txt -Encoding UTF8' — capture all connection configurations including RDC settings and sync schedules.",
+      "Run 'Get-DfsrGroupSchedule | Out-File C:\\dfsr_schedules.txt -Encoding UTF8' — document bandwidth throttling and replication schedules for all groups.",
+      "Run 'repadmin /showrepl * * > C:\\repadmin_showrepl.txt' and 'repadmin /replsummary > C:\\repadmin_summary.txt' — collect AD replication health data critical for DFS troubleshooting.",
+      "Run 'DFSRMIG /getmigrationstate > C:\\dfsrmig_state.txt' — document SYSVOL migration state for all domain controllers.",
+      "Run 'Get-DfsnServerConfiguration -ComputerName <server> | Select * | Out-File C:\\dfsn_server_config.txt -Encoding UTF8' — collect namespace server-specific settings including site costing.",
+      "Run 'Get-DfsrIdRecord -ComputerName <server> -GroupName <group> | Out-File C:\\dfsr_idrecords.txt -Encoding UTF8' — collect ID records to understand version vectors and replication history.",
+      "Run 'Get-ChildItem \"C:\\Windows\\Sysvol_DFSR\\ConflictAndDeleted\" -Recurse | Select FullName,Length,LastWriteTime | Out-File C:\\dfsr_conflicts.txt -Encoding UTF8' — document conflict and deleted files.",
+      "Run 'Get-ADReplicationSite | Select Name,Location,SiteObjectDN | Out-File C:\\ad_sites.txt -Encoding UTF8' and 'Get-ADReplicationSubnet | Select Name,Site | Out-File C:\\ad_subnets.txt -Encoding UTF8' — document AD site topology affecting DFS referrals.",
+      "Run 'dfsutil /root:\\\\<domain>\\<namespace> /export:C:\\dfs_namespace_export.txt' — export namespace configuration to text file for offline analysis.",
+      "Run 'Get-DfsrMember | Select ComputerName,DnsName,DomainName | Out-File C:\\dfsr_members.txt -Encoding UTF8' — document all replication members across all groups.",
+      "Run 'Get-DfsrGroup | Select GroupName,DomainName,Description | Out-File C:\\dfsr_groups.txt -Encoding UTF8' — document all replication groups.",
+      "Collect network diagnostic data: 'Test-NetConnection -ComputerName <partner> -Port 445 -InformationLevel Detailed | Out-File C:\\network_connectivity.txt -Append' for each replication partner.",
+      "TSS full data collection — choose based on scenario: '.\\TSS.ps1 -Scenario NET_DFSsrv' (server-side — use for namespace root issues, DFSR replication failures, or SYSVOL replication problems — run on the DFS namespace/replication server), '.\\TSS.ps1 -Scenario NET_DFScli' (client-side — use when clients cannot access DFS paths or receive wrong referrals — run on the affected client). TSS collects comprehensive system diagnostics including registry, event logs, and configuration files."
     ]
   },
   "playbooks": {
     "namespace_inaccessible": {
       "title": "DFS namespace root inaccessible",
+      "description": "Clients cannot access the DFS namespace root (e.g., \\\\domain.com\\data). This may be caused by stopped DFS Namespace service, deleted root share, network connectivity issues, or AD replication failures preventing namespace configuration from propagating. Domain-based namespaces require AD replication to distribute configuration; standalone namespaces depend on local server availability.",
       "severity": "high",
       "phases": [
         {
           "name": "Verify", "icon": "✅",
           "steps": [
-            { "action": "Get-Service Dfs | Select Status,StartType", "expect": "Status: Running on all namespace servers" },
-            { "action": "Get-DfsnRoot | Select Path,State,Type", "expect": "State: Online — if Offline, namespace is disabled" },
-            { "action": "Test-NetConnection -ComputerName <namespace server> -Port 445", "expect": "TcpTestSucceeded: True — namespace is served over SMB" }
+            { "action": "Get-Service Dfs -ComputerName <namespace server> | Select Name,Status,StartType", "expect": "Status: Running on all namespace servers — if Stopped, service must be started" },
+            { "action": "Get-DfsnRoot | Select Path,State,Type,TimeToLive", "expect": "State: Online — if Offline, namespace is disabled; Type should be 0x800 (domain-based) or 0x100 (standalone)" },
+            { "action": "Test-NetConnection -ComputerName <namespace server> -Port 445 -InformationLevel Detailed", "expect": "TcpTestSucceeded: True — namespace is served over SMB (TCP 445). Ping may succeed but SMB port must be open." },
+            { "action": "Resolve-DnsName -Name <domain> -Type A", "expect": "DNS resolution succeeds — clients must resolve domain name to access domain-based namespaces" }
           ]
         },
         {
           "name": "Isolate", "icon": "🔍",
           "steps": [
-            { "action": "dfsdiag /testreferral /dfspath:\\\\<domain>\\<namespace> /full", "expect": "All namespace servers return referrals — failed servers listed explicitly" },
-            { "action": "Get-SmbShare | Where Name -eq '<namespace>'", "expect": "Share exists on namespace server — if missing, the root share was deleted" },
-            { "action": "repadmin /showrepl", "expect": "AD replication healthy — domain-based namespace objects stored in domain partition" }
+            { "action": "dfsdiag /testreferral /dfspath:\\\\<domain>\\<namespace> /full", "expect": "All namespace servers return referrals — failed servers listed explicitly with error codes" },
+            { "action": "Get-SmbShare -CimSession <namespace server> | Where Name -eq '<namespace>'", "expect": "Share exists on namespace server — if missing, the root share was deleted or server was removed from namespace" },
+            { "action": "repadmin /showrepl * * /errorsonly", "expect": "No replication errors — domain-based namespace objects stored in AD domain partition; broken AD replication prevents namespace access" },
+            { "action": "Get-WinEvent -LogName \"Microsoft-Windows-DFSN-Server/Operational\" -MaxEvents 20 -Level 2,3", "expect": "No critical errors — look for Event ID 1451 (namespace not accessible) or 1452 (root target unavailable)" }
           ]
         },
         {
           "name": "Fix", "icon": "🛠",
           "steps": [
-            { "action": "Start-Service Dfs", "expect": "DFS Namespace service started" },
-            { "action": "New-SmbShare -Name '<namespace>' -Path '<path>' if root share was deleted", "expect": "Root share recreated — namespace becomes accessible" },
-            { "action": "dfsutil /root:\\\\<domain>\\<namespace> /addroot /server:<server> /share:<namespace>", "expect": "Namespace server re-added if it was removed" }
+            { "action": "Start-Service Dfs -ComputerName <namespace server> -PassThru | Select Name,Status", "expect": "DFS Namespace service started successfully and remains Running" },
+            { "action": "If root share deleted: New-SmbShare -Name '<namespace>' -Path '<path>' -FullAccess 'DOMAIN\\Domain Admins' -ReadAccess 'Everyone'", "expect": "Root share recreated with appropriate permissions — namespace becomes accessible" },
+            { "action": "If server removed from namespace: dfsutil /root:\\\\<domain>\\<namespace> /addroot /server:<server> /share:<namespace>", "expect": "Namespace server re-added to namespace configuration — verify with Get-DfsnRootTarget" },
+            { "action": "If AD replication broken: resolve AD issues first, then run dfsutil /root:\\\\<domain>\\<namespace> /propagate to refresh namespace", "expect": "Namespace configuration propagates to all namespace servers after AD replication completes" }
           ]
         },
         {
           "name": "Confirm", "icon": "🎯",
           "steps": [
-            { "action": "dfsutil /pktinfo on an affected client", "expect": "Referral entries present for the namespace root" },
-            { "action": "dir \\\\<domain>\\<namespace>", "expect": "Namespace contents visible" }
+            { "action": "dfsutil /pktinfo on an affected client", "expect": "Referral entries present for the namespace root with valid expiration times" },
+            { "action": "Test-Path \\\\<domain>\\<namespace>", "expect": "Returns True — namespace path is accessible" },
+            { "action": "Get-ChildItem \\\\<domain>\\<namespace>", "expect": "Namespace contents visible and folders are accessible" },
+            { "action": "dfsdiag /testreferral /dfspath:\\\\<domain>\\<namespace> /full", "expect": "All namespace servers respond successfully with valid referrals" }
           ]
         }
       ]
     },
     "replication_backlog": {
       "title": "DFS Replication backlog growing",
+      "description": "DFS Replication is falling behind, with backlog count increasing over time. This indicates that changes are not being replicated fast enough between members. Common causes include staging quota exhaustion, network bandwidth limitations, locked files preventing staging, or excessive change rates exceeding replication capacity. Backlog above 1000 typically indicates significant lag requiring intervention.",
       "severity": "medium",
       "phases": [
         {
           "name": "Verify", "icon": "✅",
           "steps": [
-            { "action": "Get-Service DFSR | Select Status,StartType", "expect": "Status: Running on all replication members" },
-            { "action": "dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<group> /rfname:<folder>", "expect": "Backlog count — if above 100 and growing, replication is falling behind" }
+            { "action": "Get-Service DFSR -ComputerName <each member> | Select Name,Status,StartType", "expect": "Status: Running on all replication members — stopped service prevents replication" },
+            { "action": "dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<group> /rfname:<folder>", "expect": "Backlog count — if above 100 and growing, replication is falling behind. Document baseline for comparison." },
+            { "action": "Get-DfsrConnection -GroupName <group> | Select SourceComputerName,DestinationComputerName,State,Enabled", "expect": "State: Normal and Enabled: True — if Disabled or Disconnected, replication is not occurring" }
           ]
         },
         {
           "name": "Isolate", "icon": "🔍",
           "steps": [
-            { "action": "Get-DfsrMembership | Select ComputerName,FolderName,StagingPath,StagingSizeInMb,CurrentStageSizeInMb", "expect": "If CurrentStageSizeInMb near StagingSizeInMb, staging quota is the bottleneck" },
-            { "action": "Get-DfsrConnection | Select SourceComputerName,DestinationComputerName,State,LastSuccessfulSync", "expect": "State: Normal and LastSuccessfulSync recent — if Disconnected, connection is broken" }
+            { "action": "Get-DfsrMembership | Select ComputerName,FolderName,StagingSizeInMb,CurrentStageSizeInMb | Where {($_.CurrentStageSizeInMb / $_.StagingSizeInMb) -gt 0.8}", "expect": "If CurrentStageSizeInMb near StagingSizeInMb (>80%), staging quota is the bottleneck preventing replication" },
+            { "action": "Get-DfsrConnection | Select SourceComputerName,DestinationComputerName,State,LastSuccessfulSync", "expect": "State: Normal and LastSuccessfulSync recent — if Disconnected or LastSuccessfulSync old, network or service issue exists" },
+            { "action": "Get-WinEvent -LogName \"DFS Replication\" -MaxEvents 50 | Where Id -eq 5008", "expect": "Event ID 5008 indicates locked files preventing replication — identify open file handles with openfiles /query /v" },
+            { "action": "Get-DfsrGroupSchedule -GroupName <group>", "expect": "Review bandwidth schedule — if restricted window or low bandwidth limit, may be insufficient for change rate" }
           ]
         },
         {
           "name": "Fix", "icon": "🛠",
           "steps": [
-            { "action": "Set-DfsrMembership -GroupName <g> -FolderName <f> -ComputerName <m> -StagingPathQuotaInMB 16384 -Force", "expect": "Staging quota increased — backlog can now be processed" },
-            { "action": "dfsrdiag syncnow /partner:<partner> /rgname:<group> /rfname:<folder> /time:1", "expect": "Forces immediate sync attempt — monitor backlog count" }
+            { "action": "If staging quota exhausted: Set-DfsrMembership -GroupName <g> -FolderName <f> -ComputerName <m> -StagingPathQuotaInMB 16384 -Force", "expect": "Staging quota increased (recommended 10-20% of folder size) — backlog can now be processed" },
+            { "action": "Test connectivity: Test-NetConnection -ComputerName <partner> -Port 445 -InformationLevel Detailed", "expect": "TcpTestSucceeded: True — if failed, resolve network/firewall issues before proceeding" },
+            { "action": "Force immediate sync: dfsrdiag syncnow /partner:<partner> /rgname:<group> /rfname:<folder> /time:1", "expect": "Forces immediate sync attempt — monitor backlog count with dfsrdiag backlog to verify decrease" },
+            { "action": "If locked files: identify and close file handles, then run dfsrdiag pollad /member:<member> to trigger replication retry", "expect": "Locked files released — replication resumes and backlog decreases" },
+            { "action": "If bandwidth insufficient: Set-DfsrGroupSchedule -GroupName <g> -BandwidthDetail 1000 to increase limit (e.g., 1000 = 1 Gbps)", "expect": "Bandwidth throttling adjusted — replication can use more available bandwidth" }
           ]
         },
         {
           "name": "Confirm", "icon": "🎯",
           "steps": [
-            { "action": "dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<group> /rfname:<folder>", "expect": "Backlog count decreasing toward 0" },
-            { "action": "Get-DfsrConnection | Select LastSuccessfulSync", "expect": "LastSuccessfulSync timestamp is recent" }
+            { "action": "dfsrdiag backlog /sendingmember:<A> /receivingmember:<B> /rgname:<group> /rfname:<folder>", "expect": "Backlog count decreasing toward 0 — monitor over time to ensure trend continues" },
+            { "action": "Get-DfsrConnection | Select LastSuccessfulSync", "expect": "LastSuccessfulSync timestamp is recent (within last 15 minutes for active replication)" },
+            { "action": "Get-DfsrMembership | Select ComputerName,CurrentStageSizeInMb,StagingSizeInMb", "expect": "CurrentStageSizeInMb decreasing as backlog is processed and quota no longer limiting" },
+            { "action": "Get-WinEvent -LogName \"DFS Replication\" -MaxEvents 10 | Where Id -eq 4104", "expect": "Recent Event ID 4104 (replicated file) confirms successful replication operations" }
           ]
         }
       ]
     },
     "sysvol_not_replicating": {
       "title": "SYSVOL not replicating between DCs",
+      "description": "SYSVOL replication is failing between domain controllers, which can prevent Group Policy application and logon script distribution. SYSVOL is replicated using DFSR in domains with Windows Server 2008 R2 or later DCs. Issues may include incomplete FRS to DFSR migration, DFSR membership errors, AD replication failures, or database corruption. SYSVOL is critical for domain operations and requires immediate attention.",
       "severity": "high",
       "phases": [
         {
           "name": "Verify", "icon": "✅",
           "steps": [
-            { "action": "DFSRMIG /getmigrationstate", "expect": "All DCs in Eliminated state (3) — if not, SYSVOL migration from FRS to DFSR is incomplete" },
-            { "action": "Get-Service DFSR | Select Status on each DC", "expect": "Status: Running on all DCs" },
-            { "action": "dfsrdiag replicationstate /member:<DC>", "expect": "No errors or IN ERROR state" }
+            { "action": "DFSRMIG /getmigrationstate", "expect": "All DCs in Eliminated state (3) — if Start, Prepared, or Redirected, migration is incomplete and may cause issues" },
+            { "action": "Get-Service DFSR -ComputerName <each DC> | Select Name,Status,StartType", "expect": "Status: Running on all DCs — DFSR must be running for SYSVOL replication" },
+            { "action": "dfsrdiag replicationstate /member:<DC>", "expect": "No errors or IN ERROR state — should show Normal or Active replication state" },
+            { "action": "Test-Path \\\\<DC>\\SYSVOL\\<domain>", "expect": "Returns True on all DCs — SYSVOL share must be accessible locally" }
           ]
         },
         {
           "name": "Isolate", "icon": "🔍",
           "steps": [
-            { "action": "repadmin /showrepl", "expect": "AD replication healthy — DFSR cannot sync SYSVOL if AD replication is broken" },
-            { "action": "Get-DfsrMembership | Where GroupName -like '*SYSVOL*' | Select ComputerName,State,ContentPath", "expect": "State: Normal on all DCs — if IN ERROR, non-authoritative restore needed" }
+            { "action": "repadmin /showrepl * * /errorsonly", "expect": "No replication errors — DFSR cannot sync SYSVOL if AD replication is broken since configuration is stored in AD" },
+            { "action": "Get-DfsrMembership | Where GroupName -like '*SYSVOL*' | Select ComputerName,State,ContentPath,PrimaryMember", "expect": "State: Normal on all DCs — if IN ERROR, non-authoritative restore needed; identify PrimaryMember for authoritative restore" },
+            { "action": "Get-WinEvent -LogName \"DFS Replication\" -MaxEvents 50 | Where Id -eq 2212", "expect": "Event ID 2212 indicates DFSR database corruption — requires database repair operation" },
+            { "action": "Compare SYSVOL content: (Get-ChildItem \\\\<DC1>\\SYSVOL\\<domain>\\Policies).Count vs (Get-ChildItem \\\\<DC2>\\SYSVOL\\<domain>\\Policies).Count", "expect": "Counts should match — mismatch indicates replication divergence requiring intervention" }
           ]
         },
         {
           "name": "Fix", "icon": "🛠",
           "steps": [
-            { "action": "dfsrdiag pollad /member:<DC>", "expect": "Forces DFSR to re-read configuration from AD — resolves config drift" },
-            { "action": "For IN ERROR state: stop DFSR, set BurFlags D2 in registry, restart DFSR", "expect": "Non-authoritative restore initiated — DC resyncs SYSVOL from authoritative partner" }
+            { "action": "If AD replication broken: resolve AD issues first with repadmin /syncall /AdP or seize FSMO roles if necessary", "expect": "AD replication healthy — prerequisite for DFSR SYSVOL replication" },
+            { "action": "Force configuration refresh: dfsrdiag pollad /member:<DC>", "expect": "Forces DFSR to re-read configuration from AD — resolves config drift or stale settings" },
+            { "action": "For IN ERROR state (non-authoritative restore): Stop-Service DFSR; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\DFSR\\Parameters\\SysVols\\Seeding SysVol' -Name BurFlags -Value D2; Start-Service DFSR", "expect": "Non-authoritative restore initiated — DC resyncs SYSVOL from authoritative partner. Monitor Event ID 4114 for start, 4604 for completion." },
+            { "action": "For database corruption: dfsrdiag databaserepair /rgname:'Domain System Volume' /rfname:'SYSVOL' /member:<DC> /full", "expect": "DFSR database rebuilt — disruptive operation requiring initial replication. Do not use unless corruption confirmed." },
+            { "action": "For incomplete migration: DFSMIG /setglobalstate 3 on PDC Emulator FSMO role holder, then monitor with DFSMIG /getmigrationstate", "expect": "Migration progresses to Eliminated state on all DCs — may take hours depending on SYSVOL size" }
           ]
         },
         {
           "name": "Confirm", "icon": "🎯",
           "steps": [
-            { "action": "dir \\\\<DC>\\SYSVOL\\<domain>\\Policies", "expect": "GPO folders visible and consistent across all DCs" },
-            { "action": "dfsrdiag replicationstate /member:<DC>", "expect": "No errors — replication state clean" }
+            { "action": "dir \\\\<DC>\\SYSVOL\\<domain>\\Policies on each DC", "expect": "GPO folders visible and consistent across all DCs — file counts and sizes should match" },
+            { "action": "dfsrdiag replicationstate /member:<DC>", "expect": "No errors — replication state shows Normal or Active with no IN ERROR members" },
+            { "action": "Get-DfsrMembership | Where GroupName -like '*SYSVOL*' | Select ComputerName,State", "expect": "State: Normal on all DCs — membership healthy" },
+            { "action": "Test Group Policy application: gpupdate /force on a client machine, then check Event Log for successful processing", "expect": "Group Policy applies successfully — confirms SYSVOL accessibility and consistency" },
+            { "action": "DFSRMIG /getmigrationstate", "expect": "All DCs show state 3 (Eliminated) — migration complete and stable" }
+          ]
+        }
+      ]
+    },
+    "wrong_site_referral": {
+      "title": "Clients receiving wrong site DFS referrals",
+      "description": "Clients are being referred to DFS targets in remote sites instead of local targets, causing poor performance or connectivity issues. This is typically caused by incorrect client site assignment in AD Sites and Services, missing subnet definitions, disabled site costing on namespace, or incorrect referral priority configuration. Site-aware referrals depend on accurate AD site topology.",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify", "icon": "✅",
+          "steps": [
+            { "action": "dfsutil /pktinfo on affected client", "expect": "Review cached referrals — identify which targets are being used and their priority classes" },
+            { "action": "nltest /dsgetsite on affected client", "expect": "Returns client's assigned AD site name — if returns blank or incorrect, site assignment is wrong" },
+            { "action": "Test-Path \\\\<domain>\\<namespace>", "expect": "Namespace accessible — issue is with referral selection, not accessibility" }
+          ]
+        },
+        {
+          "name": "Isolate", "icon": "🔍",
+          "steps": [
+            { "action": "Get-ADComputer <client> -Properties DistinguishedName | Select DistinguishedName", "expect": "Verify computer object location in AD — site assignment based on IP subnet" },
+            { "action": "Get-ADReplicationSubnet -Filter * | Select Name,Site", "expect": "Verify client's IP subnet is defined and mapped to correct site — missing subnet causes default site assignment" },
+            { "action": "Get-DfsnServerConfiguration -ComputerName <namespace server> | Select EnableSiteCosting,EnableInsiteReferrals", "expect": "EnableSiteCosting: True and EnableInsiteReferrals: True — if False, site-aware referrals disabled" },
+            { "action": "Get-DfsnFolderTarget -Path \\\\<domain>\\<namespace>\\<folder> | Select Path,ReferralPriorityClass,ReferralPriorityRank", "expect": "Review priority classes — local targets should have sitecost-high, remote targets sitecost-low" }
+          ]
+        },
+        {
+          "name": "Fix", "icon": "🛠",
+          "steps": [
+            { "action": "If subnet missing: New-ADReplicationSubnet -Name '<subnet>' -Site '<site>'", "expect": "Subnet created and mapped to correct site — clients in this subnet now receive correct site assignment" },
+            { "action": "If site costing disabled: Set-DfsnServerConfiguration -ComputerName <server> -EnableSiteCosting $true", "expect": "Site costing enabled — namespace now uses site cost for referral ordering" },
+            { "action": "Configure referral priorities: Set-DfsnFolderTarget -Path <path> -TargetPath <local target> -ReferralPriorityClass sitecost-high", "expect": "Local targets prioritized — clients prefer local site targets over remote" },
+            { "action": "Clear client referral cache: dfsutil /pktflush on affected client", "expect": "Referral cache cleared — client will request fresh referrals with correct site awareness" },
+            { "action": "Verify site link costs: Get-ADReplicationSiteLink | Select Name,Cost,SitesIncluded", "expect": "Site link costs configured appropriately — affect site cost calculation for referrals" }
+          ]
+        },
+        {
+          "name": "Confirm", "icon": "🎯",
+          "steps": [
+            { "action": "dfsutil /pktinfo on affected client after cache flush", "expect": "Referrals now show local site targets with highest priority" },
+            { "action": "nltest /dsgetsite on affected client", "expect": "Returns correct site name matching physical location" },
+            { "action": "dfsdiag /testreferral /dfspath:\\\\<domain>\\<namespace>\\<folder> /full", "expect": "Referral response includes local targets with correct priority ordering" },
+            { "action": "Test file access: Measure-Command { Copy-Item \\\\<domain>\\<namespace>\\<file> C:\\temp }", "expect": "File access time improved — indicates local target is being used" }
           ]
         }
       ]

@@ -3,128 +3,185 @@
   "label": "TCP/IP",
   "icon": "🌐",
   "domain": "networking",
+  "description": "Transmission Control Protocol/Internet Protocol (TCP/IP) is the fundamental networking protocol suite in Windows, implementing IPv4 and IPv6 dual-stack architecture. The Windows TCP/IP stack handles packet segmentation, reassembly, flow control, congestion control, and provides interfaces for upper-layer protocols. Key components include the TCP driver (tcpip.sys), UDP implementation, IP layer with routing capabilities, ARP/NDP for address resolution, and NIC offload features (RSS, LSO, RSC) that improve performance by moving processing to network hardware. Troubleshooting involves validating the stack integrity, routing table correctness, MTU/PMTUD functionality, NIC offload configuration, and dual-stack interoperability.",
   "scoping": {
     "l1": [
-      "What Windows version and build is the affected machine? (winver or Get-ComputerInfo | Select OsName,OsVersion,OsBuildNumber)",
-      "What is the exact symptom — complete loss of connectivity, partial connectivity (some IPs reachable, others not), high latency, packet loss, or intermittent drops?",
-      "Is this affecting one machine, multiple machines on the same subnet, or machines across multiple subnets/sites?",
-      "Does 'ipconfig /all' show a correctly assigned IP address, subnet mask, and default gateway?",
-      "Can the machine ping its loopback address (127.0.0.1) — tests the TCP/IP stack itself?",
-      "Can the machine ping its own IP address — tests the NIC and local stack?",
-      "Can the machine ping the default gateway IP — tests Layer 2 and Layer 3 local connectivity?",
-      "Can the machine ping a remote IP (e.g., 8.8.8.8) without using DNS — tests routing beyond the gateway?",
-      "When did the issue start — Windows Update, NIC driver update, network hardware change, or IP reconfiguration?",
-      "Is this a physical machine, Hyper-V VM, VMware VM, or Azure/cloud instance? (affects NIC offload and MTU considerations)"
+      "What Windows version and build is the affected machine? (Get-ComputerInfo | Select OsName,OsVersion,OsBuildNumber,WindowsVersion)",
+      "What is the exact symptom — complete loss of connectivity, partial connectivity (some IPs reachable, others not), high latency, packet loss, intermittent drops, or application-specific failures?",
+      "Is this affecting one machine, multiple machines on the same subnet, or machines across multiple subnets/sites? (helps identify routing, firewall, or infrastructure issues)",
+      "Does 'Get-NetIPAddress -AddressFamily IPv4 | Select InterfaceAlias,IPAddress,PrefixLength,DefaultGateway' show correctly assigned addressing?",
+      "Can the machine ping its loopback address (Test-NetConnection -ComputerName 127.0.0.1) — tests the TCP/IP stack integrity?",
+      "Can the machine ping its own IP address — validates NIC driver and local stack binding?",
+      "Can the machine ping the default gateway IP (Test-NetConnection -ComputerName <gateway>) — tests Layer 2 connectivity and local routing?",
+      "Can the machine ping a remote IP (e.g., 8.8.8.8) without using DNS — validates routing beyond the local subnet?",
+      "When did the issue start — after Windows Update, NIC driver update, network hardware change, IP reconfiguration, or VM migration?",
+      "Is this a physical machine, Hyper-V VM, VMware VM, or Azure/cloud instance? (affects NIC offload capabilities, synthetic vs. physical NICs, and MTU considerations)"
     ],
     "l2": [
-      "Are there custom TCP/IP registry parameters applied — HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters (TcpTimedWaitDelay, MaxUserPort, TCPWindowSize, TcpAckFrequency)?",
-      "Is Receive Side Scaling (RSS) enabled — are RSS queues properly distributed across CPU cores?",
-      "Is Large Send Offload v1/v2 (LSO) enabled — could NIC LSO be causing TCP segmentation issues?",
-      "Is TCP Chimney Offload enabled — deprecated in Windows Server 2012+ but may still appear in older systems?",
-      "Is IPv6 fully enabled, partially enabled (link-local only), or disabled? Is there a dual-stack issue where IPv6 is preferred but broken?",
-      "Are Windows Defender Firewall or IPsec policies blocking specific protocols or ports?",
-      "Is Path MTU Discovery (PMTUD) working — are ICMP Type 3 Code 4 (Fragmentation Needed / DF bit set) messages being filtered by a firewall or router in the path?",
-      "Are there VPN clients, network filter drivers, or third-party security agents installed that bind to the NIC? (Get-NetAdapterBinding)",
-      "What does 'netsh int tcp show global' report for AutoTuningLevel, Chimney, RSS, ECN, and InitialRTT?",
-      "Are there routing table issues — 'route print' — conflicting static routes, missing default route, or incorrect route metrics?"
+      "Are there custom TCP/IP registry parameters applied? (Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' | Select TcpTimedWaitDelay,MaxUserPort,TCPWindowSize,TcpAckFrequency,KeepAliveTime)",
+      "Is Receive Side Scaling (RSS) properly configured? (Get-NetAdapterRss | Select Name,Enabled,NumberOfReceiveQueues,BaseProcessorNumber,MaxProcessors,Profile)",
+      "Is Large Send Offload (LSO) enabled and functioning? (Get-NetAdapterLso | Select Name,IPv4Enabled,IPv6Enabled) — LSO issues can cause TCP segmentation corruption",
+      "Is Receive Segment Coalescing (RSC) enabled? (Get-NetAdapterRsc | Select Name,IPv4Enabled,IPv6Enabled) — RSC can reduce CPU but may cause issues with certain workloads",
+      "Is IPv6 fully enabled, link-local only, or disabled? (Get-NetIPAddress -AddressFamily IPv6) — dual-stack issues occur when IPv6 is preferred but unreachable",
+      "Are Windows Defender Firewall rules blocking traffic? (Get-NetFirewallRule | Where-Object {$_.Enabled -eq $true -and $__.Action -eq 'Block'} | Select DisplayName,Direction,Protocol)",
+      "Is Path MTU Discovery (PMTUD) working — are ICMP Type 3 Code 4 messages being filtered? (Test connectivity with different packet sizes: ping -f -l 1472 <dest>)",
+      "Are there third-party filter drivers binding to the NIC? (Get-NetAdapterBinding | Where-Object {$_.Enabled -eq $true} | Select Name,ComponentID,DisplayName)",
+      "What are the global TCP parameters? (Get-NetTCPSetting | Select SettingName,AutoTuningLevel,InitialCongestionWindowMss,MemoryPressureProtection)",
+      "Are there routing table anomalies? (Get-NetRoute -AddressFamily IPv4 | Where-Object {$_.DestinationPrefix -eq '0.0.0.0/0'} | Select DestinationPrefix,NextHop,RouteMetric,InterfaceAlias)",
+      "Is the NIC experiencing hardware errors? (Get-NetAdapterStatistics | Select Name,ReceivedPacketErrors,OutboundPacketErrors,InboundDiscardedPackets,OutboundDiscardedPackets)",
+      "Are there IPsec Main Mode or Quick Mode SAs established? (Get-NetIPsecMainModeSA, Get-NetIPsecQuickModeSA) — stale SAs can block traffic"
     ]
   },
   "probing": {
     "l1": [
-      "Run 'ping 127.0.0.1' (loopback), 'ping <own IP>', 'ping <default gateway>', 'ping 8.8.8.8' — share results for each, noting RTT and packet loss.",
-      "Run 'tracert 8.8.8.8' or 'tracert <failing destination IP>' — share full hop-by-hop output.",
-      "Run 'ipconfig /all' — confirm IP, subnet mask, gateway, DNS, and DHCP lease details.",
-      "Run 'route print' — share complete IPv4 and IPv6 routing tables.",
-      "Run 'netstat -ano | findstr ESTABLISHED' — are expected connections present?",
-      "Run 'Get-NetFirewallProfile | Select Name,Enabled,DefaultInboundAction,DefaultOutboundAction'",
-      "Run 'pathping <destination>' — provides per-hop latency and packet loss percentages over 250 probes."
+      "Validate TCP/IP stack integrity: Test-NetConnection -ComputerName 127.0.0.1 -InformationLevel Detailed — share TcpTestSucceeded and PingReplyDetails(RTT)",
+      "Progressive connectivity test: Test-NetConnection -ComputerName <ownIP>, <gateway>, 8.8.8.8 — identify which hop fails",
+      "Full addressing configuration: Get-NetIPAddress -AddressFamily IPv4,IPv6 | Select InterfaceAlias,IPAddress,PrefixLength,DefaultGateway,AddressState,PreferredLifetime",
+      "Routing table analysis: Get-NetRoute -AddressFamily IPv4,IPv6 | Select DestinationPrefix,NextHop,RouteMetric,InterfaceAlias,Protocol,State | Sort-Object RouteMetric",
+      "Active TCP connections: Get-NetTCPConnection -State Established,TimeWait | Select LocalAddress,LocalPort,RemoteAddress,RemotePort,State,OwningProcess",
+      "Firewall profile status: Get-NetFirewallProfile | Select Name,Enabled,DefaultInboundAction,DefaultOutboundAction,LogFilePath",
+      "Path analysis with latency: Test-NetConnection -ComputerName <destination> -TraceRoute — hop-by-hop RTT and path visibility",
+      "NIC status and speed: Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Select Name,InterfaceDescription,LinkSpeed,Status,DriverVersion,DriverDate"
     ],
     "l2": [
-      "Run 'netsh int tcp show global' — share all TCP global settings: AutoTuningLevel, EcnCapability, Timestamps, InitialRTT, ScalingHeuristics.",
-      "Run 'Get-NetAdapterAdvancedProperty -Name \"<NIC>\" | Select DisplayName,DisplayValue' — share all offload, RSS, and interrupt moderation settings.",
-      "Capture network trace: 'netsh trace start capture=yes tracefile=C:\\tcpip_trace.etl maxsize=512 overwrite=yes' — reproduce — 'netsh trace stop'",
-      "Run 'Get-NetAdapterStatistics -Name \"<NIC>\" | Select Name,ReceivedUnicastPackets,OutboundDiscardedPackets,InboundDiscardedPackets,ReceivedPacketErrors,OutboundPacketErrors'",
-      "Run 'Get-NetRoute | Select DestinationPrefix,NextHop,RouteMetric,InterfaceAlias,Protocol,State'",
-      "Run 'netsh wfp show state file=C:\\wfp_state.xml' — analyze active Windows Filtering Platform filters.",
-      "Run 'Get-NetIPAddress | Select InterfaceAlias,AddressFamily,IPAddress,PrefixLength,AddressState,ValidLifetime,PreferredLifetime'",
-      "Run 'Get-NetAdapter | Select Name,Status,LinkSpeed,DriverVersion,DriverDate,InterfaceDescription,MtuSize'",
-      "Run 'Get-NetAdapterRss | Select Name,Enabled,NumberOfReceiveQueues,BaseProcessorNumber,MaxProcessors'",
-      "Test MTU: 'ping <destination> -f -l 1472' — if response is 'Packet needs to be fragmented but DF set', MTU is below 1500. Reduce size to find the path MTU."
+      "Global TCP parameters: Get-NetTCPSetting | Select SettingName,AutoTuningLevel,InitialCongestionWindowMss,MinRto,MemoryPressureProtection,ScalingHeuristics",
+      "NIC offload configuration: Get-NetAdapterAdvancedProperty -Name '<NIC>' | Where-Object {$_.DisplayName -match 'Offload|RSS|RSC|Interrupt'} | Select DisplayName,DisplayValue,RegistryKeyword",
+      "Network trace capture: New-NetEventSession -Name 'TCPIPTrace' -LocalFilePath 'C:\\tcpip_trace.etl' -MaxFileSize 512; Add-NetEventPacketCaptureProvider -SessionName 'TCPIPTrace'; Start-NetEventSession -Name 'TCPIPTrace' — reproduce — Stop-NetEventSession -Name 'TCPIPTrace'",
+      "Detailed NIC statistics: Get-NetAdapterStatistics -Name '<NIC>' | Select Name,ReceivedUnicastPackets,ReceivedUnicastOctets,OutboundDiscardedPackets,InboundDiscardedPackets,ReceivedPacketErrors,OutboundPacketErrors",
+      "Route analysis with interface details: Get-NetRoute -AddressFamily IPv4 | Select DestinationPrefix,NextHop,RouteMetric,InterfaceAlias,ifIndex,Protocol,State | Format-Table -AutoSize",
+      "Windows Filtering Platform state: Export-NetIPsecRule -DisplayName '*' | Out-File 'C:\\ipsec_rules.xml'; netsh wfp show state file='C:\\wfp_state.xml'",
+      "IP address lifecycle: Get-NetIPAddress -AddressFamily IPv4,IPv6 | Select InterfaceAlias,AddressFamily,IPAddress,PrefixLength,AddressState,ValidLifetime,PreferredLifetime,PreferredLifetime",
+      "NIC hardware capabilities: Get-NetAdapter | Select Name,InterfaceDescription,LinkSpeed,MtuSize,HardwareInterface,Virtual; Get-NetAdapterHardwareInfo | Select Name,DriverDescription,DriverFileName,DriverVersion,DriverDate,InfName",
+      "RSS configuration details: Get-NetAdapterRss -Name '<NIC>' | Select Name,Enabled,NumberOfReceiveQueues,BaseProcessorNumber,MaxProcessors,Profile,IndirectionTable",
+      "MTU and PMTUD testing: Test-NetConnection -ComputerName <destination> -InformationLevel Detailed; then ping <destination> -f -l 1472, -l 1400, -l 1300 — binary search to find exact path MTU",
+      "ARP cache validation: Get-NetNeighbor -AddressFamily IPv4 | Select IPAddress,LinkLayerAddress,State,InterfaceAlias — identify incomplete or failed ARP entries",
+      "IPv6 neighbor discovery: Get-NetNeighbor -AddressFamily IPv6 | Select IPAddress,LinkLayerAddress,State,InterfaceAlias — validate NDP functionality",
+      "TCP connection statistics: Get-NetTCPConnection | Group-Object State | Select Name,Count — identify abnormal connection states (TIME_WAIT buildup, etc.)",
+      "DNS resolution test: Resolve-DnsName -Name <target> -DnsOnly -Server <dns_server> — validates DNS path separate from TCP/IP",
+      "IPsec SA analysis: Get-NetIPsecMainModeSA | Select LocalAddress,RemoteAddress,StartTime,TotalPackets; Get-NetIPsecQuickModeSA | Select LocalAddress,RemoteAddress,StartTime"
     ]
   },
   "troubleshooting": {
     "l1": [
-      "Reset IP configuration and Winsock: 'netsh int ip reset C:\\ip_reset.log && netsh winsock reset' — restart the machine.",
-      "Temporarily disable Windows Firewall to isolate: 'Set-NetFirewallProfile -All -Enabled False' — test — re-enable immediately after: 'Set-NetFirewallProfile -All -Enabled True'",
-      "Reinstall the NIC driver from the OEM website — do not rely on Windows Update drivers for server NICs.",
-      "If default gateway is unreachable: check physical cable, switchport state, VLAN assignment, and switch MAC address table.",
-      "Test for MTU issue: 'ping 8.8.8.8 -f -l 1472' — if it fails but '-l 1200' works, an intermediate device is fragmenting or blocking large packets.",
-      "Check for multiple default routes with equal metric: 'route print | findstr /C:\"0.0.0.0\"' — remove conflicting routes."
+      "TCP/IP stack reset: netsh int ip reset C:\\ip_reset.log && netsh winsock reset catalog — restart the machine to apply changes — this restores default TCP/IP parameters and Winsock LSP providers",
+      "Firewall isolation test: Set-NetFirewallProfile -All -Enabled False — test connectivity — immediately re-enable with Set-NetFirewallProfile -All -Enabled True — identifies if firewall rules are blocking",
+      "NIC driver reinstallation: Uninstall via 'pnputil /delete-driver <oem##.inf> /uninstall /force' — install latest driver from OEM vendor website — Windows Update drivers may lack server-specific optimizations",
+      "Default gateway unreachability: Verify physical connectivity (Get-NetAdapter -Name '<NIC>' | Select Status,LinkSpeed), check switchport VLAN assignment, verify ARP resolution (Get-NetNeighbor -IPAddress <gateway> -AddressFamily IPv4)",
+      "MTU/PMTUD blackhole detection: ping <destination> -f -l 1472 (tests 1500-byte MTU), ping -f -l 1400, ping -f -l 1300 — identify the largest successful packet size — actual MTU = successful size + 28 (IP+ICMP headers)",
+      "Multiple default route conflict: Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Select DestinationPrefix,NextHop,RouteMetric,InterfaceAlias — remove lower-priority routes with Remove-NetRoute -DestinationPrefix '0.0.0.0/0' -NextHop <unwanted> -Confirm:$false",
+      "IPv6 preference causing issues: Disable IPv6 temporarily via Disable-NetAdapterBinding -Name '<NIC>' -ComponentID ms_tcpip6 — retest — if resolved, IPv6 is preferred but unreachable — fix IPv6 connectivity or adjust prefix policy",
+      "DHCP lease issues: Release-Renew: ipconfig /release && ipconfig /renew — or PowerShell: Remove-NetIPAddress -AddressFamily IPv4 -Confirm:$false; Restart-NetAdapter -Name '<NIC>' — forces new DHCP lease acquisition"
     ],
     "l2": [
-      "If TCP throughput is poor: 'netsh int tcp set global autotuninglevel=normal' — disable experimental tuning if set; retest with iperf3.",
-      "If LSO is causing packet corruption or TCP retransmissions: 'Disable-NetAdapterLso -Name \"<NIC>\" -IPv4 -IPv6' — retest; monitor NIC stats for error reduction.",
-      "For MTU/PMTUD blackhole: set the interface MTU: 'netsh int ipv4 set subinterface \"<NIC>\" mtu=1400 store=persistent' — retest and adjust upward to find the actual path MTU.",
-      "For asymmetric routing (traffic exits one NIC, returns via another): add specific host routes — 'route add <remote IP> mask 255.255.255.255 <correct gateway> metric 1 if <ifIndex>'",
-      "For IPsec SA mismatches blocking traffic: 'Get-NetIPsecMainModeSA | Remove-NetIPsecMainModeSA' — flush stale SAs and allow re-negotiation.",
-      "For WFP callout driver blocking (third-party AV/security): 'netsh wfp show filters' — identify vendor GUID — disable callout driver via 'Disable-NetAdapterBinding -Name \"<NIC>\" -ComponentID <ID>' — test — re-enable.",
-      "For RSS queue imbalance or CPU affinity issues: 'Set-NetAdapterRss -Name \"<NIC>\" -NumberOfReceiveQueues 4 -BaseProcessorNumber 0' — spread load.",
-      "Analyze the netsh trace ETL: use 'pktmon etl2txt tcpip_trace.etl' or Microsoft Network Monitor — look for TCP RST (flag 0x04), retransmissions, or zero-window (Win=0) patterns."
+      "TCP AutoTuningLevel adjustment: Set-NetTCPSetting -SettingName InternetCustom -AutoTuningLevel Normal — if set to HighlyRestricted or Disabled, causes poor throughput — retest with iperf3 or file transfer",
+      "Large Send Offload (LSO) troubleshooting: Disable-NetAdapterLso -Name '<NIC>' -IPv4 -IPv6 — LSO can cause packet corruption on certain NIC/firmware combinations — monitor Get-NetAdapterStatistics for error reduction",
+      "Receive Segment Coalescing (RSC) issues: Disable-NetAdapterRsc -Name '<NIC>' -IPv4 -IPv6 — RSC can cause latency spikes or packet reordering for latency-sensitive applications — particularly relevant for Hyper-V and Azure VMs",
+      "MTU/PMTUD blackhole workaround: Set-NetIPInterface -InterfaceAlias '<NIC>' -AddressFamily IPv4 -NlMtuBytes 1400 — start conservative (1400) and incrementally increase (1450, 1480) to find optimal value without blackhole",
+      "Asymmetric routing correction: Add specific host route: New-NetRoute -DestinationPrefix '<remoteIP>/32' -InterfaceAlias '<NIC>' -NextHop '<correctGateway>' -RouteMetric 1 — forces traffic through correct interface",
+      "IPsec SA staleness: Remove-NetIPsecMainModeSA -RemoteAddress <peer> -Force; Remove-NetIPsecQuickModeSA -RemoteAddress <peer> -Force — forces re-negotiation — particularly for VPN or DirectAccess scenarios",
+      "Windows Filtering Platform (WFP) blocking: netsh wfp show state file=C:\\wfp_state.xml — identify third-party callout drivers (vendor GUIDs) — disable via Disable-NetAdapterBinding -Name '<NIC>' -ComponentID <filterDriverID> — test — re-enable",
+      "RSS queue distribution optimization: Set-NetAdapterRss -Name '<NIC>' -NumberOfReceiveQueues (Get-ProcessorCount) -BaseProcessorNumber 0 -Profile NUMAStatic — distributes receive processing across CPU cores for multi-Gbps workloads",
+      "TCP Chimney Offload (legacy): Set-NetTCPSetting -SettingName InternetCustom -AutoTuningLevel Normal — TCP Chimney is deprecated; if enabled in registry (HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters), set EnableChimney=0 and reboot",
+      "ECN (Explicit Congestion Notification) issues: Set-NetTCPSetting -SettingName InternetCustom -EcnCapability Disabled — some networks drop ECN-marked packets — disable if experiencing connectivity loss to specific destinations",
+      "TCP timestamp issues: Set-NetTCPSetting -SettingName InternetCustom -Timestamps Disabled — some load balancers or firewalls reject TCP options — can cause handshake failures",
+      "TCP initial congestion window: Set-NetTCPSetting -SettingName InternetCustom -InitialCongestionWindowMss 10 — default is 10, reduce to 2-4 for high-latency or lossy networks to prevent congestion collapse",
+      "Network trace analysis: pktmon etl2txt C:\\tcpip_trace.etl — convert to readable format — analyze for TCP retransmissions (Retransmit flag), duplicate ACKs, zero-window probes, or RST packets — use Message Analyzer or Wireshark for deep analysis",
+      "ARP cache poisoning detection: Clear ARP cache: Remove-NetNeighbor -AddressFamily IPv4 -State Permanent,Reachable,Stale -Confirm:$false — monitor Get-NetNeighbor for recurring incomplete entries",
+      "IPv6 duplicate address detection (DAD) failure: Set-NetIPInterface -InterfaceAlias '<NIC>' -AddressFamily IPv6 -DadTransmits 0 — disables DAD temporarily if causing address assignment delays — use only in controlled environments",
+      "Hyper-V virtual switch RSS: For VMs, ensure vSwitch RSS is enabled: Set-VMNetworkAdapter -VMName '<VM>' -Name '<NIC>' -VmqWeight 50 -RssEnabled $true — ensures VM receives RSS benefits from physical NIC",
+      "NIC interrupt moderation tuning: Set-NetAdapterAdvancedProperty -Name '<NIC>' -RegistryKeyword '*InterruptModeration' -RegistryValue 0 — disables moderation for lowest latency; enable (value 1-255) for CPU efficiency in high-throughput scenarios"
     ]
   },
   "datacollection": {
     "l1": [
-      "Run 'ipconfig /all > C:\\ipconfig_all.txt'",
-      "Run 'route print > C:\\route_print.txt'",
-      "Run 'netstat -ano > C:\\netstat_all.txt'",
-      "Export System event log: 'wevtutil epl System C:\\System_Events.evtx'"
+      "Complete IP configuration: Get-NetIPAddress -AddressFamily IPv4,IPv6 | Select InterfaceAlias,AddressFamily,IPAddress,PrefixLength,DefaultGateway,AddressState,ValidLifetime,PreferredLifetime | Export-Csv C:\\ipconfig_detailed.csv -NoTypeInformation",
+      "Full routing table: Get-NetRoute -AddressFamily IPv4,IPv6 | Select DestinationPrefix,NextHop,RouteMetric,InterfaceAlias,ifIndex,Protocol,State,RouteMetric | Sort-Object AddressFamily,RouteMetric | Export-Csv C:\\routing_table.csv -NoTypeInformation",
+      "Active network connections: Get-NetTCPConnection | Select LocalAddress,LocalPort,RemoteAddress,RemotePort,State,OwningProcess,CreationTime | Export-Csv C:\\tcp_connections.csv -NoTypeInformation",
+      "System event log (Network-related): wevtutil epl System C:\\System_Events.evtx; wevtutil epl 'Microsoft-Windows-TCPIP/Operational' C:\\TCPIP_Operational.evtx; wevtutil epl 'Microsoft-Windows-Dhcp-Client/Operational' C:\\DHCP_Events.evtx"
     ],
     "l2": [
-      "Capture network trace: 'netsh trace start capture=yes tracefile=C:\\tcpip_full.etl maxsize=512' — reproduce — stop.",
-      "Run 'Get-NetAdapterStatistics | Export-Csv C:\\nic_statistics.csv -NoTypeInformation'",
-      "Run 'netsh int tcp show global > C:\\tcp_global_settings.txt'",
-      "Run 'netsh wfp show state file=C:\\wfp_filters.xml'",
-      "Run 'Get-NetAdapterAdvancedProperty | Out-File C:\\nic_advanced_properties.txt'",
-      "Run 'Get-NetRoute | Export-Csv C:\\routing_table.csv -NoTypeInformation'",
-      "Collect kernel memory dump for tcpip.sys bugchecks: configure via 'sysdm.cpl > Advanced > Startup and Recovery > Kernel memory dump'.",
-      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_General' — run on the affected machine, reproduce the issue, stop when prompted"
+      "Comprehensive network trace: New-NetEventSession -Name 'TCPIP_FullTrace' -LocalFilePath 'C:\\tcpip_full.etl' -MaxFileSize 1024; Add-NetEventPacketCaptureProvider -SessionName 'TCPIP_FullTrace' -CaptureType Both; Start-NetEventSession -Name 'TCPIP_FullTrace' — reproduce issue — Stop-NetEventSession -Name 'TCPIP_FullTrace'",
+      "NIC performance statistics: Get-NetAdapterStatistics | Select Name,ReceivedUnicastPackets,ReceivedUnicastOctets,OutboundDiscardedPackets,InboundDiscardedPackets,ReceivedPacketErrors,OutboundPacketErrors | Export-Csv C:\\nic_statistics.csv -NoTypeInformation",
+      "TCP global parameters: Get-NetTCPSetting | Select SettingName,AutoTuningLevel,InitialCongestionWindowMss,MinRto,MemoryPressureProtection,ScalingHeuristics,EcnCapability,Timestamps | Export-Csv C:\\tcp_settings.csv -NoTypeInformation",
+      "Windows Filtering Platform state: netsh wfp show state file=C:\\wfp_state.xml; netsh wfp show filters file=C:\\wfp_filters.xml — captures all active WFP filters and callouts",
+      "NIC advanced properties: Get-NetAdapterAdvancedProperty | Select Name,DisplayName,DisplayValue,RegistryKeyword,RegistryValue | Export-Csv C:\\nic_advanced_properties.csv -NoTypeInformation",
+      "NIC hardware information: Get-NetAdapterHardwareInfo | Select Name,DriverDescription,DriverFileName,DriverVersion,DriverDate,InfName,DriverProvider | Export-Csv C:\\nic_hardware_info.csv -NoTypeInformation",
+      "RSS and offload configuration: Get-NetAdapterRss | Export-Csv C:\\rss_config.csv -NoTypeInformation; Get-NetAdapterLso | Export-Csv C:\\lso_config.csv -NoTypeInformation; Get-NetAdapterRsc | Export-Csv C:\\rsc_config.csv -NoTypeInformation",
+      "ARP and neighbor cache: Get-NetNeighbor -AddressFamily IPv4,IPv6 | Select IPAddress,LinkLayerAddress,State,InterfaceAlias,ReachabilityTime | Export-Csv C:\\neighbor_cache.csv -NoTypeInformation",
+      "Firewall rules: Get-NetFirewallRule | Where-Object {$_.Enabled -eq $true} | Select DisplayName,Direction,Action,Protocol,LocalPort,RemotePort,Enabled,Profile | Export-Csv C:\\firewall_rules.csv -NoTypeInformation",
+      "IPsec configuration: Get-NetIPsecMainModeRule | Export-Csv C:\\ipsec_mainmode.csv -NoTypeInformation; Get-NetIPsecQuickModeRule | Export-Csv C:\\ipsec_quickmode.csv -NoTypeInformation",
+      "TCP/IP registry parameters: Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' | Out-File C:\\tcpip_registry_params.txt",
+      "Network adapter binding order: Get-NetAdapterBinding | Where-Object {$_.Enabled -eq $true} | Select Name,ComponentID,DisplayName,Enabled | Export-Csv C:\\adapter_bindings.csv -NoTypeInformation",
+      "Kernel memory dump configuration: For tcpip.sys bugchecks, set via sysdm.cpl > Advanced > Startup and Recovery > Kernel memory dump — path: %SystemRoot%\\MEMORY.DMP",
+      "TSS (Troubleshooting Script Suite) collection: .\\TSS.ps1 -Scenario NET_General -NetLogOffload -NetLogTCPIP -NetLogRouting — run on affected machine, reproduce issue, stop when prompted — collects comprehensive networking diagnostics",
+      "Performance counter collection: typeperf -cf C:\\tcpip_counters.txt -si 5 -sc 120 -f CSV -o C:\\tcpip_performance.csv — create tcpip_counters.txt with: '\\\\<server>\\Network Interface(*)\\Bytes Total/sec','\\\\<server>\\TCPv4\\Segments Received/sec','\\\\<server>\\TCPv4\\Segments Retransmitted/sec','\\\\<server>\\TCPv4\\Connections Established'",
+      "DNS client cache: Get-DnsClientCache | Export-Csv C:\\dns_cache.csv -NoTypeInformation — captures resolved DNS entries and TTL"
     ]
   },
   "playbooks": {
     "no_connectivity": {
       "title": "Complete loss of network connectivity",
       "severity": "high",
+      "description": "Comprehensive troubleshooting for total network failure — validates TCP/IP stack integrity, NIC functionality, IP configuration, routing, and firewall state. This playbook follows Microsoft's layered troubleshooting approach from loopback to remote connectivity.",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify TCP/IP Stack", "icon": "✅",
           "steps": [
-            { "action": "ping 127.0.0.1", "expect": "Reply received — confirms TCP/IP stack is functional" },
-            { "action": "ping <own IP>", "expect": "Reply received — confirms NIC and local stack are working" },
-            { "action": "ping <default gateway>", "expect": "Reply received — confirms Layer 2 and Layer 3 local connectivity" },
-            { "action": "ping 8.8.8.8", "expect": "Reply received — confirms routing beyond the gateway" }
+            { "action": "Test-NetConnection -ComputerName 127.0.0.1 -InformationLevel Detailed", "expect": "TcpTestSucceeded: True and PingReplyDetails shows RTT — confirms tcpip.sys is loaded and functional" },
+            { "action": "Get-NetTCPConnection -State Established | Measure-Object", "expect": "Returns established connections if any — validates TCP stack can maintain state" }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Validate Local Connectivity", "icon": "🔍",
           "steps": [
-            { "action": "ipconfig /all", "expect": "Valid IP, subnet mask, and default gateway assigned — if missing, DHCP or static config issue" },
-            { "action": "Get-NetAdapter | Select Name,Status,LinkSpeed", "expect": "Status: Up and LinkSpeed shows a value — if Disconnected, physical or driver issue" },
-            { "action": "Get-NetFirewallProfile | Select Name,Enabled,DefaultOutboundAction", "expect": "If DefaultOutboundAction: Block, firewall is dropping outbound traffic" }
+            { "action": "Test-NetConnection -ComputerName <ownIP> -InformationLevel Detailed", "expect": "TcpTestSucceeded: True — confirms NIC driver binding and local IP stack" },
+            { "action": "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Select Name,LinkSpeed,DriverVersion", "expect": "NIC shows Status: Up with valid LinkSpeed — if Disconnected, check physical cable or driver" },
+            { "action": "Get-NetNeighbor -AddressFamily IPv4 -IPAddress <gateway>", "expect": "State: Reachable with valid LinkLayerAddress — confirms ARP resolution to gateway" }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Test Default Gateway", "icon": "🌐",
           "steps": [
-            { "action": "netsh int ip reset C:\\ip_reset.log && netsh winsock reset", "expect": "TCP/IP stack and Winsock reset — requires reboot" },
-            { "action": "Set-NetFirewallProfile -All -Enabled False (test only — re-enable immediately after)", "expect": "If connectivity restored, firewall rule is the cause — identify and fix the specific rule" },
-            { "action": "Update NIC driver from OEM website", "expect": "Driver reinstalled — reboot and retest" }
+            { "action": "Test-NetConnection -ComputerName <gateway> -InformationLevel Detailed", "expect": "TcpTestSucceeded: True — confirms Layer 2 connectivity to gateway" },
+            { "action": "Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Select NextHop,RouteMetric,InterfaceAlias", "expect": "Single default route with correct NextHop and lowest metric — multiple routes cause routing ambiguity" }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Validate Remote Routing", "icon": "🚀",
           "steps": [
-            { "action": "ping 8.8.8.8", "expect": "Reply received with consistent RTT" },
-            { "action": "Test-NetConnection -ComputerName google.com -Port 443", "expect": "TcpTestSucceeded: True" }
+            { "action": "Test-NetConnection -ComputerName 8.8.8.8 -InformationLevel Detailed", "expect": "TcpTestSucceeded: True — confirms routing beyond local subnet to internet" },
+            { "action": "Test-NetConnection -ComputerName 8.8.8.8 -TraceRoute", "expect": "Hop-by-hop path completes to destination — identifies failing hop if partial connectivity" }
+          ]
+        },
+        {
+          "name": "Check IP Configuration", "icon": "📋",
+          "steps": [
+            { "action": "Get-NetIPAddress -AddressFamily IPv4 | Select InterfaceAlias,IPAddress,PrefixLength,AddressState", "expect": "AddressState: Preferred — if Tentative or Deprecated, DHCP or duplicate IP issue" },
+            { "action": "Get-NetIPAddress -AddressFamily IPv6 | Select InterfaceAlias,IPAddress,PrefixLength,AddressState", "expect": "IPv6 addresses present if enabled — dual-stack should have both IPv4 and IPv6" }
+          ]
+        },
+        {
+          "name": "Isolate Firewall", "icon": "🛡️",
+          "steps": [
+            { "action": "Get-NetFirewallProfile | Select Name,Enabled,DefaultOutboundAction", "expect": "If DefaultOutboundAction: Block, firewall blocking outbound — test with temporary disable" },
+            { "action": "Set-NetFirewallProfile -All -Enabled False (temporary test only)", "expect": "If connectivity restored, identify specific blocking rule via Get-NetFirewallRule" },
+            { "action": "Set-NetFirewallProfile -All -Enabled True (re-enable immediately)", "expect": "Firewall re-enabled — never leave disabled" }
+          ]
+        },
+        {
+          "name": "Apply Remediation", "icon": "🛠",
+          "steps": [
+            { "action": "netsh int ip reset C:\\ip_reset.log && netsh winsock reset catalog", "expect": "TCP/IP stack and Winsock reset — requires reboot to apply" },
+            { "action": "Restart-Computer -Force", "expect": "System reboots — required for stack reset to take effect" },
+            { "action": "If driver issue: pnputil /delete-driver <oem##.inf> /uninstall /force", "expect": "Driver uninstalled — install latest OEM driver and reboot" }
+          ]
+        },
+        {
+          "name": "Confirm Resolution", "icon": "🎯",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName 8.8.8.8 -InformationLevel Detailed", "expect": "TcpTestSucceeded: True with consistent RTT (<100ms typical)" },
+            { "action": "Test-NetConnection -ComputerName google.com -Port 443", "expect": "TcpTestSucceeded: True — confirms DNS and HTTPS connectivity" },
+            { "action": "Test-NetConnection -ComputerName <internal_resource> -Port <app_port>", "expect": "TcpTestSucceeded: True — confirms application-specific connectivity" }
           ]
         }
       ]
@@ -132,32 +189,310 @@
     "mtu_blackhole": {
       "title": "MTU blackhole — large packets silently dropped",
       "severity": "medium",
+      "description": "Troubleshoots Path MTU Discovery (PMTUD) failures where intermediate devices drop large packets without sending ICMP Fragmentation Needed messages. Common in VPNs, NAT devices, or misconfigured firewalls. Follows Microsoft's MTU troubleshooting methodology.",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Detect MTU Issue", "icon": "✅",
           "steps": [
-            { "action": "ping <destination> -f -l 1472", "expect": "If fails with 'Packet needs to be fragmented but DF set' — MTU blackhole confirmed" },
-            { "action": "ping <destination> -f -l 1200", "expect": "If this succeeds but 1472 fails — path MTU is between 1200 and 1472" }
+            { "action": "Test-NetConnection -ComputerName <destination> -InformationLevel Detailed", "expect": "Ping succeeds but applications timeout or stall — suggests MTU blackhole" },
+            { "action": "ping <destination> -f -l 1472 (tests 1500-byte MTU)", "expect": "If fails with 'Packet needs to be fragmented but DF set' — PMTUD working but MTU < 1500" },
+            { "action": "ping <destination> -f -l 1472 (tests 1500-byte MTU)", "expect": "If times out silently with no error message — MTU blackhole confirmed" }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Binary Search Path MTU", "icon": "🔍",
           "steps": [
-            { "action": "Binary search: ping -f -l 1400, 1300, 1450, 1460", "expect": "Find the exact largest packet size that succeeds — that is the path MTU minus 28 bytes" },
-            { "action": "tracert <destination>", "expect": "Identify which hop is dropping large packets — intermediate firewall or router blocking ICMP Type 3 Code 4" }
+            { "action": "ping <destination> -f -l 1400", "expect": "Note success/failure — if fails, MTU < 1428" },
+            { "action": "ping <destination> -f -l 1300", "expect": "Note success/failure — continue binary search" },
+            { "action": "ping <destination> -f -l 1200", "expect": "Note success/failure — find largest successful size" },
+            { "action": "ping <destination> -f -l 1100", "expect": "If succeeds, search upward between 1100-1200" },
+            { "action": "Continue binary search until exact MTU found", "expect": "Largest successful packet size + 28 = path MTU" }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Identify Blackhole Location", "icon": "🗺️",
           "steps": [
-            { "action": "netsh int ipv4 set subinterface '<NIC>' mtu=1400 store=persistent", "expect": "Set interface MTU below the blackhole threshold — adjust upward incrementally to find optimal value" }
+            { "action": "tracert <destination>", "expect": "Identify hop where MTU drops — note hop number and IP" },
+            { "action": "Test-NetConnection -ComputerName <hop_IP> -TraceRoute", "expect": "Validate each hop individually — narrow down device causing issue" },
+            { "action": "ping <hop_IP> -f -l 1472 (test each hop)", "expect": "Find specific hop that drops large packets — typically VPN gateway or firewall" }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Apply MTU Workaround", "icon": "🛠",
           "steps": [
-            { "action": "ping <destination> -f -l 1372 (MTU 1400 minus 28)", "expect": "Succeeds — large packets now flowing correctly" },
-            { "action": "Test application that was failing (e.g. file transfer, HTTPS)", "expect": "Application works correctly at full speed" }
+            { "action": "Set-NetIPInterface -InterfaceAlias '<NIC>' -AddressFamily IPv4 -NlMtuBytes 1400", "expect": "MTU set to 1400 — start conservative below blackhole threshold" },
+            { "action": "Restart-NetAdapter -Name '<NIC>'", "expect": "NIC restarted — MTU change applied" },
+            { "action": "Test with incrementally higher MTU: 1450, 1480", "expect": "Find optimal MTU without triggering blackhole" },
+            { "action": "Set-NetIPInterface -InterfaceAlias '<NIC>' -AddressFamily IPv4 -NlMtuBytes <optimal_value>", "expect": "Optimal MTU set persistently" }
+          ]
+        },
+        {
+          "name": "Alternative: Disable PMTUD", "icon": "⚙️",
+          "steps": [
+            { "action": "Set-NetTCPSetting -SettingName InternetCustom -AutoTuningLevel Restricted", "expect": "May help in some blackhole scenarios by reducing initial segment size" },
+            { "action": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'EnablePMTUDiscovery' -Value 0", "expect": "Disables PMTUD — not recommended as workaround, use only if MTU adjustment fails" }
+          ]
+        },
+        {
+          "name": "Confirm Resolution", "icon": "🎯",
+          "steps": [
+            { "action": "ping <destination> -f -l <path_MTU_minus_28>", "expect": "Succeeds consistently — large packets flowing" },
+            { "action": "Test failing application (file transfer, VPN, HTTPS)", "expect": "Application works without timeouts or stalls" },
+            { "action": "Monitor Get-NetAdapterStatistics for packet errors", "expect": "No increase in OutboundDiscardedPackets or errors" }
+          ]
+        }
+      ]
+    },
+    "dual_stack_ipv6_issues": {
+      "title": "IPv6/IPv4 dual-stack connectivity problems",
+      "severity": "medium",
+      "description": "Addresses Windows dual-stack scenarios where IPv6 is preferred but unreachable, causing application delays or failures. Windows prefers IPv6 by default per RFC 6724, but broken IPv6 can cause significant latency.",
+      "phases": [
+        {
+          "name": "Assess IPv6 State", "icon": "✅",
+          "steps": [
+            { "action": "Get-NetIPAddress -AddressFamily IPv6 | Select InterfaceAlias,IPAddress,PrefixLength,AddressState", "expect": "Check if IPv6 addresses are present and in Preferred state" },
+            { "action": "Get-NetIPAddress -AddressFamily IPv6 | Where-Object {$_.IPAddress -like 'fe80::*'}", "expect": "Link-local addresses present — indicates IPv6 stack loaded" },
+            { "action": "Get-NetAdapterBinding -ComponentID ms_tcpip6 | Select Name,Enabled", "expect": "Enabled: True on active NICs — if False, IPv6 disabled" }
+          ]
+        },
+        {
+          "name": "Test IPv6 Connectivity", "icon": "🔍",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName ::1 -InformationLevel Detailed", "expect": "TcpTestSucceeded: True — IPv6 loopback functional" },
+            { "action": "ping -6 <IPv6_gateway_or_destination>", "expect": "If fails, IPv6 routing or connectivity issue" },
+            { "action": "Resolve-DnsName -Name <target> -Type AAAA", "expect": "If AAAA records returned but IPv6 unreachable, broken IPv6 path" }
+          ]
+        },
+        {
+          "name": "Compare IPv4 vs IPv6 Latency", "icon": "⏱️",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName <target> -InformationLevel Detailed (force IPv4)", "expect": "Note RTT and success — use -4 flag if available" },
+            { "action": "Test-NetConnection -ComputerName <target> -InformationLevel Detailed (force IPv6)", "expect": "Note RTT and success — use -6 flag if available" },
+            { "action": "Compare results", "expect": "If IPv6 fails or has high latency, IPv6 preference causing delays" }
+          ]
+        },
+        {
+          "name": "Adjust Prefix Policy", "icon": "⚙️",
+          "steps": [
+            { "action": "Get-NetPrefixPolicy", "expect": "View current IPv6 prefix policy — determines address selection" },
+            { "action": "Set-NetPrefixPolicy -Prefix ::/0 -Label 30 -Precedence 10", "expect": "Adjusts IPv6 preference — increases IPv4 preference" },
+            { "action": "netsh int ipv6 reset", "expect": "Resets IPv6 stack to default — may resolve misconfiguration" }
+          ]
+        },
+        {
+          "name": "Temporary IPv6 Disable", "icon": "🛠",
+          "steps": [
+            { "action": "Disable-NetAdapterBinding -Name '<NIC>' -ComponentID ms_tcpip6", "expect": "IPv6 disabled on NIC — forces IPv4-only" },
+            { "action": "Test-NetConnection -ComputerName <target> -InformationLevel Detailed", "expect": "If connectivity improves, IPv6 was the issue" },
+            { "action": "Enable-NetAdapterBinding -Name '<NIC>' -ComponentID ms_tcpip6", "expect": "Re-enable IPv6 — fix root cause or leave disabled if not required" }
+          ]
+        },
+        {
+          "name": "Fix IPv6 Root Cause", "icon": "🔧",
+          "steps": [
+            { "action": "Check router for IPv6 RA (Router Advertisement) support", "expect": "Ensure router sends RAs — Windows uses SLAAC by default" },
+            { "action": "Get-NetRoute -AddressFamily IPv6 | Where-Object {$_.DestinationPrefix -eq '::/0'}", "expect": "Verify IPv6 default route present" },
+            { "action": "Configure static IPv6 if SLAAC fails: New-NetIPAddress -InterfaceAlias '<NIC>' -IPAddress <IPv6> -PrefixLength <prefix>", "expect": "Static IPv6 assigned — bypasses SLAAC issues" }
+          ]
+        },
+        {
+          "name": "Confirm Resolution", "icon": "🎯",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName <target> -InformationLevel Detailed", "expect": "TcpTestSucceeded: True with acceptable RTT" },
+            { "action": "Monitor application performance", "expect": "No delays or timeouts related to address resolution" },
+            { "action": "Get-NetTCPConnection | Group-Object RemoteAddress", "expect": "Connections using appropriate address family based on policy" }
+          ]
+        }
+      ]
+    },
+    "nic_offload_issues": {
+      "title": "NIC offload features causing packet corruption or performance issues",
+      "severity": "medium",
+      "description": "Troubleshoots NIC offload features (RSS, LSO, RSC, Chimney) that can cause packet corruption, retransmissions, or performance degradation. Offloads move processing from CPU to NIC hardware but can have compatibility issues.",
+      "phases": [
+        {
+          "name": "Identify Offload Configuration", "icon": "✅",
+          "steps": [
+            { "action": "Get-NetAdapterLso | Select Name,IPv4Enabled,IPv6Enabled", "expect": "Document current LSO state — Large Send Offload status" },
+            { "action": "Get-NetAdapterRss | Select Name,Enabled,NumberOfReceiveQueues,BaseProcessorNumber", "expect": "Document RSS configuration — Receive Side Scaling state" },
+            { "action": "Get-NetAdapterRsc | Select Name,IPv4Enabled,IPv6Enabled", "expect": "Document RSC state — Receive Segment Coalescing status" }
+          ]
+        },
+        {
+          "name": "Check for Packet Errors", "icon": "🔍",
+          "steps": [
+            { "action": "Get-NetAdapterStatistics -Name '<NIC>' | Select ReceivedPacketErrors,OutboundPacketErrors", "expect": "If errors increasing, offload may be causing corruption" },
+            { "action": "Get-NetTCPConnection | Group-Object State | Select Name,Count", "expect": "High retransmission count suggests LSO or checksum offload issues" },
+            { "action": "Performance Monitor: TCPv4\\Segments Retransmitted/sec", "expect": "High retransmission rate (>1% of segments) indicates offload problem" }
+          ]
+        },
+        {
+          "name": "Test LSO Disable", "icon": "🛠",
+          "steps": [
+            { "action": "Disable-NetAdapterLso -Name '<NIC>' -IPv4 -IPv6", "expect": "LSO disabled — CPU now handles segmentation" },
+            { "action": "Restart-NetAdapter -Name '<NIC>'", "expect": "NIC restarted — offload change applied" },
+            { "action": "Monitor Get-NetAdapterStatistics for error reduction", "expect": "Packet errors should decrease if LSO was the cause" },
+            { "action": "Test application throughput", "expect": "If corruption resolved but throughput lower, LSO was needed but misconfigured" }
+          ]
+        },
+        {
+          "name": "Test RSC Disable", "icon": "🛠",
+          "steps": [
+            { "action": "Disable-NetAdapterRsc -Name '<NIC>' -IPv4 -IPv6", "expect": "RSC disabled — reduces latency for latency-sensitive apps" },
+            { "action": "Restart-NetAdapter -Name '<NIC>'", "expect": "NIC restarted — change applied" },
+            { "action": "Test latency-sensitive application", "expect": "If latency spikes resolved, RSC was causing issues" }
+          ]
+        },
+        {
+          "name": "Optimize RSS Configuration", "icon": "⚙️",
+          "steps": [
+            { "action": "Get-ProcessorCount", "expect": "Note CPU core count — match RSS queues to cores" },
+            { "action": "Set-NetAdapterRss -Name '<NIC>' -NumberOfReceiveQueues <core_count> -BaseProcessorNumber 0", "expect": "RSS queues configured for optimal distribution" },
+            { "action": "Set-NetAdapterRss -Name '<NIC>' -Profile NUMAStatic", "expect": "NUMA-aware RSS for NUMA systems — improves cache locality" },
+            { "action": "Monitor CPU distribution via Task Manager or Performance Monitor", "expect": "Network interrupts distributed across cores" }
+          ]
+        },
+        {
+          "name": "Check Checksum Offload", "icon": "✅",
+          "steps": [
+            { "action": "Get-NetAdapterAdvancedProperty -Name '<NIC>' -DisplayName '*Checksum*'", "expect": "Document checksum offload state (IPv4, IPv6, Tx, Rx)" },
+            { "action": "Disable checksum offload via registry or driver properties", "expect": "If corruption resolved, checksum offload was faulty" },
+            { "action": "Re-enable with latest NIC driver/firmware", "expect": "Updated driver may fix offload bugs" }
+          ]
+        },
+        {
+          "name": "Confirm Resolution", "icon": "🎯",
+          "steps": [
+            { "action": "Get-NetAdapterStatistics -Name '<NIC>'", "expect": "No increase in packet errors or discards" },
+            { "action": "Test application throughput and latency", "expect": "Acceptable performance without packet corruption" },
+            { "action": "Long-term monitoring of retransmission rate", "expect": "Retransmission rate <0.1% of segments" }
+          ]
+        }
+      ]
+    },
+    "routing_problems": {
+      "title": "Routing table issues causing connectivity failures",
+      "severity": "medium",
+      "description": "Addresses incorrect routing table entries, multiple default routes, asymmetric routing, and route metric conflicts that cause traffic to take wrong paths or be dropped entirely.",
+      "phases": [
+        {
+          "name": "Analyze Routing Table", "icon": "✅",
+          "steps": [
+            { "action": "Get-NetRoute -AddressFamily IPv4 | Where-Object {$_.DestinationPrefix -eq '0.0.0.0/0'} | Select DestinationPrefix,NextHop,RouteMetric,InterfaceAlias", "expect": "Should have single default route with lowest metric — multiple routes cause ambiguity" },
+            { "action": "Get-NetRoute -AddressFamily IPv4 | Sort-Object RouteMetric | Format-Table -AutoSize", "expect": "Review all routes — identify conflicting or incorrect entries" },
+            { "action": "Get-NetRoute -AddressFamily IPv6 | Where-Object {$_.DestinationPrefix -eq '::/0'}", "expect": "Verify IPv6 default route if dual-stack enabled" }
+          ]
+        },
+        {
+          "name": "Identify Route Conflicts", "icon": "🔍",
+          "steps": [
+            { "action": "Get-NetRoute -AddressFamily IPv4 | Group-Object DestinationPrefix | Where-Object {$_.Count -gt 1}", "expect": "Identify duplicate destinations — may cause routing loops" },
+            { "action": "Get-NetRoute -AddressFamily IPv4 | Where-Object {$_.Protocol -eq 'NetBT'}", "expect": "Check for NetBIOS routes — can conflict with IP routing" },
+            { "action": "Test-NetConnection -ComputerName <target> -TraceRoute", "expect": "Compare actual path with expected routing table entry" }
+          ]
+        },
+        {
+          "name": "Remove Conflicting Routes", "icon": "🛠",
+          "steps": [
+            { "action": "Remove-NetRoute -DestinationPrefix '0.0.0.0/0' -NextHop <unwanted_gateway> -Confirm:$false", "expect": "Unwanted default route removed" },
+            { "action": "Remove-NetRoute -DestinationPrefix <duplicate_prefix> -NextHop <unwanted> -Confirm:$false", "expect": "Conflicting specific route removed" },
+            { "action": "Get-NetRoute -AddressFamily IPv4 | Sort-Object RouteMetric", "expect": "Verify clean routing table" }
+          ]
+        },
+        {
+          "name": "Add Specific Routes", "icon": "➕",
+          "steps": [
+            { "action": "New-NetRoute -DestinationPrefix '<target_subnet>/24' -InterfaceAlias '<NIC>' -NextHop <gateway> -RouteMetric 1", "expect": "Specific route added — overrides default route for that subnet" },
+            { "action": "New-NetRoute -DestinationPrefix '<target_host>/32' -InterfaceAlias '<NIC>' -NextHop <gateway> -RouteMetric 1", "expect": "Host-specific route for asymmetric routing correction" },
+            { "action": "Get-NetRoute -DestinationPrefix '<target>'", "expect": "Verify route appears in table with correct metric" }
+          ]
+        },
+        {
+          "name": "Fix Asymmetric Routing", "icon": "🔄",
+          "steps": [
+            { "action": "Identify asymmetric path: traffic exits NIC A, returns via NIC B", "expect": "Check Get-NetAdapterStatistics on both NICs for traffic imbalance" },
+            { "action": "Add host route on NIC A: New-NetRoute -DestinationPrefix '<remote>/32' -InterfaceAlias 'NIC_A' -NextHop <gateway_A>", "expect": "Forces return traffic through same interface" },
+            { "action": "Test connectivity and monitor both NICs", "expect": "Traffic now symmetric through single interface" }
+          ]
+        },
+        {
+          "name": "Adjust Route Metrics", "icon": "⚖️",
+          "steps": [
+            { "action": "Set-NetRoute -DestinationPrefix '0.0.0.0/0' -NextHop <primary_gateway> -RouteMetric 10", "expect": "Primary route set with lower metric" },
+            { "action": "Set-NetRoute -DestinationPrefix '0.0.0.0/0' -NextHop <backup_gateway> -RouteMetric 20", "expect": "Backup route with higher metric — used only if primary fails" },
+            { "action": "Test failover by disabling primary NIC", "expect": "Traffic shifts to backup route automatically" }
+          ]
+        },
+        {
+          "name": "Confirm Resolution", "icon": "🎯",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName <target> -InformationLevel Detailed", "expect": "TcpTestSucceeded: True with correct path" },
+            { "action": "Get-NetRoute -AddressFamily IPv4 | Sort-Object RouteMetric", "expect": "Clean routing table with no conflicts" },
+            { "action": "Monitor Get-NetAdapterStatistics for expected traffic distribution", "expect": "Traffic flows through intended interfaces" }
+          ]
+        }
+      ]
+    },
+    "tcp_performance": {
+      "title": "TCP throughput and latency optimization",
+      "severity": "low",
+      "description": "Optimizes TCP parameters for high-throughput or low-latency scenarios. Addresses AutoTuning, congestion window, keepalive settings, and TCP options that affect performance on high-latency or high-bandwidth networks.",
+      "phases": [
+        {
+          "name": "Baseline Performance", "icon": "✅",
+          "steps": [
+            { "action": "Test-NetConnection -ComputerName <target> -InformationLevel Detailed", "expect": "Document baseline RTT and TCP test results" },
+            { "action": "iperf3 -c <target> -t 30 (if available)", "expect": "Document baseline throughput in Mbps/Gbps" },
+            { "action": "Get-NetTCPSetting | Select SettingName,AutoTuningLevel,InitialCongestionWindowMss", "expect": "Document current TCP parameter configuration" }
+          ]
+        },
+        {
+          "name": "Check AutoTuning Level", "icon": "🔍",
+          "steps": [
+            { "action": "Get-NetTCPSetting -SettingName InternetCustom | Select AutoTuningLevel", "expect": "Document current AutoTuning: Normal, Restricted, HighlyRestricted, Disabled, Experimental" },
+            { "action": "If AutoTuningLevel is Disabled or HighlyRestricted", "expect": "Causes poor throughput on high-BDP networks" },
+            { "action": "Set-NetTCPSetting -SettingName InternetCustom -AutoTuningLevel Normal", "expect": "Enables normal window scaling — recommended for most scenarios" }
+          ]
+        },
+        {
+          "name": "Optimize Congestion Window", "icon": "⚙️",
+          "steps": [
+            { "action": "Calculate BDP: Bandwidth (bps) × RTT (sec) / 8 = bytes", "expect": "Example: 1Gbps × 0.05sec RTT = 6.25MB BDP" },
+            { "action": "Set-NetTCPSetting -SettingName InternetCustom -InitialCongestionWindowMss 10", "expect": "Default is 10 MSS — increase to 20-50 for high-BDP networks" },
+            { "action": "Test throughput after adjustment", "expect": "Improved throughput proportional to BDP" }
+          ]
+        },
+        {
+          "name": "Adjust TCP Keepalive", "icon": "❤️",
+          "steps": [
+            { "action": "Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' | Select KeepAliveTime,KeepAliveInterval", "expect": "Document current keepalive settings (default: 2 hours)" },
+            { "action": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'KeepAliveTime' -Value 300000 (5 minutes)", "expect": "Reduces keepalive interval for faster failure detection" },
+            { "action": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'KeepAliveInterval' -Value 1000 (1 second)", "expect": "Reduces retry interval for quicker detection" }
+          ]
+        },
+        {
+          "name": "TCP Option Tuning", "icon": "⚙️",
+          "steps": [
+            { "action": "Set-NetTCPSetting -SettingName InternetCustom -EcnCapability Disabled", "expect": "Disable ECN if network drops ECN-marked packets" },
+            { "action": "Set-NetTCPSetting -SettingName InternetCustom -Timestamps Disabled", "expect": "Disable timestamps if middleboxes reject TCP options" },
+            { "action": "Set-NetTCPSetting -SettingName InternetCustom -MinRto 300", "expect": "Reduce minimum RTO for faster recovery on low-latency networks" }
+          ]
+        },
+        {
+          "name": "Registry Parameter Tuning", "icon": "📝",
+          "steps": [
+            { "action": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'MaxUserPort' -Value 65534", "expect": "Increases ephemeral port range for high-connection scenarios" },
+            { "action": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'TcpTimedWaitDelay' -Value 30", "expect": "Reduces TIME_WAIT duration from default 240 seconds" },
+            { "action": "Restart-Computer -Force", "expect": "Reboot required for registry changes to take effect" }
+          ]
+        },
+        {
+          "name": "Confirm Optimization", "icon": "🎯",
+          "steps": [
+            { "action": "iperf3 -c <target> -t 30", "expect": "Improved throughput compared to baseline" },
+            { "action": "Test-NetConnection -ComputerName <target> -InformationLevel Detailed", "expect": "Maintained or improved RTT" },
+            { "action": "Monitor Get-NetTCPConnection for connection churn", "expect": "Reduced TIME_WAIT buildup if ports increased" }
           ]
         }
       ]

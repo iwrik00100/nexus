@@ -2,18 +2,18 @@
   "key": "networking",
   "label": "Networking",
   "icon": "🌐",
-  "description": "Windows DNS, DHCP, TCP/IP, SMB, DFS, NPS (RADIUS), 802.1x Wired/Wireless, VPN",
+  "description": "Windows networking infrastructure including DNS Server/Client, DHCP Server/Client, TCP/IP stack, SMB file sharing, DFS Namespaces and Replication, NPS (RADIUS) for 802.1x authentication, Wired and Wireless 802.1x, and VPN (SSTP, IKEv2, L2TP, Always On VPN)",
   "technologies": [
-    { "key": "dns_server", "label": "DNS Server", "icon": "🖧" },
-    { "key": "dns_client", "label": "DNS Client", "icon": "💻" },
-    { "key": "dhcp_server", "label": "DHCP Server", "icon": "🗄️" },
-    { "key": "dhcp_client", "label": "DHCP Client", "icon": "📡" },
-    { "key": "tcpip", "label": "TCP/IP", "icon": "🌐" },
-    { "key": "smb", "label": "SMB", "icon": "📂" },
-    { "key": "dfs", "label": "DFS", "icon": "🗃️" },
-    { "key": "nps", "label": "NPS (RADIUS)", "icon": "🔐" },
-    { "key": "dot1x_wired", "label": "802.1x Wired", "icon": "🔌" },
-    { "key": "dot1x_wireless", "label": "802.1x Wireless", "icon": "📶" },
-    { "key": "vpn", "label": "VPN", "icon": "🔒" }
+    { "key": "dns_server", "label": "DNS Server", "icon": "🖧", "description": "Windows Server DNS Server role with AD integration, DNSSEC, DNS policies, and zone management" },
+    { "key": "dns_client", "label": "DNS Client", "icon": "💻", "description": "Windows DNS Client resolver with caching, NRPT policies, DNS over HTTPS, and multi-homed name resolution" },
+    { "key": "dhcp_server", "label": "DHCP Server", "icon": "🗄️", "description": "Windows Server DHCP Server with failover, policies, scavenging, and DNS integration" },
+    { "key": "dhcp_client", "label": "DHCP Client", "icon": "📡", "description": "Windows DHCP Client for IPv4 and IPv6 lease management, including APIPA and lease renewal" },
+    { "key": "tcpip", "label": "TCP/IP", "icon": "🌐", "description": "Windows TCP/IP stack, IPv4/IPv6 dual stack, routing, MTU/PMTUD, NIC offloads, and performance troubleshooting" },
+    { "key": "smb", "label": "SMB", "icon": "📂", "description": "SMB 2.x/3.x file sharing with signing, encryption, multichannel, and performance optimization" },
+    { "key": "dfs", "label": "DFS", "icon": "🗃️", "description": "DFS Namespaces (DFSN) and DFS Replication (DFSR) for distributed file storage and SYSVOL replication" },
+    { "key": "nps", "label": "NPS (RADIUS)", "icon": "🔐", "description": "Network Policy Server for RADIUS authentication, EAP-TLS, PEAP, and 802.1x policy enforcement" },
+    { "key": "dot1x_wired", "label": "802.1x Wired", "icon": "🔌", "description": "Wired 802.1x authentication with EAP-TLS, PEAP, switch port security, and NPS integration" },
+    { "key": "dot1x_wireless", "label": "802.1x Wireless", "icon": "📶", "description": "Wireless 802.1x authentication for WPA2/WPA3-Enterprise, WAP controller integration, and roaming optimization" },
+    { "key": "vpn", "label": "VPN", "icon": "🔒", "description": "Windows VPN including SSTP, IKEv2, L2TP/IPsec, and Always On VPN (AOVPN) with RRAS and NPS" }
   ]
 }
