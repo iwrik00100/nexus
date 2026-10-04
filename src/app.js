@@ -87,20 +87,15 @@ async function loadTechData(domainKey, techKey) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  const savedGlass    = LS.get('pcy_glass', true);
   const savedTier     = LS.get('pcy_tier', 'l1');
   const savedQtype    = LS.get('pcy_qtype', 'scoping');
   const savedDomain   = LS.get('pcy_domain', null);
   const savedTech     = LS.get('pcy_tech', null);
   const savedProvider = LS.get('pcy_ai_provider', 'gemini');
+  const savedThemeIndex = LS.get('pcy_theme_index', 0);
 
-  _isGlass = savedGlass;
-  document.body.classList.remove('theme-glass', 'theme-dark');
-  document.body.classList.add(_isGlass ? 'theme-glass' : 'theme-dark');
-  const _initIcon = _isGlass ? '🌙' : '☀️';
-  document.getElementById('themeIcon').textContent = _initIcon;
-  const _ti2 = document.getElementById('themeIcon2');
-  if (_ti2) _ti2.textContent = _initIcon;
+  _themeIndex = savedThemeIndex;
+  applyTheme(_themeIndex);
 
   renderDomainGrid();
 
@@ -998,17 +993,33 @@ function _inlineMarkdown(escaped) {
 }
 
 // ─── Theme Toggle ─────────────────────────────────────────────────────────────
-let _isGlass = true;
+let _themeIndex = 0;
+const _themes = [
+  { name: 'light', icon: '☀️', class: '' },
+  { name: 'glass', icon: '💎', class: 'theme-glass' },
+  { name: 'dark', icon: '🌙', class: 'theme-dark' },
+  { name: 'cyberpunk', icon: '⚡', class: 'theme-cyberpunk' }
+];
 
-function toggleTheme() {
-  _isGlass = !_isGlass;
-  LS.set('pcy_glass', _isGlass);
-  document.body.classList.remove('theme-glass', 'theme-dark');
-  document.body.classList.add(_isGlass ? 'theme-glass' : 'theme-dark');
-  const icon = _isGlass ? '🌙' : '☀️';
+function applyTheme(index) {
+  _themeIndex = index % _themes.length;
+  const theme = _themes[_themeIndex];
+
+  document.body.classList.remove('theme-glass', 'theme-dark', 'theme-cyberpunk');
+  if (theme.class) {
+    document.body.classList.add(theme.class);
+  }
+
+  const icon = theme.icon;
   document.getElementById('themeIcon').textContent = icon;
   const ti2 = document.getElementById('themeIcon2');
   if (ti2) ti2.textContent = icon;
+
+  LS.set('pcy_theme_index', _themeIndex);
+}
+
+function toggleTheme() {
+  applyTheme(_themeIndex + 1);
 }
 
 // ─── Case Notes Panel ─────────────────────────────────────────────────────────
