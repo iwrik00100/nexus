@@ -5,90 +5,135 @@
   "domain": "networking",
   "scoping": {
     "l1": [
-      "What Windows Server version is the NPS server running on?",
-      "Is the Network Policy Server service (IAS) running and set to Automatic? (Get-Service IAS | Select Status,StartType)",
+      "What Windows Server version is the NPS server running on? (Get-ComputerInfo | Select WindowsProductName, WindowsVersion, OsBuild)",
+      "Is the Network Policy Server service (IAS) running and set to Automatic? (Get-Service IAS | Select Name,Status,StartType,DisplayName)",
       "What authentication scenario is this — 802.1x wired, 802.1x wireless, SSTP/IKEv2 VPN, L2TP VPN, or RADIUS proxy authentication?",
       "What is the exact symptom — authentication rejected, no RADIUS response (timeout at NAS), NPS service not responding, or wrong VLAN/attribute assigned?",
       "Is this affecting all users/devices, specific user accounts, specific device types, or a specific RADIUS client (NAS)?",
-      "What RADIUS client (NAS) is involved — network switch, wireless access point, or VPN concentrator? What is the NAS device IP address?",
+      "What RADIUS client (NAS) is involved — network switch, wireless access point, or VPN concentrator? What is the NAS device IP address? (netsh nps show client)",
       "Is the RADIUS shared secret configured identically on both NPS and the NAS device — including case sensitivity and special characters?",
       "When did the issue start — NPS certificate renewal, Group Policy change, AD group change, NPS server upgrade, or NAS firmware update?",
-      "Are there NPS authentication failure events in the Windows Security event log? (Event IDs 6272 auth succeeded, 6273 auth failed, 6274 discarded)"
+      "Are there NPS authentication failure events in the Windows Security event log? (Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" | Select TimeCreated,Message | Select -First 10)",
+      "Is Windows Firewall allowing RADIUS traffic on UDP ports 1812 (authentication) and 1813 (accounting)? (Get-NetFirewallRule | Where DisplayName -like \"*RADIUS*\" | Select DisplayName,Enabled,Direction,Action)"
     ],
     "l2": [
-      "What EAP method is configured in the NPS Network Policy — EAP-TLS (certificate-based machine or user auth), PEAP-MSCHAPv2 (username/password), or PEAP-TLS?",
-      "Is NPS acting as a standalone RADIUS server, or is it configured as a RADIUS Proxy forwarding requests to a Remote RADIUS Server Group?",
-      "Which Connection Request Policy (CRP) and Network Policy (NP) are matching the failing authentication requests — what are their conditions and order?",
-      "Is the NPS server computer account a member of 'RAS and IAS Servers' security group in AD (required to read user dial-in properties)?",
-      "Is the NPS server TLS certificate trusted by authenticating clients — is the full CA certificate chain present and the root CA certificate distributed to clients via GPO?",
-      "Is the authenticating AD account enabled, not locked out, not expired, and does it have the correct dial-in permission (Allow Access, Deny Access, or Control Access through NPS Network Policy)?",
-      "Is RADIUS Accounting configured and working — are accounting Start/Stop/Interim packets from the NAS reaching NPS on UDP 1813?",
-      "For RADIUS Proxy: are realm routing rules correctly mapping domain suffixes to the correct Remote RADIUS Server Group?",
-      "Is the NPS IAS log configured and capturing full authentication detail records? (C:\\Windows\\System32\\LogFiles\\IN*.log)",
-      "Are there multiple NPS servers for redundancy — is the NAS device configured with both primary and secondary NPS servers?"
+      "What EAP method is configured in the NPS Network Policy — EAP-TLS (certificate-based machine or user auth), PEAP-MSCHAPv2 (username/password), or PEAP-TLS? (netsh nps show np)",
+      "Is NPS acting as a standalone RADIUS server, or is it configured as a RADIUS Proxy forwarding requests to a Remote RADIUS Server Group? (netsh nps show config)",
+      "Which Connection Request Policy (CRP) and Network Policy (NP) are matching the failing authentication requests — what are their conditions and order? (netsh nps show crp; netsh nps show np)",
+      "Is the NPS server computer account a member of 'RAS and IAS Servers' security group in AD (required to read user dial-in properties)? (Get-ADGroupMember -Identity \"RAS and IAS Servers\" | Select Name,SamAccountName)",
+      "Is the NPS server TLS certificate trusted by authenticating clients — is the full CA certificate chain present and the root CA certificate distributed to clients via GPO? (Get-ChildItem Cert:\\LocalMachine\\My | Where Subject -like \"*<NPS FQDN>*\" | Select Subject,Thumbprint,NotAfter,Issuer)",
+      "Is the authenticating AD account enabled, not locked out, not expired, and does it have the correct dial-in permission? (Get-ADUser <username> -Properties Enabled,LockedOut,PasswordExpired,AccountExpirationDate,msNPAllowDialin | Select *)",
+      "Is RADIUS Accounting configured and working — are accounting Start/Stop/Interim packets from the NAS reaching NPS on UDP 1813? (Get-NetUDPEndpoint -OwningProcess (Get-Process -Name IAS).Id | Where LocalPort -eq 1813)",
+      "For RADIUS Proxy: are realm routing rules correctly mapping domain suffixes to the correct Remote RADIUS Server Group? (netsh nps show remoteserver)",
+      "Is the NPS IAS log configured and capturing full authentication detail records? (Get-Item C:\\Windows\\System32\\LogFiles\\IN*.log | Select Name,Length,LastWriteTime)",
+      "Are there multiple NPS servers for redundancy — is the NAS device configured with both primary and secondary NPS servers? (netsh nps show client)",
+      "What is the NPS database configuration — using local SQL or remote SQL for logging? (netsh nps show config)",
+      "Are there any NPS templates configured — Shared Secrets, RADIUS Clients, or Network Policies? (netsh nps show template)",
+      "Is the NPS server experiencing high CPU or memory utilization during authentication attempts? (Get-Process -Name IAS | Select CPU,WorkingSet,PM)",
+      "Are there any recent Windows updates installed that might affect NPS functionality? (Get-HotFix | Sort InstalledOn -Descending | Select -First 5)"
     ]
   },
   "probing": {
     "l1": [
-      "On the NPS server: open Security event log — filter for Event ID 6273 — share the Reason Code (field 9), Reason description, and User-Name.",
-      "Run 'Get-Service IAS | Select Name,Status,StartType'",
-      "Run 'netsh nps show client' — confirm the NAS device IP is listed as a RADIUS client with the correct shared secret.",
-      "Is the user's AD account enabled and not locked? 'Get-ADUser <username> -Properties Enabled,LockedOut,BadLogonCount,AccountExpirationDate | Select *'",
+      "On the NPS server: open Security event log — filter for Event ID 6273 — share the Reason Code (field 9), Reason description, and User-Name. (Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" | Select TimeCreated,Message | Format-List)",
+      "Run 'Get-Service IAS | Select Name,Status,StartType,DisplayName' — verify the NPS service is running and configured for automatic startup.",
+      "Run 'netsh nps show client' — confirm the NAS device IP is listed as a RADIUS client with the correct shared secret. (netsh nps show client > C:\\nps_clients.txt)",
+      "Is the user's AD account enabled and not locked? 'Get-ADUser <username> -Properties Enabled,LockedOut,BadLogonCount,AccountExpirationDate,msNPAllowDialin | Select *'",
       "What error does the end client/device display — 'Authentication failed', 'Certificate is not valid', 'Server certificate not trusted', or 'Username/password incorrect'?",
-      "Review the NPS IAS log: C:\\Windows\\System32\\LogFiles\\IN<date>.log — find the record for the failing User-Name and note the Reason-Code and NAS-IP-Address.",
-      "Test RADIUS reachability from the NAS: use 'portqry -n <NPS IP> -e 1812 -p udp' or a RADIUS test tool (e.g., NTRadPing)."
+      "Review the NPS IAS log: C:\\Windows\\System32\\LogFiles\\IN<date>.log — find the record for the failing User-Name and note the Reason-Code and NAS-IP-Address. (Get-Content C:\\Windows\\System32\\LogFiles\\IN*.log | Select-String '<username>')",
+      "Test RADIUS reachability from the NAS: use 'Test-NetConnection -ComputerName <NPS_IP> -Port 1812' or 'portqry -n <NPS IP> -e 1812 -p udp' from the NAS device.",
+      "Check Windows Firewall for RADIUS rules: 'Get-NetFirewallRule | Where DisplayName -like \"*RADIUS*\" | Select DisplayName,Enabled,Direction,Action,Profile'",
+      "Verify NPS is listening on RADIUS ports: 'Get-NetUDPEndpoint -OwningProcess (Get-Process -Name IAS).Id | Select LocalPort,OwningProcess'",
+      "Check for recent NPS service crashes in System event log: 'Get-WinEvent -LogName System -FilterXPath \"*[System[(EventID=7031 or EventID=7034)]]\" | Select TimeCreated,Message'"
     ],
     "l2": [
-      "Enable NPS verbose trace: 'netsh nps set tracing mode=all' — reproduce the failure — disable: 'netsh nps set tracing mode=none' — share C:\\Windows\\tracing\\nps.log.",
-      "Run 'netsh nps show np' — list all Network Policies, their order, enabled/disabled state, and conditions.",
-      "Run 'netsh nps show crp' — list all Connection Request Policies, conditions, and RADIUS server groups.",
-      "Verify the NPS server TLS certificate: 'Get-ChildItem Cert:\\LocalMachine\\My | Where Subject -like \"*<NPS FQDN>*\" | Select Subject,Thumbprint,NotAfter,Issuer,EnhancedKeyUsageList'",
-      "Verify the CA root cert is in Trusted Root CAs on clients: 'Get-ChildItem Cert:\\LocalMachine\\Root | Where Subject -like \"*<CA name>*\"'",
+      "Enable NPS verbose trace: 'netsh nps set tracing mode=all' — reproduce the failure — disable: 'netsh nps set tracing mode=none' — share C:\\Windows\\tracing\\nps.log. (Copy-Item C:\\Windows\\tracing\\nps.log C:\\nps_trace.log)",
+      "Run 'netsh nps show np' — list all Network Policies, their order, enabled/disabled state, and conditions. (netsh nps show np > C:\\nps_network_policies.txt)",
+      "Run 'netsh nps show crp' — list all Connection Request Policies, conditions, and RADIUS server groups. (netsh nps show crp > C:\\nps_crp_policies.txt)",
+      "Verify the NPS server TLS certificate: 'Get-ChildItem Cert:\\LocalMachine\\My | Where Subject -like \"*<NPS FQDN>*\" | Select Subject,Thumbprint,NotAfter,Issuer,EnhancedKeyUsageList,SubjectAlternativeNames'",
+      "Verify the CA root cert is in Trusted Root CAs on clients: 'Get-ChildItem Cert:\\LocalMachine\\Root | Where Subject -like \"*<CA name>*\" | Select Subject,Thumbprint,NotAfter'",
       "Verify NPS server is in 'RAS and IAS Servers' group: 'Get-ADGroupMember -Identity \"RAS and IAS Servers\" | Where Name -eq \"<NPS server name>\"'",
-      "Check CRL accessibility for NPS server cert: 'certutil -verify -urlfetch C:\\nps_server.cer' — does CRL/OCSP check pass?",
-      "Capture RADIUS packet trace: 'netsh trace start capture=yes tracefile=C:\\nps_radius.etl' — reproduce — stop — analyze RADIUS Access-Request, Access-Challenge, Access-Accept/Reject on UDP 1812.",
+      "Check CRL accessibility for NPS server cert: 'certutil -verify -urlfetch C:\\nps_server.cer' — does CRL/OCSP check pass? Export cert first: 'certutil -store My <NPS FQDN> C:\\nps_server.cer'",
+      "Capture RADIUS packet trace: 'netsh trace start capture=yes IPv4.Address=<NPS_IP> UDP.Port=1812 tracefile=C:\\nps_radius.etl' — reproduce — 'netsh trace stop' — analyze with Message Analyzer or Wireshark.",
       "Check user dial-in attribute: 'Get-ADUser <user> -Properties msNPAllowDialin | Select msNPAllowDialin' — $null = NPS policy controls; $false = always denied regardless of policy.",
-      "For RADIUS proxy: 'netsh nps show remoteserver' — confirm remote RADIUS server IPs and shared secrets; test reachability from NPS proxy to backend NPS on UDP 1812."
+      "For RADIUS proxy: 'netsh nps show remoteserver' — confirm remote RADIUS server IPs and shared secrets; test reachability from NPS proxy to backend NPS on UDP 1812. (Test-NetConnection -ComputerName <backend_NPS_IP> -Port 1812)",
+      "Check NPS registry configuration: 'Get-ItemProperty \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\IAS\\Parameters\" | Select *'",
+      "Verify EAP configuration in registry: 'Get-ItemProperty \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\IAS\\Parameters\\Profiles\" | Select *'",
+      "Test AD connectivity from NPS: 'Test-ADDSForestHealth -Identity <forest_name>' or 'Get-ADDomainController -Filter * | Select Name,IPv4Address,OperatingSystem'",
+      "Check for NPS database issues: 'Get-ItemProperty \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\IAS\\Parameters\" | Select SqlDatabaseConnectionString,SqlLogFileName'",
+      "Verify the NPS server's SPN is registered: 'setspn -Q IAS/<NPS_FQDN>' and 'setspn -Q TERMSRV/<NPS_FQDN>'",
+      "Check for certificate auto-enrollment issues: 'certutil -pulse' and review Certificate Services client logs in Application event log."
     ]
   },
   "troubleshooting": {
     "l1": [
-      "NPS Event 6273 Reason Codes reference: 0=no error, 16=auth method not supported/mismatch, 22=user account not found, 23=password incorrect, 48=no NPS policy matched request, 65=EAP negotiation failure.",
-      "Verify RADIUS shared secret is byte-for-byte identical on NPS and the NAS — even a trailing space causes all authentications to fail with RADIUS Message-Authenticator mismatch.",
-      "Unlock and confirm AD account: 'Unlock-ADAccount -Identity <user>; Get-ADUser <user> -Properties LockedOut | Select LockedOut'",
-      "Verify the NPS Network Policy conditions exactly match the request attributes — check NAS-Port-Type, NAS-IP-Address, Windows Groups, and HCAP conditions.",
-      "Restart NPS service: 'Restart-Service IAS' — verify Event ID 4400 (NPS started) appears in System log.",
-      "Confirm UDP 1812 reachability from NAS to NPS — check Windows Firewall rule: 'Get-NetFirewallRule | Where DisplayName -like \"*RADIUS*\"'"
+      "NPS Event 6273 Reason Codes reference: 0=no error, 16=auth method not supported/mismatch, 22=user account not found, 23=password incorrect, 48=no NPS policy matched request, 65=EAP negotiation failure, 66=account locked, 67=account expired, 68=account disabled, 69=password expired, 70=dial-in denied.",
+      "Verify RADIUS shared secret is byte-for-byte identical on NPS and the NAS — even a trailing space causes all authentications to fail with RADIUS Message-Authenticator mismatch. Use PowerShell to compare: (netsh nps show client | Select-String <NAS_IP>)",
+      "Unlock and confirm AD account: 'Unlock-ADAccount -Identity <user>; Get-ADUser <user> -Properties LockedOut,Enabled,PasswordExpired | Select LockedOut,Enabled,PasswordExpired'",
+      "Verify the NPS Network Policy conditions exactly match the request attributes — check NAS-Port-Type, NAS-IP-Address, Windows Groups, and HCAP conditions. Use 'netsh nps show np' to review policy order and conditions.",
+      "Restart NPS service: 'Restart-Service IAS -Force' — verify Event ID 4400 (NPS started) appears in System log within 30 seconds. (Get-WinEvent -LogName System -FilterXPath \"*[System[(EventID=4400)]]\" | Select -First 1)",
+      "Confirm UDP 1812 reachability from NAS to NPS — check Windows Firewall rule: 'Get-NetFirewallRule | Where DisplayName -like \"*RADIUS*\" | Select DisplayName,Enabled,Direction,Action,Profile' — ensure rules are enabled for correct profiles (Domain/Private/Public).",
+      "For authentication timeouts: increase RADIUS timeout on NAS device to minimum 30 seconds for EAP-TLS (requires 3-8 round trips) and 15 seconds for PEAP-MSCHAPv2.",
+      "Verify NPS service startup type: 'Set-Service IAS -StartupType Automatic' — ensure service starts automatically after server reboot.",
+      "Check for port conflicts: 'Get-NetUDPEndpoint | Where LocalPort -in @(1812,1813)' — ensure no other processes are using RADIUS ports.",
+      "Review NPS event log for service startup errors: 'Get-WinEvent -LogName System -Source IAS -MaxEvents 50 | Select TimeCreated,Id,LevelDisplayName,Message'"
     ],
     "l2": [
-      "For EAP-TLS failure: verify the client cert has Client Authentication EKU (OID 1.3.6.1.5.5.7.3.2), is not expired, has correct SAN/CN, and is issued by a CA that NPS trusts in its Trusted Root CAs store.",
-      "For PEAP-MSCHAPv2 failure with incorrect credentials: verify the RADIUS NAS is sending the correct User-Name format (domain\\user or user@domain) and that the account exists in that domain.",
-      "For no policy match (Reason 48): check Connection Request Policy first — if the CRP condition does not match, NPS does not even evaluate Network Policies. Review NAS-Port-Type and Called-Station-Id conditions in the CRP.",
-      "For RADIUS proxy misrouting: 'netsh nps show remoteserver' — confirm realm suffix routing rules; ensure the RADIUS proxy can resolve and reach backend NPS IPs on UDP 1812.",
-      "For expired NPS certificate: re-enroll via 'certlm.msc > Personal > Request new certificate' — then update EAP properties in NPS console to select new certificate.",
-      "For msNPAllowDialin = $false: either set to $null (policy-controlled) — 'Set-ADUser <user> -Clear msNPAllowDialin' — or set to $true for explicit allow.",
-      "For certificate revocation check failure: if CRL is offline, NPS will reject EAP-TLS by default — temporarily disable revocation checking for testing only.",
-      "For RADIUS accounting failures: verify UDP 1813 is open on NPS firewall — 'Get-NetFirewallRule | Where LocalPort -eq 1813'",
-      "For RADIUS timeout at the NAS: increase RADIUS server timeout on the NAS device — EAP-TLS requires 3-8 round trips — set timeout to minimum 15 seconds.",
-      "Analyze the NPS verbose trace (nps.log) — look for 'IAS_AUTH_FAILED', 'IAS_CORRUPT_DATA', or 'IAS_NO_RECORD' entries correlated with the failing user/device."
+      "For EAP-TLS failure: verify the client cert has Client Authentication EKU (OID 1.3.6.1.5.5.7.3.2), is not expired, has correct SAN/CN matching the user principal name, and is issued by a CA that NPS trusts in its Trusted Root CAs store. (certutil -store My <cert_thumbprint>)",
+      "For EAP-TLS: verify the NPS server certificate has Server Authentication EKU (OID 1.3.6.1.5.5.7.3.1), the subject matches the NPS FQDN, and the certificate chain is complete. (Get-ChildItem Cert:\\LocalMachine\\My | Where Subject -like \"*<NPS_FQDN>*\" | Select *)",
+      "For PEAP-MSCHAPv2 failure with incorrect credentials: verify the RADIUS NAS is sending the correct User-Name format (domain\\user or user@domain) and that the account exists in that domain. Check NPS IAS log for User-Name field.",
+      "For PEAP-MSCHAPv2: ensure the 'Validate server certificate' option is disabled on clients if using self-signed certificates, or ensure the NPS server certificate is trusted by clients via GPO or manual installation.",
+      "For no policy match (Reason 48): check Connection Request Policy first — if the CRP condition does not match, NPS does not even evaluate Network Policies. Review NAS-Port-Type, Called-Station-Id, and Client-IPv4-Address conditions in the CRP. Use 'netsh nps show crp' to review.",
+      "For RADIUS proxy misrouting: 'netsh nps show remoteserver' — confirm realm suffix routing rules; ensure the RADIUS proxy can resolve and reach backend NPS IPs on UDP 1812. (Test-NetConnection -ComputerName <backend_NPS> -Port 1812)",
+      "For expired NPS certificate: re-enroll via 'certlm.msc > Personal > Request new certificate' — then update EAP properties in NPS console (Network Policy > Constraints > Authentication > EAP Types > Edit > Select new certificate).",
+      "For msNPAllowDialin = $false: either set to $null (policy-controlled) — 'Set-ADUser <user> -Clear msNPAllowDialin' — or set to $true for explicit allow — 'Set-ADUser <user> -Replace @{msNPAllowDialin=$true}'.",
+      "For certificate revocation check failure: if CRL is offline, NPS will reject EAP-TLS by default — temporarily disable revocation checking for testing only in NPS console (Network Policy > Constraints > Authentication > EAP Types > Edit > Validate Server Certificate > Uncheck).",
+      "For RADIUS accounting failures: verify UDP 1813 is open on NPS firewall — 'Get-NetFirewallRule | Where LocalPort -eq 1813' — ensure accounting is enabled on the NAS device and the NAS IP is configured as a RADIUS client in NPS.",
+      "For RADIUS timeout at the NAS: increase RADIUS server timeout on the NAS device — EAP-TLS requires 3-8 round trips — set timeout to minimum 30 seconds, PEAP-MSCHAPv2 to 15 seconds.",
+      "Analyze the NPS verbose trace (nps.log) — look for 'IAS_AUTH_FAILED', 'IAS_CORRUPT_DATA', 'IAS_NO_RECORD', 'EAP_TYPE_NOT_SUPPORTED', or 'CERT_CHAIN_ERROR' entries correlated with the failing user/device. (Get-Content C:\\Windows\\tracing\\nps.log | Select-String <username>)",
+      "For 802.1X authentication issues: verify the switch/AP is configured with the correct EAP type, authentication mode (port-based or MAC-based), and RADIUS server settings. Check switch logs for EAPOL exchange failures.",
+      "For VPN authentication issues: verify the VPN server (RRAS) is configured with the correct RADIUS server IP, shared secret, and authentication type. Check RRAS event log for RADIUS communication errors.",
+      "For machine authentication vs user authentication: ensure NPS Network Policy conditions distinguish between machine auth (using machine certificate) and user auth (using user certificate or credentials). Use 'Condition > Windows Groups' or 'Condition > NAS-Port-Type' to differentiate.",
+      "For VLAN assignment issues: verify the NPS Network Policy has the correct 'Tunnel-Pvt-Group-ID' (RADIUS attribute 81) configured for the target VLAN. Check switch configuration for VLAN assignments from RADIUS.",
+      "For time-restricted access failures: verify the NPS Network Policy 'Day and Time Restrictions' condition matches the current time of the authentication attempt. Check NPS server and client time synchronization.",
+      "For NPS database logging issues: if using SQL logging, verify the SQL server is reachable, the database exists, and the connection string in registry is correct. Test with 'Test-NetConnection -ComputerName <SQL_server> -Port 1433'.",
+      "For NPS high availability issues: verify NPS is configured in an NPS NLB cluster or with multiple NPS servers. Check that the NAS device has all NPS server IPs configured as RADIUS clients with shared secrets.",
+      "For AD replication delays: if using multi-domain forests, verify the NPS server can contact domain controllers for the user's domain. Use 'Get-ADDomainController -Discover -DomainName <user_domain>' to verify DC discovery.",
+      "For smart card authentication failures: verify the smart card reader is functional, the smart card certificate is valid and has Client Authentication EKU, and the user PIN is correct. Check event log for smart card errors.",
+      "For health policy (NAP) failures: verify the SHA (System Health Agent) is installed and configured on clients, the SHV (System Health Validator) is configured on NPS, and the health policy conditions match the client's compliance state."
     ]
   },
   "datacollection": {
     "l1": [
-      "Export Security event log (contains Event 6272/6273): 'wevtutil epl Security C:\\Security_Events.evtx'",
-      "Copy NPS IAS log files: 'Copy-Item C:\\Windows\\System32\\LogFiles\\IN*.log C:\\NPS_IAS_Logs\\'",
-      "Run 'netsh nps show client > C:\\nps_clients.txt'",
-      "Run 'netsh nps show np > C:\\nps_network_policies.txt'"
+      "Export Security event log (contains Event 6272/6273): 'wevtutil epl Security C:\\Security_Events.evtx' — also export System event log: 'wevtutil epl System C:\\System_Events.evtx'",
+      "Copy NPS IAS log files: 'Copy-Item C:\\Windows\\System32\\LogFiles\\IN*.log C:\\NPS_IAS_Logs\\' — include the most recent 7 days of logs for analysis.",
+      "Run 'netsh nps show client > C:\\nps_clients.txt' — exports all RADIUS client configurations including NAS IPs and shared secret hashes.",
+      "Run 'netsh nps show np > C:\\nps_network_policies.txt' — exports all Network Policies with conditions, constraints, and settings.",
+      "Export NPS configuration: 'netsh nps export config C:\\nps_config.xml' — exports complete NPS configuration including policies and settings.",
+      "Collect NPS service information: 'Get-Service IAS | Select Name,Status,StartType,DisplayName,ServiceType | Out-File C:\\nps_service_info.txt'",
+      "Collect Windows Firewall rules: 'Get-NetFirewallRule | Where DisplayName -like \"*RADIUS*\" | Select DisplayName,Enabled,Direction,Action,Profile,Direction | Out-File C:\\nps_firewall_rules.txt'",
+      "Collect system information: 'Get-ComputerInfo | Select WindowsProductName,WindowsVersion,OsBuild,OsHardwareAbstractionLayer, CsName, CsDomain | Out-File C:\\nps_system_info.txt'"
     ],
     "l2": [
-      "Enable NPS verbose trace: 'netsh nps set tracing mode=all' — reproduce — disable — collect C:\\Windows\\tracing\\nps.log",
-      "Run 'netsh nps show crp > C:\\nps_connection_request_policies.txt'",
-      "Run 'Get-ChildItem Cert:\\LocalMachine\\My | Select Subject,Thumbprint,NotAfter,Issuer,EnhancedKeyUsageList | Out-File C:\\nps_certificates.txt'",
-      "Capture RADIUS traffic trace: 'netsh trace start capture=yes tracefile=C:\\nps_radius_trace.etl' — reproduce — stop.",
-      "Run 'netsh nps show remoteserver > C:\\nps_remote_servers.txt'",
-      "Run 'Get-ADGroupMember -Identity \"RAS and IAS Servers\" | Select Name,SamAccountName | Out-File C:\\ras_ias_members.txt'",
-      "Run 'Get-ADUser -Filter * -Properties msNPAllowDialin | Where msNPAllowDialin -eq $false | Select Name,SamAccountName | Out-File C:\\users_denied_dialin.txt'",
-      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_NPS' — run on the NPS server, reproduce the authentication failure, stop when prompted"
+      "Enable NPS verbose trace: 'netsh nps set tracing mode=all' — reproduce the failure — disable: 'netsh nps set tracing mode=none' — collect C:\\Windows\\tracing\\nps.log with 'Copy-Item C:\\Windows\\tracing\\nps.log C:\\nps_trace.log'",
+      "Run 'netsh nps show crp > C:\\nps_connection_request_policies.txt' — exports all Connection Request Policies with conditions and server groups.",
+      "Run 'Get-ChildItem Cert:\\LocalMachine\\My | Select Subject,Thumbprint,NotAfter,Issuer,EnhancedKeyUsageList,SubjectAlternativeNames | Out-File C:\\nps_certificates.txt' — collects all certificates in the Personal store.",
+      "Capture RADIUS traffic trace: 'netsh trace start capture=yes IPv4.Address=<NPS_IP> UDP.Port=1812,1813 tracefile=C:\\nps_radius_trace.etl' — reproduce authentication — stop with 'netsh trace stop' — analyze with Message Analyzer or Wireshark.",
+      "Run 'netsh nps show remoteserver > C:\\nps_remote_servers.txt' — exports RADIUS proxy remote server configurations.",
+      "Run 'Get-ADGroupMember -Identity \"RAS and IAS Servers\" | Select Name,SamAccountName,DistinguishedName | Out-File C:\\ras_ias_members.txt' — verifies NPS server group membership.",
+      "Run 'Get-ADUser -Filter * -Properties msNPAllowDialin | Where msNPAllowDialin -eq $false | Select Name,SamAccountName,DistinguishedName | Out-File C:\\users_denied_dialin.txt' — identifies users with explicit dial-in denial.",
+      "Export NPS registry configuration: 'reg export \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\IAS\" C:\\nps_registry.reg' — captures NPS registry settings including EAP configuration.",
+      "Collect AD domain controller information: 'Get-ADDomainController -Filter * | Select Name,IPv4Address,OperatingSystem,Site,Enabled | Out-File C:\\nps_domain_controllers.txt'",
+      "Collect recent hotfixes: 'Get-HotFix | Sort InstalledOn -Descending | Select HotFixID,InstalledOn,Description | Out-File C:\\nps_hotfixes.txt'",
+      "Collect process information: 'Get-Process -Name IAS | Select Name,CPU,WorkingSet,PM,Id,HandleCount,Threads | Out-File C:\\nps_process_info.txt'",
+      "Collect network configuration: 'Get-NetIPConfiguration | Select InterfaceAlias,IPv4Address,IPv6Address,DefaultGateway | Out-File C:\\nps_network_config.txt'",
+      "Collect DNS configuration: 'Get-DnsClientServerAddress -AddressFamily IPv4 | Select InterfaceAlias,ServerAddresses | Out-File C:\\nps_dns_config.txt'",
+      "Export certificate store: 'certutil -store My > C:\\nps_cert_store.txt' and 'certutil -store Root > C:\\nps_root_cert_store.txt'",
+      "Collect event log configuration: 'wevtutil gl Security > C:\\security_log_config.txt' and 'wevtutil gl System > C:\\system_log_config.txt'",
+      "TSS full data collection: '.\\TSS.ps1 -Scenario NET_NPS' — run on the NPS server, reproduce the authentication failure, stop when prompted. This collects comprehensive diagnostics including registry, event logs, configuration, and traces.",
+      "Collect NPS SQL logging configuration: 'Get-ItemProperty \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\IAS\\Parameters\" | Select SqlDatabaseConnectionString,SqlLogFileName,SqlLogFrequency | Out-File C:\\nps_sql_config.txt' if SQL logging is configured.",
+      "Collect SPN information: 'setspn -Q IAS/* > C:\\nps_spn_ias.txt' and 'setspn -Q TERMSRV/* > C:\\nps_spn_termsrv.txt' — verifies NPS service principal names.",
+      "Collect group policy information: 'gpresult /H C:\\nps_gpresult.html' — exports applied Group Policy settings including security policies that may affect NPS."
     ]
   },
   "playbooks": {
@@ -97,33 +142,83 @@
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-Service IAS | Select Status,StartType", "expect": "Status: Running" },
-            { "action": "Get-WinEvent -LogName Security | Where Id -eq 6273 | Select -First 5 | Format-List", "expect": "Note Reason Code field — this drives the entire investigation" },
-            { "action": "Reason Code reference: 16=EAP method mismatch, 22=account not found, 23=wrong password, 48=no policy matched, 65=EAP negotiation failed", "expect": "Match reason code to root cause category" }
+            {
+              "action": "Get-Service IAS | Select Name,Status,StartType,DisplayName",
+              "expect": "Status: Running, StartType: Automatic"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" | Select -First 5 | Format-List TimeCreated,Message",
+              "expect": "Note Reason Code field (field 9) — this drives the entire investigation"
+            },
+            {
+              "action": "Reason Code reference: 16=EAP method mismatch, 22=account not found, 23=wrong password, 48=no policy matched, 65=EAP negotiation failed, 66=account locked, 67=account expired, 68=account disabled, 69=password expired, 70=dial-in denied",
+              "expect": "Match reason code to root cause category"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Get-ADUser <username> -Properties Enabled,LockedOut,PasswordExpired,AccountExpirationDate | Select *", "expect": "Account enabled, not locked, password not expired" },
-            { "action": "netsh nps show client", "expect": "NAS device IP listed with correct shared secret — trailing space in secret causes all auths to fail" },
-            { "action": "netsh nps show np", "expect": "Network policies listed in correct order — first matching policy wins" }
+            {
+              "action": "Get-ADUser <username> -Properties Enabled,LockedOut,PasswordExpired,AccountExpirationDate,msNPAllowDialin | Select *",
+              "expect": "Account enabled, not locked, password not expired, msNPAllowDialin not set to $false"
+            },
+            {
+              "action": "netsh nps show client",
+              "expect": "NAS device IP listed with correct shared secret — trailing space in secret causes all auths to fail"
+            },
+            {
+              "action": "netsh nps show np",
+              "expect": "Network policies listed in correct order — first matching policy wins; verify policy conditions match request attributes"
+            },
+            {
+              "action": "netsh nps show crp",
+              "expect": "Connection Request Policies listed in correct order — CRP must match before Network Policies are evaluated"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Unlock-ADAccount -Identity <user> (if Reason 23 and account locked)", "expect": "Account unlocked — retry authentication" },
-            { "action": "Verify and re-enter RADIUS shared secret on both NPS and NAS device (if Reason 16 or auth fails silently)", "expect": "Secrets match byte-for-byte including case and special characters" },
-            { "action": "Reorder or fix NPS Network Policy conditions to match the request attributes (if Reason 48)", "expect": "Policy now matches — check NAS-Port-Type, Windows Groups, and NAS-IP-Address conditions" }
+            {
+              "action": "Unlock-ADAccount -Identity <user> (if Reason 23 and account locked)",
+              "expect": "Account unlocked — retry authentication"
+            },
+            {
+              "action": "Verify and re-enter RADIUS shared secret on both NPS and NAS device (if Reason 16 or auth fails silently)",
+              "expect": "Secrets match byte-for-byte including case and special characters — use PowerShell to compare"
+            },
+            {
+              "action": "Reorder or fix NPS Network Policy conditions to match the request attributes (if Reason 48)",
+              "expect": "Policy now matches — check NAS-Port-Type, Windows Groups, and NAS-IP-Address conditions"
+            },
+            {
+              "action": "Set-ADUser <user> -Clear msNPAllowDialin (if msNPAllowDialin=$false)",
+              "expect": "Dial-in permission cleared to allow NPS policy control"
+            },
+            {
+              "action": "Reset user password and force change at next logon (if Reason 23 or 69)",
+              "expect": "Password reset — user must authenticate with new password"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-WinEvent -LogName Security | Where Id -eq 6272 | Select -First 3 | Format-List", "expect": "Event 6272 = authentication succeeded — confirms fix worked" }
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3 | Format-List TimeCreated,Message",
+              "expect": "Event 6272 = authentication succeeded — confirms fix worked"
+            },
+            {
+              "action": "Test authentication from affected client device or NAS",
+              "expect": "Authentication succeeds without errors"
+            }
           ]
         }
       ]
@@ -133,31 +228,419 @@
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-WinEvent -LogName Security | Where Id -eq 6273 | Select -First 3 | Format-List", "expect": "Reason Code 65 = EAP negotiation failed; note the full reason description" },
-            { "action": "Get-ChildItem Cert:\\LocalMachine\\My | Where Subject -like '*<NPS FQDN>*' | Select Subject,NotAfter,EnhancedKeyUsageList", "expect": "NPS server cert present, not expired, has Server Authentication EKU" }
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" | Select -First 3 | Format-List TimeCreated,Message",
+              "expect": "Reason Code 65 = EAP negotiation failed; note the full reason description"
+            },
+            {
+              "action": "Get-ChildItem Cert:\\LocalMachine\\My | Where Subject -like '*<NPS FQDN>*' | Select Subject,Thumbprint,NotAfter,Issuer,EnhancedKeyUsageList,SubjectAlternativeNames",
+              "expect": "NPS server cert present, not expired, has Server Authentication EKU (OID 1.3.6.1.5.5.7.3.1)"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "certutil -verify -urlfetch C:\\nps_server.cer", "expect": "CRL and OCSP checks pass — if CRL unreachable, NPS rejects EAP-TLS by default" },
-            { "action": "Get-ChildItem Cert:\\LocalMachine\\Root | Where Subject -like '*<CA name>*'", "expect": "Issuing CA root cert in Trusted Root CAs on NPS server" },
-            { "action": "On client: certutil -store My — check client cert Subject, NotAfter, and EKU", "expect": "Client cert has Client Authentication EKU (OID 1.3.6.1.5.5.7.3.2), not expired, correct SAN or CN" }
+            {
+              "action": "certutil -store My <NPS_FQDN> C:\\nps_server.cer; certutil -verify -urlfetch C:\\nps_server.cer",
+              "expect": "CRL and OCSP checks pass — if CRL unreachable, NPS rejects EAP-TLS by default"
+            },
+            {
+              "action": "Get-ChildItem Cert:\\LocalMachine\\Root | Where Subject -like '*<CA name>*' | Select Subject,Thumbprint,NotAfter",
+              "expect": "Issuing CA root cert in Trusted Root CAs on NPS server"
+            },
+            {
+              "action": "On client: certutil -store My — check client cert Subject, NotAfter, EKU, and SAN",
+              "expect": "Client cert has Client Authentication EKU (OID 1.3.6.1.5.5.7.3.2), not expired, correct SAN or CN matching user principal name"
+            },
+            {
+              "action": "On client: Get-ChildItem Cert:\\LocalMachine\\Root | Where Subject -like '*<CA name>*'",
+              "expect": "Issuing CA root cert in Trusted Root CAs on client device"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Re-enroll NPS server cert via certlm.msc > Personal > Request new certificate (if expired)", "expect": "New cert enrolled — update EAP type in NPS Network Policy to select new cert" },
-            { "action": "Push CA root cert to clients via GPO: Computer Config > Windows Settings > Security Settings > Public Key Policies > Trusted Root CAs", "expect": "Clients now trust the NPS server certificate chain" }
+            {
+              "action": "Re-enroll NPS server cert via certlm.msc > Personal > Request new certificate (if expired)",
+              "expect": "New cert enrolled — update EAP type in NPS Network Policy to select new certificate"
+            },
+            {
+              "action": "Push CA root cert to clients via GPO: Computer Config > Windows Settings > Security Settings > Public Key Policies > Trusted Root CAs",
+              "expect": "Clients now trust the NPS server certificate chain"
+            },
+            {
+              "action": "Configure CRL distribution points to be accessible from NPS server and clients",
+              "expect": "CRL checks pass — NPS accepts certificates with valid revocation status"
+            },
+            {
+              "action": "Temporarily disable revocation checking for testing: NPS console > Network Policy > Constraints > Authentication > EAP Types > Edit > Validate Server Certificate > Uncheck",
+              "expect": "EAP-TLS succeeds with revocation checking disabled — use only for troubleshooting"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-WinEvent -LogName Security | Where Id -eq 6272 | Select -First 3 | Format-List", "expect": "Event 6272 = authentication succeeded with EAP-TLS" }
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3 | Format-List TimeCreated,Message",
+              "expect": "Event 6272 = authentication succeeded with EAP-TLS"
+            },
+            {
+              "action": "Test authentication from affected client device",
+              "expect": "EAP-TLS authentication succeeds without certificate errors"
+            }
+          ]
+        }
+      ]
+    },
+    "peap_mschapv2_failure": {
+      "title": "PEAP-MSCHAPv2 authentication failing",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" | Select -First 5 | Format-List TimeCreated,Message",
+              "expect": "Reason Code 23 (incorrect password), 22 (account not found), or 65 (EAP negotiation failed)"
+            },
+            {
+              "action": "Get-ChildItem Cert:\\LocalMachine\\My | Where Subject -like '*<NPS FQDN>*' | Select Subject,NotAfter,Issuer",
+              "expect": "NPS server cert present and valid"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Get-ADUser <username> -Properties Enabled,LockedOut,PasswordExpired,AccountExpirationDate,msNPAllowDialin | Select *",
+              "expect": "Account enabled, not locked, password not expired"
+            },
+            {
+              "action": "Review NPS IAS log: Get-Content C:\\Windows\\System32\\LogFiles\\IN*.log | Select-String '<username>'",
+              "expect": "Check User-Name format sent by NAS — should be domain\\user or user@domain"
+            },
+            {
+              "action": "On client: verify NPS server certificate is in Trusted Root CAs",
+              "expect": "Client trusts NPS server certificate or 'Validate server certificate' is disabled in client PEAP settings"
+            },
+            {
+              "action": "Test authentication with known good credentials",
+              "expect": "If good credentials work, issue is with the specific user account or password"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Unlock-ADAccount -Identity <user> (if account locked)",
+              "expect": "Account unlocked — retry authentication"
+            },
+            {
+              "action": "Reset user password: Set-ADAccountPassword -Identity <user> -Reset -NewPassword (ConvertTo-SecureString -AsPlainText '<new_password>' -Force)",
+              "expect": "Password reset — user authenticates with new password"
+            },
+            {
+              "action": "Configure NAS to send correct User-Name format (domain\\user or user@domain)",
+              "expect": "NPS receives correct username format and can locate the AD account"
+            },
+            {
+              "action": "Push NPS server CA certificate to clients via GPO if 'Validate server certificate' is enabled",
+              "expect": "Clients trust NPS server certificate chain"
+            },
+            {
+              "action": "Disable 'Validate server certificate' on clients if using self-signed NPS certificate (not recommended for production)",
+              "expect": "Clients accept NPS server certificate without validation"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3 | Format-List TimeCreated,Message",
+              "expect": "Event 6272 = authentication succeeded with PEAP-MSCHAPv2"
+            },
+            {
+              "action": "Test authentication from affected client device",
+              "expect": "PEAP-MSCHAPv2 authentication succeeds"
+            }
+          ]
+        }
+      ]
+    },
+    "radius_proxy_misrouting": {
+      "title": "RADIUS proxy misrouting to backend servers",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "netsh nps show config",
+              "expect": "NPS configured as RADIUS proxy with Remote RADIUS Server Groups defined"
+            },
+            {
+              "action": "netsh nps show remoteserver",
+              "expect": "Backend RADIUS server IPs and shared secrets are configured"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" | Select -First 5 | Format-List TimeCreated,Message",
+              "expect": "Reason Code indicates proxy communication failure or no policy matched"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Test-NetConnection -ComputerName <backend_NPS_IP> -Port 1812",
+              "expect": "TCP/UDP connectivity to backend NPS on port 1812 succeeds"
+            },
+            {
+              "action": "netsh nps show crp",
+              "expect": "Connection Request Policy with realm suffix conditions is configured and enabled"
+            },
+            {
+              "action": "Review NPS IAS log for proxy forwarding attempts",
+              "expect": "Log shows which backend server the request was forwarded to and the response"
+            },
+            {
+              "action": "Verify shared secret matches between proxy and backend NPS",
+              "expect": "Shared secrets are identical on both proxy and backend server"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Add or correct realm suffix routing rule in Connection Request Policy",
+              "expect": "Requests with matching realm suffix are routed to correct backend server group"
+            },
+            {
+              "action": "Configure firewall rules to allow UDP 1812/1813 between proxy and backend NPS",
+              "expect": "Network connectivity established between proxy and backend servers"
+            },
+            {
+              "action": "Update shared secret on both proxy and backend NPS to match exactly",
+              "expect": "Shared secrets match — proxy can authenticate to backend NPS"
+            },
+            {
+              "action": "Configure DNS resolution for backend NPS FQDNs if using FQDN in remote server configuration",
+              "expect": "Proxy can resolve backend NPS hostnames"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3 | Format-List TimeCreated,Message",
+              "expect": "Event 6272 = authentication succeeded via proxy"
+            },
+            {
+              "action": "Review NPS IAS log for successful proxy forwarding",
+              "expect": "Log shows request forwarded to backend and Access-Accept received"
+            },
+            {
+              "action": "Test authentication from client through proxy to backend",
+              "expect": "Authentication succeeds through proxy"
+            }
+          ]
+        }
+      ]
+    },
+    "network_policy_match_failure": {
+      "title": "No Network Policy matched (Reason Code 48)",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" | Select -First 5 | Format-List TimeCreated,Message",
+              "expect": "Reason Code 48 = no NPS policy matched request"
+            },
+            {
+              "action": "netsh nps show crp",
+              "expect": "Connection Request Policies are configured and enabled"
+            },
+            {
+              "action": "netsh nps show np",
+              "expect": "Network Policies are configured, enabled, and in correct order"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Review NPS IAS log: Get-Content C:\\Windows\\System32\\LogFiles\\IN*.log | Select-String '<username>'",
+              "expect": "Log shows NAS-Port-Type, NAS-IP-Address, Called-Station-Id, and other request attributes"
+            },
+            {
+              "action": "Compare request attributes to Connection Request Policy conditions",
+              "expect": "At least one CRP condition must match for Network Policies to be evaluated"
+            },
+            {
+              "action": "Compare request attributes to Network Policy conditions",
+              "expect": "At least one NP condition must match for the policy to apply"
+            },
+            {
+              "action": "Check if policies are disabled or have 'Grant Access' vs 'Deny Access' settings",
+              "expect": "Policies are enabled and configured to grant access"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Enable disabled Connection Request Policy or Network Policy",
+              "expect": "Policy is now evaluated during authentication"
+            },
+            {
+              "action": "Adjust NAS-Port-Type condition to match the actual NAS type (Ethernet, Wireless, VPN, etc.)",
+              "expect": "Condition matches the NAS-Port-Type sent by the NAS device"
+            },
+            {
+              "action": "Add or correct Windows Group condition to include the authenticating user's group membership",
+              "expect": "User's group membership matches the policy condition"
+            },
+            {
+              "action": "Reorder Network Policies so that more specific policies are evaluated before generic ones",
+              "expect": "First matching policy wins — ensure correct policy applies"
+            },
+            {
+              "action": "Create a catch-all policy with minimal conditions if appropriate for the environment",
+              "expect": "Requests that don't match specific policies fall through to catch-all policy"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3 | Format-List TimeCreated,Message",
+              "expect": "Event 6272 = authentication succeeded — policy matched"
+            },
+            {
+              "action": "Review NPS IAS log for policy name that matched",
+              "expect": "Log shows which Network Policy granted access"
+            },
+            {
+              "action": "Test authentication from affected client or NAS",
+              "expect": "Authentication succeeds with correct policy applied"
+            }
+          ]
+        }
+      ]
+    },
+    "vlan_assignment_failure": {
+      "title": "VLAN assignment not working via RADIUS",
+      "severity": "medium",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "netsh nps show np",
+              "expect": "Network Policy includes Tunnel-Pvt-Group-ID (attribute 81) or other VLAN-related attributes"
+            },
+            {
+              "action": "Review NPS console: Network Policy > Settings > RADIUS Attributes",
+              "expect": "VLAN ID is correctly configured in standard or vendor-specific attributes"
+            },
+            {
+              "action": "Check NAS device configuration for RADIUS VLAN assignment",
+              "expect": "NAS is configured to use RADIUS attributes for VLAN assignment"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Review NPS IAS log for attributes sent in Access-Accept packet",
+              "expect": "Log shows Tunnel-Pvt-Group-ID and other VLAN attributes in the response"
+            },
+            {
+              "action": "Capture RADIUS packet trace on NPS or NAS",
+              "expect": "Access-Accept packet contains VLAN attributes with correct values"
+            },
+            {
+              "action": "Check switch logs for VLAN assignment errors",
+              "expect": "Switch logs show whether VLAN assignment was attempted and any errors"
+            },
+            {
+              "action": "Verify VLAN ID exists on the switch and is configured on the correct ports",
+              "expect": "VLAN ID is valid and configured on the switch"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Configure correct Tunnel-Pvt-Group-ID attribute in NPS Network Policy",
+              "expect": "Attribute value matches the desired VLAN ID"
+            },
+            {
+              "action": "Configure NAS device to use RADIUS vendor-specific attributes if required for the specific switch vendor",
+              "expect": "NAS interprets vendor-specific VLAN attributes correctly"
+            },
+            {
+              "action": "Enable RADIUS-assigned VLAN on switch ports",
+              "expect": "Switch ports accept VLAN assignments from RADIUS"
+            },
+            {
+              "action": "Verify VLAN exists and is active on the switch",
+              "expect": "VLAN is configured and operational on the switch"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Test authentication and verify client is placed in correct VLAN",
+              "expect": "Client device is assigned to the correct VLAN based on policy"
+            },
+            {
+              "action": "Check client IP address and verify it matches the VLAN subnet",
+              "expect": "Client receives IP address from the correct VLAN subnet"
+            },
+            {
+              "action": "Review switch port status to confirm VLAN assignment",
+              "expect": "Switch port shows the assigned VLAN for the authenticated client"
+            }
           ]
         }
       ]
