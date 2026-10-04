@@ -3,7 +3,6 @@
   "label": "802.1x Wired",
   "icon": "🔌",
   "domain": "networking",
-  "description": "IEEE 802.1X wired authentication provides port-based network access control for wired Ethernet connections. The Wired AutoConfig service (dot3svc) enforces authentication using EAP methods such as EAP-TLS (certificate-based) or PEAP-MSCHAPv2 (username/password). Clients authenticate to a RADIUS server (typically Microsoft NPS) which authorizes network access and can assign VLANs. This scenario covers troubleshooting authentication failures, certificate issues, switch port configuration, NPS policy matching, and wired profile deployment via Group Policy.",
   "scoping": {
     "l1": [
       "What Windows version is the authenticating client running? (Get-ComputerInfo | Select OsName,OsVersion,WindowsVersion)",
@@ -132,245 +131,512 @@
   "playbooks": {
     "port_unauthorized": {
       "title": "Switchport stuck in unauthorized state — no network",
-      "description": "Troubleshoots 802.1x wired authentication failures where the switch port remains in an unauthorized state, blocking all network access. This playbook covers Wired AutoConfig service issues, GPO profile deployment, certificate problems, and NPS authentication failures.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-Service dot3svc | Select Name,Status,StartType,DisplayName", "expect": "Status: Running, StartType: Automatic — service must be running for 802.1x to function" },
-            { "action": "On switch: show dot1x interface <port>", "expect": "Auth state: Unauthorized — confirms 802.1x is blocking the port" },
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5632 or EventID=5633)]]\" -MaxEvents 10 | Format-List TimeCreated,Id,Message", "expect": "Event 5633 = 802.1x auth failed — note the error code for root cause analysis" },
-            { "action": "Get-NetAdapter | Where Status -eq 'Up' | Select Name,Status", "expect": "Ethernet adapter is connected and showing 'Up' status" }
+            {
+              "action": "Get-Service dot3svc | Select Name,Status,StartType,DisplayName",
+              "expect": "Status: Running, StartType: Automatic — service must be running for 802.1x to function"
+            },
+            {
+              "action": "On switch: show dot1x interface <port>",
+              "expect": "Auth state: Unauthorized — confirms 802.1x is blocking the port"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5632 or EventID=5633)]]\" -MaxEvents 10 | Format-List TimeCreated,Id,Message",
+              "expect": "Event 5633 = 802.1x auth failed — note the error code for root cause analysis"
+            },
+            {
+              "action": "Get-NetAdapter | Where Status -eq 'Up' | Select Name,Status",
+              "expect": "Ethernet adapter is connected and showing 'Up' status"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" -MaxEvents 10 on NPS server | Format-List TimeCreated,Message", "expect": "Reason Code identifies root cause — 22=account not found, 23=wrong password, 48=no policy matched, 65=EAP failure" },
-            { "action": "netsh lan show profiles", "expect": "Correct 802.1x wired profile present on client" },
-            { "action": "gpresult /r | findstr -i '802.3\\|wired\\|IEEE'", "expect": "Wired Network IEEE 802.3 GPO listed in Applied GPOs" },
-            { "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Where {$_.EnhancedKeyUsageList -like \"*Client Authentication*\"} | Select Subject,NotAfter", "expect": "Valid machine certificate with Client Authentication EKU exists and is not expired" }
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" -MaxEvents 10 on NPS server | Format-List TimeCreated,Message",
+              "expect": "Reason Code identifies root cause — 22=account not found, 23=wrong password, 48=no policy matched, 65=EAP failure"
+            },
+            {
+              "action": "netsh lan show profiles",
+              "expect": "Correct 802.1x wired profile present on client"
+            },
+            {
+              "action": "gpresult /r | findstr -i '802.3\\|wired\\|IEEE'",
+              "expect": "Wired Network IEEE 802.3 GPO listed in Applied GPOs"
+            },
+            {
+              "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Where {$_.EnhancedKeyUsageList -like \"*Client Authentication*\"} | Select Subject,NotAfter",
+              "expect": "Valid machine certificate with Client Authentication EKU exists and is not expired"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Set-Service dot3svc -StartupType Automatic; Start-Service dot3svc; Get-Service dot3svc", "expect": "Wired AutoConfig service running and set to Automatic" },
-            { "action": "gpupdate /force /target:computer", "expect": "Wired 802.1x profile refreshed from GPO — verify with netsh lan show profiles" },
-            { "action": "On switch: shutdown then no shutdown on the port", "expect": "Forces new authentication cycle after client-side fix" },
-            { "action": "If certificate issue: Ensure certificate has private key and correct EKU — re-enroll if needed", "expect": "Valid certificate present with required properties" }
+            {
+              "action": "Set-Service dot3svc -StartupType Automatic; Start-Service dot3svc; Get-Service dot3svc",
+              "expect": "Wired AutoConfig service running and set to Automatic"
+            },
+            {
+              "action": "gpupdate /force /target:computer",
+              "expect": "Wired 802.1x profile refreshed from GPO — verify with netsh lan show profiles"
+            },
+            {
+              "action": "On switch: shutdown then no shutdown on the port",
+              "expect": "Forces new authentication cycle after client-side fix"
+            },
+            {
+              "action": "If certificate issue: Ensure certificate has private key and correct EKU — re-enroll if needed",
+              "expect": "Valid certificate present with required properties"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "On switch: show authentication sessions interface <port>", "expect": "Auth state: Authorized, correct VLAN assigned" },
-            { "action": "ipconfig /all on client", "expect": "Valid IP address received from correct VLAN scope" },
-            { "action": "Test network connectivity: ping <gateway IP>", "expect": "Successful ping to default gateway confirms network access" }
+            {
+              "action": "On switch: show authentication sessions interface <port>",
+              "expect": "Auth state: Authorized, correct VLAN assigned"
+            },
+            {
+              "action": "ipconfig /all on client",
+              "expect": "Valid IP address received from correct VLAN scope"
+            },
+            {
+              "action": "Test network connectivity: ping <gateway IP>",
+              "expect": "Successful ping to default gateway confirms network access"
+            }
           ]
         }
       ]
     },
     "vlan_not_assigned": {
       "title": "Wrong VLAN assigned after wired 802.1x authentication",
-      "description": "Addresses scenarios where 802.1x authentication succeeds but the client is placed in an incorrect VLAN. This typically involves NPS RADIUS attribute configuration issues, specifically Tunnel-Type, Tunnel-Medium-Type, and Tunnel-Pvt-Group-ID values.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "On switch: show authentication sessions interface <port>", "expect": "Auth succeeds but VLAN shown is wrong" },
-            { "action": "ipconfig /all on client", "expect": "IP is in wrong subnet — confirms VLAN assignment issue not auth issue" },
-            { "action": "On switch: show interface <port> switchport", "expect": "Verify the port is actually in the VLAN shown by authentication sessions" }
+            {
+              "action": "On switch: show authentication sessions interface <port>",
+              "expect": "Auth succeeds but VLAN shown is wrong"
+            },
+            {
+              "action": "ipconfig /all on client",
+              "expect": "IP is in wrong subnet — confirms VLAN assignment issue not auth issue"
+            },
+            {
+              "action": "On switch: show interface <port> switchport",
+              "expect": "Verify the port is actually in the VLAN shown by authentication sessions"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "netsh nps show np — check RADIUS attributes on matching Network Policy", "expect": "Tunnel-Type=13, Tunnel-Medium-Type=6, Tunnel-Pvt-Group-ID=<VLAN ID as string>" },
-            { "action": "On switch: show running-config interface <port>", "expect": "Confirm switchport is configured to accept RADIUS-assigned VLAN (e.g., 'authentication port-control auto', 'dot1x pae authenticator')" },
-            { "action": "Check NPS event log for VLAN assignment: Get-WinEvent -LogName Microsoft-Windows-NPS/Operational -MaxEvents 20", "expect": "Events show which Network Policy matched and what RADIUS attributes were sent" }
+            {
+              "action": "netsh nps show np — check RADIUS attributes on matching Network Policy",
+              "expect": "Tunnel-Type=13, Tunnel-Medium-Type=6, Tunnel-Pvt-Group-ID=<VLAN ID as string>"
+            },
+            {
+              "action": "On switch: show running-config interface <port>",
+              "expect": "Confirm switchport is configured to accept RADIUS-assigned VLAN (e.g., 'authentication port-control auto', 'dot1x pae authenticator')"
+            },
+            {
+              "action": "Check NPS event log for VLAN assignment: Get-WinEvent -LogName Microsoft-Windows-NPS/Operational -MaxEvents 20",
+              "expect": "Events show which Network Policy matched and what RADIUS attributes were sent"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "In NPS console: correct Tunnel-Pvt-Group-ID to the correct VLAN ID as a string value", "expect": "VLAN ID corrected — note it must be a string not integer type (e.g., \"10\" not 10)" },
-            { "action": "Verify Tunnel-Type is set to 13 (VLAN) and Tunnel-Medium-Type is set to 6 (802)", "expect": "Both attributes correctly configured in NPS Network Policy" },
-            { "action": "If using vendor-specific attributes, ensure switch supports the VSA format used", "expect": "VSA configuration matches switch requirements" }
+            {
+              "action": "In NPS console: correct Tunnel-Pvt-Group-ID to the correct VLAN ID as a string value",
+              "expect": "VLAN ID corrected — note it must be a string not integer type (e.g., \"10\" not 10)"
+            },
+            {
+              "action": "Verify Tunnel-Type is set to 13 (VLAN) and Tunnel-Medium-Type is set to 6 (802)",
+              "expect": "Both attributes correctly configured in NPS Network Policy"
+            },
+            {
+              "action": "If using vendor-specific attributes, ensure switch supports the VSA format used",
+              "expect": "VSA configuration matches switch requirements"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Re-authenticate: on switch shutdown then no shutdown on port", "expect": "Client re-authenticates and receives correct VLAN" },
-            { "action": "ipconfig /all on client", "expect": "IP address in correct VLAN subnet" },
-            { "action": "On switch: show authentication sessions interface <port>", "expect": "Shows correct VLAN ID in session information" }
+            {
+              "action": "Re-authenticate: on switch shutdown then no shutdown on port",
+              "expect": "Client re-authenticates and receives correct VLAN"
+            },
+            {
+              "action": "ipconfig /all on client",
+              "expect": "IP address in correct VLAN subnet"
+            },
+            {
+              "action": "On switch: show authentication sessions interface <port>",
+              "expect": "Shows correct VLAN ID in session information"
+            }
           ]
         }
       ]
     },
     "eaptls_cert_failure": {
       "title": "EAP-TLS certificate authentication failure",
-      "description": "Troubleshoots EAP-TLS authentication failures related to client certificate issues. Covers certificate validity, chain trust, EKU requirements, private key availability, and NTAuth store configuration for Kerberos-based authentication.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5633)]]\" -MaxEvents 5 | Format-List Message", "expect": "Event 5633 shows EAP-TLS specific error code (often related to certificate issues)" },
-            { "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Where {$_.Subject -like \"*<machine FQDN>*\"} | Select Subject,NotAfter,HasPrivateKey", "expect": "Certificate exists, is not expired, and has private key" },
-            { "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Where {$_.Subject -like \"*<machine FQDN>*\"} | Select EnhancedKeyUsageList", "expect": "Enhanced Key Usage includes Client Authentication (1.3.6.1.5.5.7.3.2)" }
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5633)]]\" -MaxEvents 5 | Format-List Message",
+              "expect": "Event 5633 shows EAP-TLS specific error code (often related to certificate issues)"
+            },
+            {
+              "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Where {$_.Subject -like \"*<machine FQDN>*\"} | Select Subject,NotAfter,HasPrivateKey",
+              "expect": "Certificate exists, is not expired, and has private key"
+            },
+            {
+              "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Where {$_.Subject -like \"*<machine FQDN>*\"} | Select EnhancedKeyUsageList",
+              "expect": "Enhanced Key Usage includes Client Authentication (1.3.6.1.5.5.7.3.2)"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "certutil -verify -urlfetch <thumbprint>", "expect": "Certificate chain validates successfully, CRL/OCSP is reachable" },
-            { "action": "certutil -store -enterprise NTAuthCertificates", "expect": "Issuing CA is listed in NTAuthCertificates store (required for Kerberos EAP-TLS)" },
-            { "action": "Get-ChildItem -Path Cert:\\LocalMachine\\Root | Where Issuer -like \"*<issuing CA>*\"", "expect": "Root CA certificate is present in trusted root store" },
-            { "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Where {$_.Subject -like \"*<machine FQDN>*\"} | Select SubjectAlternativeNames", "expect": "SAN contains machine FQDN or CN matches FQDN" }
+            {
+              "action": "certutil -verify -urlfetch <thumbprint>",
+              "expect": "Certificate chain validates successfully, CRL/OCSP is reachable"
+            },
+            {
+              "action": "certutil -store -enterprise NTAuthCertificates",
+              "expect": "Issuing CA is listed in NTAuthCertificates store (required for Kerberos EAP-TLS)"
+            },
+            {
+              "action": "Get-ChildItem -Path Cert:\\LocalMachine\\Root | Where Issuer -like \"*<issuing CA>*\"",
+              "expect": "Root CA certificate is present in trusted root store"
+            },
+            {
+              "action": "Get-ChildItem -Path Cert:\\LocalMachine\\My | Where {$_.Subject -like \"*<machine FQDN>*\"} | Select SubjectAlternativeNames",
+              "expect": "SAN contains machine FQDN or CN matches FQDN"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "If certificate expired: Request new certificate from certificate template", "expect": "New certificate issued with valid dates" },
-            { "action": "If missing private key: Re-enroll for certificate using certmgr.msc or auto-enrollment", "expect": "Certificate now has HasPrivateKey = $true" },
-            { "action": "If CA not in NTAuth: certutil -addstore -enterprise NTAuthCertificates <CA cert file>", "expect": "CA added to NTAuthCertificates store" },
-            { "action": "If chain validation fails: Ensure intermediate CAs are in appropriate certificate stores", "expect": "Complete certificate chain from leaf to root is present" }
+            {
+              "action": "If certificate expired: Request new certificate from certificate template",
+              "expect": "New certificate issued with valid dates"
+            },
+            {
+              "action": "If missing private key: Re-enroll for certificate using certmgr.msc or auto-enrollment",
+              "expect": "Certificate now has HasPrivateKey = $true"
+            },
+            {
+              "action": "If CA not in NTAuth: certutil -addstore -enterprise NTAuthCertificates <CA cert file>",
+              "expect": "CA added to NTAuthCertificates store"
+            },
+            {
+              "action": "If chain validation fails: Ensure intermediate CAs are in appropriate certificate stores",
+              "expect": "Complete certificate chain from leaf to root is present"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Re-authenticate: disable/enable Ethernet adapter or bounce switch port", "expect": "EAP-TLS authentication succeeds" },
-            { "action": "On switch: show authentication sessions interface <port>", "expect": "Auth state: Authorized, method shows EAP-TLS" },
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5632)]]\" -MaxEvents 5", "expect": "Event 5632 indicates successful 802.1x authentication request" }
+            {
+              "action": "Re-authenticate: disable/enable Ethernet adapter or bounce switch port",
+              "expect": "EAP-TLS authentication succeeds"
+            },
+            {
+              "action": "On switch: show authentication sessions interface <port>",
+              "expect": "Auth state: Authorized, method shows EAP-TLS"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5632)]]\" -MaxEvents 5",
+              "expect": "Event 5632 indicates successful 802.1x authentication request"
+            }
           ]
         }
       ]
     },
     "peap_mschapv2_failure": {
       "title": "PEAP-MSCHAPv2 authentication failure",
-      "description": "Troubleshoots PEAP-MSCHAPv2 authentication failures involving username/password authentication. Covers password expiration, server certificate validation, NPS configuration, and user account issues.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5633)]]\" -MaxEvents 5 | Format-List Message", "expect": "Event 5633 shows PEAP-MSCHAPv2 specific error (often password or server cert related)" },
-            { "action": "Get-ADUser <username> -Properties PasswordExpired,PasswordLastSet | Select PasswordExpired,PasswordLastSet", "expect": "Password is not expired and account is enabled" },
-            { "action": "netsh lan show profile name=\"<profile>\"", "expect": "Profile configured for PEAP with MSCHAPv2 as inner method" }
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5633)]]\" -MaxEvents 5 | Format-List Message",
+              "expect": "Event 5633 shows PEAP-MSCHAPv2 specific error (often password or server cert related)"
+            },
+            {
+              "action": "Get-ADUser <username> -Properties PasswordExpired,PasswordLastSet | Select PasswordExpired,PasswordLastSet",
+              "expect": "Password is not expired and account is enabled"
+            },
+            {
+              "action": "netsh lan show profile name=\"<profile>\"",
+              "expect": "Profile configured for PEAP with MSCHAPv2 as inner method"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Get-ChildItem -Path Cert:\\LocalMachine\\Root | Where Subject -like \"*<NPS server cert issuer>*\"", "expect": "NPS/RADIUS server certificate issuing CA is in trusted root store" },
-            { "action": "On NPS server: Check NPS server certificate validity and chain", "expect": "NPS server certificate is valid, trusted, and has Server Authentication EKU" },
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" -MaxEvents 10 on NPS server", "expect": "Reason Code indicates specific failure (23=wrong password, etc.)" },
-            { "action": "Test user credentials: Test login to domain with same credentials", "expect": "User can successfully authenticate to AD domain" }
+            {
+              "action": "Get-ChildItem -Path Cert:\\LocalMachine\\Root | Where Subject -like \"*<NPS server cert issuer>*\"",
+              "expect": "NPS/RADIUS server certificate issuing CA is in trusted root store"
+            },
+            {
+              "action": "On NPS server: Check NPS server certificate validity and chain",
+              "expect": "NPS server certificate is valid, trusted, and has Server Authentication EKU"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6273)]]\" -MaxEvents 10 on NPS server",
+              "expect": "Reason Code indicates specific failure (23=wrong password, etc.)"
+            },
+            {
+              "action": "Test user credentials: Test login to domain with same credentials",
+              "expect": "User can successfully authenticate to AD domain"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "If password expired: User must change password (Set-ADUser -ChangePasswordAtLogon $true)", "expect": "User can change password and new password works" },
-            { "action": "If server cert not trusted: Add issuing CA to client's trusted root store", "expect": "NPS server certificate now validates on client" },
-            { "action": "If account locked: Unlock account (Unlock-ADAccount <username>)", "expect": "Account unlocked and can authenticate" },
-            { "action": "Temporarily disable server cert validation for testing (not production): In wired profile, uncheck 'Validate server certificate'", "expect": "If auth succeeds with validation disabled, focus on server certificate trust chain" }
+            {
+              "action": "If password expired: User must change password (Set-ADUser -ChangePasswordAtLogon $true)",
+              "expect": "User can change password and new password works"
+            },
+            {
+              "action": "If server cert not trusted: Add issuing CA to client's trusted root store",
+              "expect": "NPS server certificate now validates on client"
+            },
+            {
+              "action": "If account locked: Unlock account (Unlock-ADAccount <username>)",
+              "expect": "Account unlocked and can authenticate"
+            },
+            {
+              "action": "Temporarily disable server cert validation for testing (not production): In wired profile, uncheck 'Validate server certificate'",
+              "expect": "If auth succeeds with validation disabled, focus on server certificate trust chain"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Re-authenticate: disable/enable Ethernet adapter", "expect": "PEAP-MSCHAPv2 authentication succeeds" },
-            { "action": "On switch: show authentication sessions interface <port>", "expect": "Auth state: Authorized, method shows PEAP" },
-            { "action": "On NPS: Check recent authentication events for success", "expect": "NPS logs show successful authentication for the user" }
+            {
+              "action": "Re-authenticate: disable/enable Ethernet adapter",
+              "expect": "PEAP-MSCHAPv2 authentication succeeds"
+            },
+            {
+              "action": "On switch: show authentication sessions interface <port>",
+              "expect": "Auth state: Authorized, method shows PEAP"
+            },
+            {
+              "action": "On NPS: Check recent authentication events for success",
+              "expect": "NPS logs show successful authentication for the user"
+            }
           ]
         }
       ]
     },
     "switch_port_config": {
       "title": "Switch port 802.1x configuration issues",
-      "description": "Addresses switch-side configuration problems that prevent 802.1x authentication. Covers port control settings, host mode configuration, authentication order, timer settings, and RADIUS server configuration.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "On switch: show running-config interface <port> | include dot1x,authentication", "expect": "802.1x is enabled and configured on the port" },
-            { "action": "On switch: show dot1x interface <port>", "expect": "Dot1x is operational and shows port status" },
-            { "action": "On switch: show authentication sessions interface <port>", "expect": "Shows authentication state and any error conditions" }
+            {
+              "action": "On switch: show running-config interface <port> | include dot1x,authentication",
+              "expect": "802.1x is enabled and configured on the port"
+            },
+            {
+              "action": "On switch: show dot1x interface <port>",
+              "expect": "Dot1x is operational and shows port status"
+            },
+            {
+              "action": "On switch: show authentication sessions interface <port>",
+              "expect": "Shows authentication state and any error conditions"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "On switch: show running-config interface <port> | include port-control", "expect": "Port control is set to 'auto' (enables 802.1x) not 'force-authorized' or 'force-unauthorized'" },
-            { "action": "On switch: Verify RADIUS server configuration: show radius server", "expect": "RADIUS server IP, port (1812/1813), and shared secret are correctly configured" },
-            { "action": "On switch: Check host mode: show running-config interface <port> | include host-mode", "expect": "Host mode matches deployment (single-host, multi-host, multi-auth, or multi-domain)" },
-            { "action": "On switch: Verify authentication order: show running-config | include authentication order", "expect": "Authentication order is appropriate (typically dot1x then mab)" }
+            {
+              "action": "On switch: show running-config interface <port> | include port-control",
+              "expect": "Port control is set to 'auto' (enables 802.1x) not 'force-authorized' or 'force-unauthorized'"
+            },
+            {
+              "action": "On switch: Verify RADIUS server configuration: show radius server",
+              "expect": "RADIUS server IP, port (1812/1813), and shared secret are correctly configured"
+            },
+            {
+              "action": "On switch: Check host mode: show running-config interface <port> | include host-mode",
+              "expect": "Host mode matches deployment (single-host, multi-host, multi-auth, or multi-domain)"
+            },
+            {
+              "action": "On switch: Verify authentication order: show running-config | include authentication order",
+              "expect": "Authentication order is appropriate (typically dot1x then mab)"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "If port-control is wrong: authentication port-control auto (Cisco) or equivalent", "expect": "Port control set to auto, enabling 802.1x negotiation" },
-            { "action": "If RADIUS server misconfigured: Correct IP, ports, and shared secret", "expect": "RADIUS server configuration matches NPS settings exactly" },
-            { "action": "If host mode wrong: Set appropriate host mode for deployment", "expect": "Host mode allows expected number of devices on the port" },
-            { "action": "If timers too aggressive: Adjust dot1x timeout values (tx-period, supp-timeout, max-req)", "expect": "Timers allow sufficient time for EAP negotiation" }
+            {
+              "action": "If port-control is wrong: authentication port-control auto (Cisco) or equivalent",
+              "expect": "Port control set to auto, enabling 802.1x negotiation"
+            },
+            {
+              "action": "If RADIUS server misconfigured: Correct IP, ports, and shared secret",
+              "expect": "RADIUS server configuration matches NPS settings exactly"
+            },
+            {
+              "action": "If host mode wrong: Set appropriate host mode for deployment",
+              "expect": "Host mode allows expected number of devices on the port"
+            },
+            {
+              "action": "If timers too aggressive: Adjust dot1x timeout values (tx-period, supp-timeout, max-req)",
+              "expect": "Timers allow sufficient time for EAP negotiation"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "On switch: show dot1x interface <port>", "expect": "Shows authorized state after client authentication" },
-            { "action": "Test RADIUS connectivity: test aaa group radius <user> <pass> new-code (Cisco)", "expect": "RADIUS connectivity test succeeds" },
-            { "action": "Bounce port: shutdown then no shutdown", "expect": "Client successfully authenticates after port restart" }
+            {
+              "action": "On switch: show dot1x interface <port>",
+              "expect": "Shows authorized state after client authentication"
+            },
+            {
+              "action": "Test RADIUS connectivity: test aaa group radius <user> <pass> new-code (Cisco)",
+              "expect": "RADIUS connectivity test succeeds"
+            },
+            {
+              "action": "Bounce port: shutdown then no shutdown",
+              "expect": "Client successfully authenticates after port restart"
+            }
           ]
         }
       ]
     },
     "mab_fallback_failure": {
       "title": "MAC Authentication Bypass (MAB) fallback not working",
-      "description": "Troubleshoots MAB failures for non-802.1x capable devices like printers, IP phones, and legacy equipment. Covers MAC address database configuration, fallback VLAN assignment, and authentication order issues.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "On switch: show authentication sessions interface <port>", "expect": "Shows authentication state — may be stuck or failed for MAB" },
-            { "action": "On switch: show mac address-table interface <port>", "expect": "Shows MAC address of the device attempting MAB" },
-            { "action": "Check device capabilities: Confirm device does not support 802.1x", "expect": "Device confirmed as non-802.1x capable" }
+            {
+              "action": "On switch: show authentication sessions interface <port>",
+              "expect": "Shows authentication state — may be stuck or failed for MAB"
+            },
+            {
+              "action": "On switch: show mac address-table interface <port>",
+              "expect": "Shows MAC address of the device attempting MAB"
+            },
+            {
+              "action": "Check device capabilities: Confirm device does not support 802.1x",
+              "expect": "Device confirmed as non-802.1x capable"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "On switch: show running-config interface <port> | include authentication event no-response", "expect": "MAB fallback action is configured (e.g., authorize vlan <restricted VLAN>)" },
-            { "action": "On NPS: Check if MAC address is configured as RADIUS client or in user database", "expect": "MAC address exists in authentication database (format varies by implementation)" },
-            { "action": "On switch: Verify authentication order: show running-config | include authentication order", "expect": "Order allows MAB after 802.1x timeout (dot1x mab or similar)" },
-            { "action": "On switch: Check MAB timers: show running-config | include mab timeout", "expect": "MAB timers are configured appropriately" }
+            {
+              "action": "On switch: show running-config interface <port> | include authentication event no-response",
+              "expect": "MAB fallback action is configured (e.g., authorize vlan <restricted VLAN>)"
+            },
+            {
+              "action": "On NPS: Check if MAC address is configured as RADIUS client or in user database",
+              "expect": "MAC address exists in authentication database (format varies by implementation)"
+            },
+            {
+              "action": "On switch: Verify authentication order: show running-config | include authentication order",
+              "expect": "Order allows MAB after 802.1x timeout (dot1x mab or similar)"
+            },
+            {
+              "action": "On switch: Check MAB timers: show running-config | include mab timeout",
+              "expect": "MAB timers are configured appropriately"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "If MAC not in database: Add MAC address to NPS RADIUS clients or user database", "expect": "MAC address now exists in authentication system" },
-            { "action": "If fallback action missing: Configure 'authentication event no-response action authorize vlan <VLAN>'", "expect": "Fallback VLAN configured for unauthorized devices" },
-            { "action": "If authentication order wrong: Set correct order (dot1x before mab for 802.1x-capable devices)", "expect": "Authentication order allows proper fallback sequence" },
-            { "action": "If timers too short: Increase MAB timeout values", "expect": "MAB has sufficient time to complete" }
+            {
+              "action": "If MAC not in database: Add MAC address to NPS RADIUS clients or user database",
+              "expect": "MAC address now exists in authentication system"
+            },
+            {
+              "action": "If fallback action missing: Configure 'authentication event no-response action authorize vlan <VLAN>'",
+              "expect": "Fallback VLAN configured for unauthorized devices"
+            },
+            {
+              "action": "If authentication order wrong: Set correct order (dot1x before mab for 802.1x-capable devices)",
+              "expect": "Authentication order allows proper fallback sequence"
+            },
+            {
+              "action": "If timers too short: Increase MAB timeout values",
+              "expect": "MAB has sufficient time to complete"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "On switch: show authentication sessions interface <port>", "expect": "Shows authorized state via MAB method" },
-            { "action": "Verify device in correct VLAN: show interface <port> switchport", "expect": "Port is in the MAB fallback VLAN" },
-            { "action": "Test device connectivity: Ping from device to gateway", "expect": "Device has network connectivity in restricted VLAN" }
+            {
+              "action": "On switch: show authentication sessions interface <port>",
+              "expect": "Shows authorized state via MAB method"
+            },
+            {
+              "action": "Verify device in correct VLAN: show interface <port> switchport",
+              "expect": "Port is in the MAB fallback VLAN"
+            },
+            {
+              "action": "Test device connectivity: Ping from device to gateway",
+              "expect": "Device has network connectivity in restricted VLAN"
+            }
           ]
         }
       ]

@@ -3,7 +3,6 @@
   "label": "DNS Server",
   "icon": "🖧",
   "domain": "networking",
-  "description": "Windows Server DNS Server role for name resolution, Active Directory integration, DNSSEC, and DNS policies",
   "scoping": {
     "l1": [
       "What Windows Server version and build is the DNS server running? (Get-ComputerInfo | Select OsName,OsVersion,OsBuildNumber)",
@@ -124,37 +123,73 @@
     "resolution_failing_all": {
       "title": "DNS resolution failing — all clients",
       "severity": "high",
-      "description": "Complete DNS resolution failure affecting all clients on the network",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-Service DNS | Select Name,Status,StartType", "expect": "Status: Running, StartType: Automatic — service must be operational" },
-            { "action": "Test-NetConnection -ComputerName <DNS IP> -Port 53", "expect": "TcpTestSucceeded: True — confirms TCP 53 reachable (DNS uses TCP for large responses and zone transfers)" },
-            { "action": "nslookup <failing name> <DNS IP>", "expect": "Returns valid A record — if timeout, SERVFAIL, or NXDOMAIN, server-side issue confirmed" }
+            {
+              "action": "Get-Service DNS | Select Name,Status,StartType",
+              "expect": "Status: Running, StartType: Automatic — service must be operational"
+            },
+            {
+              "action": "Test-NetConnection -ComputerName <DNS IP> -Port 53",
+              "expect": "TcpTestSucceeded: True — confirms TCP 53 reachable (DNS uses TCP for large responses and zone transfers)"
+            },
+            {
+              "action": "nslookup <failing name> <DNS IP>",
+              "expect": "Returns valid A record — if timeout, SERVFAIL, or NXDOMAIN, server-side issue confirmed"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "nslookup <failing name> 127.0.0.1 on the DNS server itself", "expect": "If resolves locally but not from clients, network or firewall is blocking port 53 to clients" },
-            { "action": "Get-WinEvent -LogName 'DNS Server' | Where Id -in 4000,4001,4013 | Select -First 10 | Format-List", "expect": "Event 4013 = waiting for AD; 4000/4001 = zone load failure; determines root cause" },
-            { "action": "Get-DnsServerZone | Select ZoneName,ZoneType,IsDsIntegrated", "expect": "All expected zones present and loaded — missing zones indicate AD integration or zone file issues" }
+            {
+              "action": "nslookup <failing name> 127.0.0.1 on the DNS server itself",
+              "expect": "If resolves locally but not from clients, network or firewall is blocking port 53 to clients"
+            },
+            {
+              "action": "Get-WinEvent -LogName 'DNS Server' | Where Id -in 4000,4001,4013 | Select -First 10 | Format-List",
+              "expect": "Event 4013 = waiting for AD; 4000/4001 = zone load failure; determines root cause"
+            },
+            {
+              "action": "Get-DnsServerZone | Select ZoneName,ZoneType,IsDsIntegrated",
+              "expect": "All expected zones present and loaded — missing zones indicate AD integration or zone file issues"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Clear-DnsServerCache -Force", "expect": "Cache cleared immediately — retry resolution to eliminate stale cache as cause" },
-            { "action": "Restart-Service DNS", "expect": "Service restarts cleanly — verify Event ID 4 (DNS Server started) in DNS Server event log" },
-            { "action": "Get-NetFirewallRule | Where DisplayName -like '*DNS*' | Select DisplayName,Enabled,Direction,Action", "expect": "Inbound rules for port 53 TCP and UDP are Enabled and Allow on appropriate profile" }
+            {
+              "action": "Clear-DnsServerCache -Force",
+              "expect": "Cache cleared immediately — retry resolution to eliminate stale cache as cause"
+            },
+            {
+              "action": "Restart-Service DNS",
+              "expect": "Service restarts cleanly — verify Event ID 4 (DNS Server started) in DNS Server event log"
+            },
+            {
+              "action": "Get-NetFirewallRule | Where DisplayName -like '*DNS*' | Select DisplayName,Enabled,Direction,Action",
+              "expect": "Inbound rules for port 53 TCP and UDP are Enabled and Allow on appropriate profile"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Resolve-DnsName <failing name> -Server <DNS IP>", "expect": "Returns correct IP address with reasonable response time" },
-            { "action": "Test from two clients on different subnets", "expect": "Both resolve correctly — confirms server-wide fix, not network-specific" }
+            {
+              "action": "Resolve-DnsName <failing name> -Server <DNS IP>",
+              "expect": "Returns correct IP address with reasonable response time"
+            },
+            {
+              "action": "Test from two clients on different subnets",
+              "expect": "Both resolve correctly — confirms server-wide fix, not network-specific"
+            }
           ]
         }
       ]
@@ -162,35 +197,65 @@
     "zone_not_loading": {
       "title": "AD-integrated zone not loading",
       "severity": "high",
-      "description": "Active Directory-integrated DNS zone fails to load on Domain Controller",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-DnsServerZone | Where ZoneName -eq '<zone>'", "expect": "Zone should appear in output — if missing, it failed to load from AD partition" },
-            { "action": "Get-WinEvent -LogName 'DNS Server' | Where Id -in 4000,4001,4013 | Select -First 10 | Format-List", "expect": "Event 4013 = waiting for AD (service waiting for AD replication); 4000/4001 = zone load failure" }
+            {
+              "action": "Get-DnsServerZone | Where ZoneName -eq '<zone>'",
+              "expect": "Zone should appear in output — if missing, it failed to load from AD partition"
+            },
+            {
+              "action": "Get-WinEvent -LogName 'DNS Server' | Where Id -in 4000,4001,4013 | Select -First 10 | Format-List",
+              "expect": "Event 4013 = waiting for AD (service waiting for AD replication); 4000/4001 = zone load failure"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "repadmin /showrepl", "expect": "No replication failures across all DCs — if failures exist, fix AD replication first as DNS zones depend on it" },
-            { "action": "nltest /sc_verify:<domain>", "expect": "Secure channel to DC is healthy — broken secure channel prevents AD zone access" },
-            { "action": "klist", "expect": "Valid Kerberos tickets present — if expired, run 'klist purge' then 'gpupdate /force' to refresh" }
+            {
+              "action": "repadmin /showrepl",
+              "expect": "No replication failures across all DCs — if failures exist, fix AD replication first as DNS zones depend on it"
+            },
+            {
+              "action": "nltest /sc_verify:<domain>",
+              "expect": "Secure channel to DC is healthy — broken secure channel prevents AD zone access"
+            },
+            {
+              "action": "klist",
+              "expect": "Valid Kerberos tickets present — if expired, run 'klist purge' then 'gpupdate /force' to refresh"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Stop-Service DNS; Start-Service DNS", "expect": "DNS service restarts after AD is confirmed healthy — zone loads on startup from AD partition" },
-            { "action": "Invoke-DnsServerZoneTransfer -Name <zone> -FullTransfer (if secondary zone)", "expect": "Forces full zone transfer from primary — for AD zones, this reloads from AD partition" }
+            {
+              "action": "Stop-Service DNS; Start-Service DNS",
+              "expect": "DNS service restarts after AD is confirmed healthy — zone loads on startup from AD partition"
+            },
+            {
+              "action": "Invoke-DnsServerZoneTransfer -Name <zone> -FullTransfer (if secondary zone)",
+              "expect": "Forces full zone transfer from primary — for AD zones, this reloads from AD partition"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-DnsServerZone | Where ZoneName -eq '<zone>'", "expect": "Zone present with IsDsIntegrated: True and correct replication scope" },
-            { "action": "Resolve-DnsName <record in zone> -Server <DNS IP>", "expect": "Record resolves correctly with correct IP address" }
+            {
+              "action": "Get-DnsServerZone | Where ZoneName -eq '<zone>'",
+              "expect": "Zone present with IsDsIntegrated: True and correct replication scope"
+            },
+            {
+              "action": "Resolve-DnsName <record in zone> -Server <DNS IP>",
+              "expect": "Record resolves correctly with correct IP address"
+            }
           ]
         }
       ]
@@ -198,34 +263,61 @@
     "forwarder_unreachable": {
       "title": "External name resolution failing — forwarder unreachable",
       "severity": "medium",
-      "description": "Cannot resolve external DNS names due to unreachable forwarder configuration",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Resolve-DnsName google.com -Server <DNS IP>", "expect": "If timeout or SERVFAIL for external names but internal names work, forwarder issue confirmed" },
-            { "action": "Get-DnsServerForwarder", "expect": "Lists configured forwarder IPs — verify they are the intended servers" }
+            {
+              "action": "Resolve-DnsName google.com -Server <DNS IP>",
+              "expect": "If timeout or SERVFAIL for external names but internal names work, forwarder issue confirmed"
+            },
+            {
+              "action": "Get-DnsServerForwarder",
+              "expect": "Lists configured forwarder IPs — verify they are the intended servers"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Test-NetConnection <forwarder IP> -Port 53", "expect": "TcpTestSucceeded: True — if False, forwarder is unreachable due to network or firewall" },
-            { "action": "Get-DnsServerRecursion", "expect": "RecursionAvailable: True — if False, recursion is disabled, preventing external resolution even with working forwarders" }
+            {
+              "action": "Test-NetConnection <forwarder IP> -Port 53",
+              "expect": "TcpTestSucceeded: True — if False, forwarder is unreachable due to network or firewall"
+            },
+            {
+              "action": "Get-DnsServerRecursion",
+              "expect": "RecursionAvailable: True — if False, recursion is disabled, preventing external resolution even with working forwarders"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Set-DnsServerForwarder -IPAddress <working forwarder IP>", "expect": "Replace unreachable forwarder with a reachable one — test with public DNS (8.8.8.8, 1.1.1.1) as fallback" },
-            { "action": "Get-DnsServerRootHint", "expect": "Root hints present for fallback recursion if forwarders are removed or fail — DNS falls back to root hints when forwarders unavailable" }
+            {
+              "action": "Set-DnsServerForwarder -IPAddress <working forwarder IP>",
+              "expect": "Replace unreachable forwarder with a reachable one — test with public DNS (8.8.8.8, 1.1.1.1) as fallback"
+            },
+            {
+              "action": "Get-DnsServerRootHint",
+              "expect": "Root hints present for fallback recursion if forwarders are removed or fail — DNS falls back to root hints when forwarders unavailable"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Resolve-DnsName google.com -Server <DNS IP>", "expect": "External name resolves successfully with correct IP address" },
-            { "action": "Resolve-DnsName microsoft.com -Server <DNS IP>", "expect": "Multiple external domains resolve — confirms fix is not specific to one domain" }
+            {
+              "action": "Resolve-DnsName google.com -Server <DNS IP>",
+              "expect": "External name resolves successfully with correct IP address"
+            },
+            {
+              "action": "Resolve-DnsName microsoft.com -Server <DNS IP>",
+              "expect": "Multiple external domains resolve — confirms fix is not specific to one domain"
+            }
           ]
         }
       ]
@@ -233,34 +325,61 @@
     "dnssec_validation_failure": {
       "title": "DNSSEC validation failing — SERVFAIL on signed zones",
       "severity": "medium",
-      "description": "DNSSEC-signed zones returning SERVFAIL due to validation or trust anchor issues",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Resolve-DnsName <dnssec-signed zone> -DnssecOk -Server <DNS IP>", "expect": "If SERVFAIL with DNSSEC validation, DNSSEC issue confirmed" },
-            { "action": "Get-DnsServerDnsSecZone -ZoneName <zone>", "expect": "Check DNSSEC signing state, KSK/ZSK status, and trust anchor configuration" }
+            {
+              "action": "Resolve-DnsName <dnssec-signed zone> -DnssecOk -Server <DNS IP>",
+              "expect": "If SERVFAIL with DNSSEC validation, DNSSEC issue confirmed"
+            },
+            {
+              "action": "Get-DnsServerDnsSecZone -ZoneName <zone>",
+              "expect": "Check DNSSEC signing state, KSK/ZSK status, and trust anchor configuration"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Get-DnsServerResourceRecord -ZoneName <zone> -RRType DNSKEY", "expect": "DNSKEY records present and not expired — if missing or expired, validation fails" },
-            { "action": "Get-DnsServerTrustAnchor", "expect": "Trust anchor configured for the zone — missing trust anchor causes validation failure" }
+            {
+              "action": "Get-DnsServerResourceRecord -ZoneName <zone> -RRType DNSKEY",
+              "expect": "DNSKEY records present and not expired — if missing or expired, validation fails"
+            },
+            {
+              "action": "Get-DnsServerTrustAnchor",
+              "expect": "Trust anchor configured for the zone — missing trust anchor causes validation failure"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Set-DnsServerDnsSecZone -Name <zone> -SigningParameter <new KSK/ZSK>", "expect": "Rotate signing keys if expired — ensure new keys are propagated to trust anchors" },
-            { "action": "Add-DnsServerTrustAnchor -Name <zone> -CryptoAlgorithm <algorithm> -KeyTag <tag>", "expect": "Configure correct trust anchor if missing or incorrect" }
+            {
+              "action": "Set-DnsServerDnsSecZone -Name <zone> -SigningParameter <new KSK/ZSK>",
+              "expect": "Rotate signing keys if expired — ensure new keys are propagated to trust anchors"
+            },
+            {
+              "action": "Add-DnsServerTrustAnchor -Name <zone> -CryptoAlgorithm <algorithm> -KeyTag <tag>",
+              "expect": "Configure correct trust anchor if missing or incorrect"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Resolve-DnsName <dnssec-signed zone> -DnssecOk -Server <DNS IP>", "expect": "Returns AD (Authenticated Data) flag indicating successful DNSSEC validation" },
-            { "action": "Resolve-DnsName <record in zone> -Server <DNS IP>", "expect": "Records resolve successfully without SERVFAIL" }
+            {
+              "action": "Resolve-DnsName <dnssec-signed zone> -DnssecOk -Server <DNS IP>",
+              "expect": "Returns AD (Authenticated Data) flag indicating successful DNSSEC validation"
+            },
+            {
+              "action": "Resolve-DnsName <record in zone> -Server <DNS IP>",
+              "expect": "Records resolve successfully without SERVFAIL"
+            }
           ]
         }
       ]

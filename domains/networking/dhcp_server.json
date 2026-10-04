@@ -3,7 +3,6 @@
   "label": "DHCP Server",
   "icon": "🗄️",
   "domain": "networking",
-  "description": "The DHCP Server role in Windows Server automates IP address assignment and network configuration for clients on an IP network. It supports IPv4 and IPv6 address allocation, DHCP failover for high availability, policy-based assignment for granular control, dynamic DNS integration, MAC address reservations, scavenging, and multi-subnet management via DHCP relay agents. Key features include scope management, lease duration control, option configuration (DNS, gateway, PXE boot), conflict detection, audit logging, and database backup/restore capabilities.",
   "scoping": {
     "l1": [
       "What Windows Server version is the DHCP server running on? (Get-ComputerInfo | Select OsName,WindowsVersion,OsBuildNumber)",
@@ -135,253 +134,544 @@
   "playbooks": {
     "clients_getting_apipa": {
       "title": "Clients getting APIPA (169.254.x.x) — no IP assigned",
-      "description": "Comprehensive troubleshooting for clients unable to obtain IP addresses from DHCP server, resulting in Automatic Private IP Addressing (APIPA). Covers service status, AD authorization, scope availability, relay agent configuration, and network connectivity issues.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-Service DHCPServer | Select Name,Status,StartType,Status", "expect": "Status: Running, StartType: Automatic — service must be operational" },
-            { "action": "Get-DhcpServerInDC", "expect": "This server listed as authorized — if empty output, server is deauthorized in AD" },
-            { "action": "Get-DhcpServerv4ScopeStatistics -ScopeId <scope> | Select ScopeId,Free,PercentageInUse", "expect": "PercentageInUse below 100 and Free > 0 — scope must have available addresses" },
-            { "action": "Get-NetFirewallRule -DisplayGroup \"DHCP Server\" | Where Enabled -eq 'True'", "expect": "DHCP Server firewall rules are enabled to allow inbound traffic" }
+            {
+              "action": "Get-Service DHCPServer | Select Name,Status,StartType,Status",
+              "expect": "Status: Running, StartType: Automatic — service must be operational"
+            },
+            {
+              "action": "Get-DhcpServerInDC",
+              "expect": "This server listed as authorized — if empty output, server is deauthorized in AD"
+            },
+            {
+              "action": "Get-DhcpServerv4ScopeStatistics -ScopeId <scope> | Select ScopeId,Free,PercentageInUse",
+              "expect": "PercentageInUse below 100 and Free > 0 — scope must have available addresses"
+            },
+            {
+              "action": "Get-NetFirewallRule -DisplayGroup \"DHCP Server\" | Where Enabled -eq 'True'",
+              "expect": "DHCP Server firewall rules are enabled to allow inbound traffic"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "ipconfig /release && ipconfig /renew on affected client", "expect": "If DHCP server IP appears in output, server is responding — if APIPA persists, check relay or scope configuration" },
-            { "action": "Get-WinEvent -LogName System -MaxEvents 20 | Where Id -in 1046,1055,1063 | Format-List TimeCreated,Id,Message", "expect": "1046 = not authorized; 1055 = cannot contact AD; 1063 = authorized — identify authorization state" },
-            { "action": "Confirm IP Helper address on router interface for client VLAN (Cisco: show run interface <int> | include helper)", "expect": "ip helper-address points to correct DHCP server IP on the correct Layer 3 interface" },
-            { "action": "Test-NetConnection -ComputerName <DHCP server IP> -Port 67 -DiagnoseRouting", "expect": "TcpTestSucceeded: True — confirms UDP 67 connectivity from client to server" },
-            { "action": "Get-DhcpServerv4Filter -List Deny", "expect": "Client MAC address not present in Deny list — MAC filters could block lease assignment" }
+            {
+              "action": "ipconfig /release && ipconfig /renew on affected client",
+              "expect": "If DHCP server IP appears in output, server is responding — if APIPA persists, check relay or scope configuration"
+            },
+            {
+              "action": "Get-WinEvent -LogName System -MaxEvents 20 | Where Id -in 1046,1055,1063 | Format-List TimeCreated,Id,Message",
+              "expect": "1046 = not authorized; 1055 = cannot contact AD; 1063 = authorized — identify authorization state"
+            },
+            {
+              "action": "Confirm IP Helper address on router interface for client VLAN (Cisco: show run interface <int> | include helper)",
+              "expect": "ip helper-address points to correct DHCP server IP on the correct Layer 3 interface"
+            },
+            {
+              "action": "Test-NetConnection -ComputerName <DHCP server IP> -Port 67 -DiagnoseRouting",
+              "expect": "TcpTestSucceeded: True — confirms UDP 67 connectivity from client to server"
+            },
+            {
+              "action": "Get-DhcpServerv4Filter -List Deny",
+              "expect": "Client MAC address not present in Deny list — MAC filters could block lease assignment"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Add-DhcpServerInDC -DnsName <server FQDN> -IPAddress <IP>", "expect": "Server re-authorized in AD — verify with Get-DhcpServerInDC returns server entry" },
-            { "action": "Set-DhcpServerv4Scope -ScopeId <scope> -State Active", "expect": "Scope set to Active state — allows server to respond to DHCP requests for this scope" },
-            { "action": "Restart-Service DHCPServer -Force", "expect": "Service restarts successfully — Event ID 1063 in System log confirms authorized state" },
-            { "action": "Enable-NetFirewallRule -DisplayGroup \"DHCP Server\"", "expect": "Firewall rules enabled — allows DHCP traffic through Windows Firewall" },
-            { "action": "Correct IP Helper address on router: ip helper-address <correct DHCP server IP>", "expect": "Relay agent forwards DHCP requests to the correct server" }
+            {
+              "action": "Add-DhcpServerInDC -DnsName <server FQDN> -IPAddress <IP>",
+              "expect": "Server re-authorized in AD — verify with Get-DhcpServerInDC returns server entry"
+            },
+            {
+              "action": "Set-DhcpServerv4Scope -ScopeId <scope> -State Active",
+              "expect": "Scope set to Active state — allows server to respond to DHCP requests for this scope"
+            },
+            {
+              "action": "Restart-Service DHCPServer -Force",
+              "expect": "Service restarts successfully — Event ID 1063 in System log confirms authorized state"
+            },
+            {
+              "action": "Enable-NetFirewallRule -DisplayGroup \"DHCP Server\"",
+              "expect": "Firewall rules enabled — allows DHCP traffic through Windows Firewall"
+            },
+            {
+              "action": "Correct IP Helper address on router: ip helper-address <correct DHCP server IP>",
+              "expect": "Relay agent forwards DHCP requests to the correct server"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "ipconfig /release && ipconfig /renew on affected client", "expect": "Client receives valid IP from correct scope — output shows DHCP Server IP and lease information" },
-            { "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where ClientId -eq '<MAC>'", "expect": "Lease present with AddressState: Active — confirms successful lease assignment" },
-            { "action": "ping <client IP> from DHCP server", "expect": "Ping successful — confirms network connectivity and IP assignment" }
+            {
+              "action": "ipconfig /release && ipconfig /renew on affected client",
+              "expect": "Client receives valid IP from correct scope — output shows DHCP Server IP and lease information"
+            },
+            {
+              "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where ClientId -eq '<MAC>'",
+              "expect": "Lease present with AddressState: Active — confirms successful lease assignment"
+            },
+            {
+              "action": "ping <client IP> from DHCP server",
+              "expect": "Ping successful — confirms network connectivity and IP assignment"
+            }
           ]
         }
       ]
     },
     "scope_exhausted": {
       "title": "DHCP scope exhausted — no free addresses",
-      "description": "Addresses the scenario where DHCP scope has reached 100% utilization, preventing new clients from obtaining IP addresses. Covers lease duration optimization, scope expansion, expired lease cleanup, and address pool management strategies.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-DhcpServerv4ScopeStatistics -ScopeId <scope> | Select ScopeId,Total,InUse,Free,PercentageInUse", "expect": "PercentageInUse: 100, Free: 0 — confirms scope exhaustion" },
-            { "action": "Get-DhcpServerv4Scope -ScopeId <scope> | Select ScopeId,StartRange,EndRange,SubnetMask", "expect": "Current scope boundaries and subnet mask — determines expansion potential" }
+            {
+              "action": "Get-DhcpServerv4ScopeStatistics -ScopeId <scope> | Select ScopeId,Total,InUse,Free,PercentageInUse",
+              "expect": "PercentageInUse: 100, Free: 0 — confirms scope exhaustion"
+            },
+            {
+              "action": "Get-DhcpServerv4Scope -ScopeId <scope> | Select ScopeId,StartRange,EndRange,SubnetMask",
+              "expect": "Current scope boundaries and subnet mask — determines expansion potential"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where AddressState -ne 'Active' | Measure-Object", "expect": "Count of Expired or Released leases that can be reclaimed — indicates potential for cleanup" },
-            { "action": "Get-DhcpServerv4Scope -ScopeId <scope> | Select LeaseDuration", "expect": "If lease duration is very long (e.g. 8 days), addresses are held too long — consider reduction" },
-            { "action": "Get-DhcpServerv4ExclusionRange -ScopeId <scope>", "expect": "Review exclusion ranges — may be unnecessarily blocking addresses that could be used" },
-            { "action": "Get-DhcpServerv4Reservation -ScopeId <scope> | Measure-Object", "expect": "Count of reservations — verify all are still needed for active devices" }
+            {
+              "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where AddressState -ne 'Active' | Measure-Object",
+              "expect": "Count of Expired or Released leases that can be reclaimed — indicates potential for cleanup"
+            },
+            {
+              "action": "Get-DhcpServerv4Scope -ScopeId <scope> | Select LeaseDuration",
+              "expect": "If lease duration is very long (e.g. 8 days), addresses are held too long — consider reduction"
+            },
+            {
+              "action": "Get-DhcpServerv4ExclusionRange -ScopeId <scope>",
+              "expect": "Review exclusion ranges — may be unnecessarily blocking addresses that could be used"
+            },
+            {
+              "action": "Get-DhcpServerv4Reservation -ScopeId <scope> | Measure-Object",
+              "expect": "Count of reservations — verify all are still needed for active devices"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Set-DhcpServerv4Scope -ScopeId <scope> -LeaseDuration 1.00:00:00", "expect": "Reduce lease duration to 1 day to reclaim addresses faster — adjust based on network needs" },
-            { "action": "Set-DhcpServerv4Scope -ScopeId <scope> -EndRange <new higher IP>", "expect": "Expand scope range if subnet allows — verify no overlap with static assignments or other scopes" },
-            { "action": "Remove-DhcpServerv4ExclusionRange -ScopeId <scope> -StartRange <start> -EndRange <end>", "expect": "Remove unnecessary exclusion ranges to free up addresses" },
-            { "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where AddressState -eq 'Expired' | Remove-DhcpServerv4Lease", "expect": "Clean up expired leases to free addresses immediately" },
-            { "action": "Create superscope or add new scope for additional subnet", "expect": "If expansion not possible, create additional scope on different subnet" }
+            {
+              "action": "Set-DhcpServerv4Scope -ScopeId <scope> -LeaseDuration 1.00:00:00",
+              "expect": "Reduce lease duration to 1 day to reclaim addresses faster — adjust based on network needs"
+            },
+            {
+              "action": "Set-DhcpServerv4Scope -ScopeId <scope> -EndRange <new higher IP>",
+              "expect": "Expand scope range if subnet allows — verify no overlap with static assignments or other scopes"
+            },
+            {
+              "action": "Remove-DhcpServerv4ExclusionRange -ScopeId <scope> -StartRange <start> -EndRange <end>",
+              "expect": "Remove unnecessary exclusion ranges to free up addresses"
+            },
+            {
+              "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where AddressState -eq 'Expired' | Remove-DhcpServerv4Lease",
+              "expect": "Clean up expired leases to free addresses immediately"
+            },
+            {
+              "action": "Create superscope or add new scope for additional subnet",
+              "expect": "If expansion not possible, create additional scope on different subnet"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-DhcpServerv4ScopeStatistics -ScopeId <scope>", "expect": "Free > 0 — new clients can now receive leases" },
-            { "action": "ipconfig /renew on test client", "expect": "Client successfully obtains IP address from the scope" },
-            { "action": "Monitor scope statistics over 24 hours", "expect": "PercentageInUse stabilizes below 90% — indicates sustainable configuration" }
+            {
+              "action": "Get-DhcpServerv4ScopeStatistics -ScopeId <scope>",
+              "expect": "Free > 0 — new clients can now receive leases"
+            },
+            {
+              "action": "ipconfig /renew on test client",
+              "expect": "Client successfully obtains IP address from the scope"
+            },
+            {
+              "action": "Monitor scope statistics over 24 hours",
+              "expect": "PercentageInUse stabilizes below 90% — indicates sustainable configuration"
+            }
           ]
         }
       ]
     },
     "failover_interrupted": {
       "title": "DHCP failover partner — Communication Interrupted",
-      "description": "Troubleshooting for DHCP failover scenarios where partner servers lose communication, causing failover state to become Communication Interrupted. Covers network connectivity, failover state management, force synchronization, and partner down state transition procedures.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-DhcpServerv4Failover | Select Name,Mode,State,PartnerServer,ServerRole", "expect": "State: CommunicationInterrupted — confirms partner sync is broken" },
-            { "action": "Get-DhcpServerv4Failover | Select Name,MaxClientLeadTime,AutoStateTransitionInterval", "expect": "Review MCLT and auto-transition settings — determines failover behavior" }
+            {
+              "action": "Get-DhcpServerv4Failover | Select Name,Mode,State,PartnerServer,ServerRole",
+              "expect": "State: CommunicationInterrupted — confirms partner sync is broken"
+            },
+            {
+              "action": "Get-DhcpServerv4Failover | Select Name,MaxClientLeadTime,AutoStateTransitionInterval",
+              "expect": "Review MCLT and auto-transition settings — determines failover behavior"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Test-NetConnection <partner server IP> -Port 647", "expect": "TcpTestSucceeded: True — if False, TCP 647 is blocked between partners" },
-            { "action": "Get-Service DHCPServer on partner server (Invoke-Command -ComputerName <partner> -ScriptBlock {Get-Service DHCPServer})", "expect": "Service running on partner — if stopped, that is the root cause" },
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 50 | Where Message -like '*failover*'", "expect": "Review failover-related events for communication failure details" },
-            { "action": "Get-NetFirewallRule on both servers | Where DisplayName -like '*DHCP*'", "expect": "Firewall rules allow failover communication on TCP 647" }
+            {
+              "action": "Test-NetConnection <partner server IP> -Port 647",
+              "expect": "TcpTestSucceeded: True — if False, TCP 647 is blocked between partners"
+            },
+            {
+              "action": "Get-Service DHCPServer on partner server (Invoke-Command -ComputerName <partner> -ScriptBlock {Get-Service DHCPServer})",
+              "expect": "Service running on partner — if stopped, that is the root cause"
+            },
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 50 | Where Message -like '*failover*'",
+              "expect": "Review failover-related events for communication failure details"
+            },
+            {
+              "action": "Get-NetFirewallRule on both servers | Where DisplayName -like '*DHCP*'",
+              "expect": "Firewall rules allow failover communication on TCP 647"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Invoke-DhcpServerv4FailoverReplication -Name <failover relationship> -Force", "expect": "Forces immediate sync — State should return to Normal after sync completes" },
-            { "action": "If network issue: resolve firewall, routing, or network connectivity between partners", "expect": "TCP 647 connectivity restored — partners can communicate" },
-            { "action": "If partner service stopped: Start-Service DHCPServer on partner server", "expect": "Partner service starts — failover communication resumes" },
-            { "action": "If partner is permanently down: Set-DhcpServerv4FailoverScope -ScopeId <scope> -State PartnerDown", "expect": "This server takes full ownership — use only when partner is confirmed dead and unrecoverable" },
-            { "action": "Remove-DhcpServerv4Failover -Name <relationship> and recreate if corruption suspected", "expect": "Failover relationship reestablished with clean configuration" }
+            {
+              "action": "Invoke-DhcpServerv4FailoverReplication -Name <failover relationship> -Force",
+              "expect": "Forces immediate sync — State should return to Normal after sync completes"
+            },
+            {
+              "action": "If network issue: resolve firewall, routing, or network connectivity between partners",
+              "expect": "TCP 647 connectivity restored — partners can communicate"
+            },
+            {
+              "action": "If partner service stopped: Start-Service DHCPServer on partner server",
+              "expect": "Partner service starts — failover communication resumes"
+            },
+            {
+              "action": "If partner is permanently down: Set-DhcpServerv4FailoverScope -ScopeId <scope> -State PartnerDown",
+              "expect": "This server takes full ownership — use only when partner is confirmed dead and unrecoverable"
+            },
+            {
+              "action": "Remove-DhcpServerv4Failover -Name <relationship> and recreate if corruption suspected",
+              "expect": "Failover relationship reestablished with clean configuration"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-DhcpServerv4Failover", "expect": "State: Normal — both partners in sync and communicating" },
-            { "action": "Test client lease assignment from both servers", "expect": "Clients can obtain leases from either server based on load balance or standby configuration" },
-            { "action": "Monitor failover state over time", "expect": "State remains Normal — no recurring communication interruptions" }
+            {
+              "action": "Get-DhcpServerv4Failover",
+              "expect": "State: Normal — both partners in sync and communicating"
+            },
+            {
+              "action": "Test client lease assignment from both servers",
+              "expect": "Clients can obtain leases from either server based on load balance or standby configuration"
+            },
+            {
+              "action": "Monitor failover state over time",
+              "expect": "State remains Normal — no recurring communication interruptions"
+            }
           ]
         }
       ]
     },
     "dns_integration_failure": {
       "title": "DHCP-DNS dynamic update failures",
-      "description": "Addresses issues where DHCP server fails to dynamically update DNS records for clients, resulting in stale or missing DNS entries. Covers credential validation, DNS permissions, Name Protection settings, and update behavior configuration.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-DhcpServerv4DnsSetting | Select NameProtection,UpdateDnsRRForOlderClients,DynamicUpdates", "expect": "Review DNS update settings — confirm dynamic updates are enabled" },
-            { "action": "Get-DhcpServerDnsCredential", "expect": "Check if DNS credential is configured — returns credential if set" },
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 50 | Where Id -in 20062,20063", "expect": "Look for DNS update failure events — indicates authentication or permission issues" }
+            {
+              "action": "Get-DhcpServerv4DnsSetting | Select NameProtection,UpdateDnsRRForOlderClients,DynamicUpdates",
+              "expect": "Review DNS update settings — confirm dynamic updates are enabled"
+            },
+            {
+              "action": "Get-DhcpServerDnsCredential",
+              "expect": "Check if DNS credential is configured — returns credential if set"
+            },
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 50 | Where Id -in 20062,20063",
+              "expect": "Look for DNS update failure events — indicates authentication or permission issues"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Test DNS zone permissions with DNSCredential (Resolve-DnsName <zone> -DnsServer <DNS server>)", "expect": "Credential has permissions to update DNS zones" },
-            { "action": "Check DNS server event log for DNS update failures", "expect": "DNS server logs may show rejected update requests from DHCP server" },
-            { "action": "Get-DhcpServerv4Scope -ScopeId <scope> | Select Name, NapEnable", "expect": "NAP may interfere with DNS updates if enabled" },
-            { "action": "nslookup <client hostname> from DNS server", "expect": "Verify if DNS records exist for DHCP clients" }
+            {
+              "action": "Test DNS zone permissions with DNSCredential (Resolve-DnsName <zone> -DnsServer <DNS server>)",
+              "expect": "Credential has permissions to update DNS zones"
+            },
+            {
+              "action": "Check DNS server event log for DNS update failures",
+              "expect": "DNS server logs may show rejected update requests from DHCP server"
+            },
+            {
+              "action": "Get-DhcpServerv4Scope -ScopeId <scope> | Select Name, NapEnable",
+              "expect": "NAP may interfere with DNS updates if enabled"
+            },
+            {
+              "action": "nslookup <client hostname> from DNS server",
+              "expect": "Verify if DNS records exist for DHCP clients"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Set-DhcpServerDnsCredential -Credential (Get-Credential)", "expect": "Set or reset DNS credential with account that has DNS zone permissions" },
-            { "action": "Set-DhcpServerv4DnsSetting -NameProtection $true", "expect": "Enable Name Protection to prevent name conflicts — DHCP checks DNS before registering" },
-            { "action": "Set-DhcpServerv4DnsSetting -DynamicUpdates 'OnClientAndServer'", "expect": "Configure both client and server to perform DNS updates" },
-            { "action": "Grant DNSCredential account permissions on DNS zones (Read/Write)", "expect": "Credential account can create and update DNS records" },
-            { "action": "Set-DhcpServerv4DnsSetting -UpdateDnsRRForOlderClients $true", "expect": "Enable DNS updates for non-Windows 2000 clients" }
+            {
+              "action": "Set-DhcpServerDnsCredential -Credential (Get-Credential)",
+              "expect": "Set or reset DNS credential with account that has DNS zone permissions"
+            },
+            {
+              "action": "Set-DhcpServerv4DnsSetting -NameProtection $true",
+              "expect": "Enable Name Protection to prevent name conflicts — DHCP checks DNS before registering"
+            },
+            {
+              "action": "Set-DhcpServerv4DnsSetting -DynamicUpdates 'OnClientAndServer'",
+              "expect": "Configure both client and server to perform DNS updates"
+            },
+            {
+              "action": "Grant DNSCredential account permissions on DNS zones (Read/Write)",
+              "expect": "Credential account can create and update DNS records"
+            },
+            {
+              "action": "Set-DhcpServerv4DnsSetting -UpdateDnsRRForOlderClients $true",
+              "expect": "Enable DNS updates for non-Windows 2000 clients"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "ipconfig /renew on client, then nslookup <client hostname>", "expect": "DNS record appears and resolves correctly after lease renewal" },
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 10 | Where Id -like '*200*'", "expect": "DNS update events show successful updates (no error events)" },
-            { "action": "Check DNS zone for new client records", "expect": "New A and PTR records appear for DHCP clients" }
+            {
+              "action": "ipconfig /renew on client, then nslookup <client hostname>",
+              "expect": "DNS record appears and resolves correctly after lease renewal"
+            },
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 10 | Where Id -like '*200*'",
+              "expect": "DNS update events show successful updates (no error events)"
+            },
+            {
+              "action": "Check DNS zone for new client records",
+              "expect": "New A and PTR records appear for DHCP clients"
+            }
           ]
         }
       ]
     },
     "policy_filtering_issue": {
       "title": "DHCP policy incorrectly filtering clients",
-      "description": "Troubleshooting for DHCP policies that incorrectly block or misconfigure clients based on MAC address, Vendor Class, User Class, or other criteria. Covers policy condition verification, client option analysis, and policy adjustment procedures.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-DhcpServerv4Policy -ScopeId <scope> -All", "expect": "List all policies on the scope with their conditions and processing order" },
-            { "action": "Get-DhcpServerv4PolicyIPRange -ScopeId <scope> -Name <policy>", "expect": "Check if policy has IP range assignments that may exclude the client" }
+            {
+              "action": "Get-DhcpServerv4Policy -ScopeId <scope> -All",
+              "expect": "List all policies on the scope with their conditions and processing order"
+            },
+            {
+              "action": "Get-DhcpServerv4PolicyIPRange -ScopeId <scope> -Name <policy>",
+              "expect": "Check if policy has IP range assignments that may exclude the client"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Capture DHCP DISCOVER with Wireshark: filter 'bootp' and examine Option 60 (VCI) and Option 77 (User Class)", "expect": "Identify actual values sent by client — compare to policy conditions" },
-            { "action": "Get-DhcpServerv4Class -Type Vendor and Get-DhcpServerv4Class -Type User", "expect": "Review defined classes that policies may reference" },
-            { "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where ClientId -eq '<client MAC>'", "expect": "Check if client has any lease — may indicate if policy ever allowed assignment" },
-            { "action": "Get-DhcpServerv4OptionValue -PolicyName <policy> -ScopeId <scope>", "expect": "Review options assigned by policy — may have incorrect settings" }
+            {
+              "action": "Capture DHCP DISCOVER with Wireshark: filter 'bootp' and examine Option 60 (VCI) and Option 77 (User Class)",
+              "expect": "Identify actual values sent by client — compare to policy conditions"
+            },
+            {
+              "action": "Get-DhcpServerv4Class -Type Vendor and Get-DhcpServerv4Class -Type User",
+              "expect": "Review defined classes that policies may reference"
+            },
+            {
+              "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where ClientId -eq '<client MAC>'",
+              "expect": "Check if client has any lease — may indicate if policy ever allowed assignment"
+            },
+            {
+              "action": "Get-DhcpServerv4OptionValue -PolicyName <policy> -ScopeId <scope>",
+              "expect": "Review options assigned by policy — may have incorrect settings"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Set-DhcpServerv4Policy -Name <policy> -Enabled $false", "expect": "Temporarily disable policy to test if client can obtain lease" },
-            { "action": "Set-DhcpServerv4Policy -Name <policy> -Condition <corrected condition>", "expect": "Update policy condition to match actual client characteristics" },
-            { "action": "Remove-DhcpServerv4Policy -Name <policy> -ScopeId <scope>", "expect": "Remove incorrect policy if no longer needed" },
-            { "action": "Add-DhcpServerv4Policy -Name <new policy> -ScopeId <scope> -Condition <correct condition> -ProcessingOrder <order>", "expect": "Create new policy with correct conditions and processing order" },
-            { "action": "Set-DhcpServerv4PolicyIPRange -Name <policy> -ScopeId <scope> -StartRange <start> -EndRange <end>", "expect": "Correct IP range assignment for the policy" }
+            {
+              "action": "Set-DhcpServerv4Policy -Name <policy> -Enabled $false",
+              "expect": "Temporarily disable policy to test if client can obtain lease"
+            },
+            {
+              "action": "Set-DhcpServerv4Policy -Name <policy> -Condition <corrected condition>",
+              "expect": "Update policy condition to match actual client characteristics"
+            },
+            {
+              "action": "Remove-DhcpServerv4Policy -Name <policy> -ScopeId <scope>",
+              "expect": "Remove incorrect policy if no longer needed"
+            },
+            {
+              "action": "Add-DhcpServerv4Policy -Name <new policy> -ScopeId <scope> -Condition <correct condition> -ProcessingOrder <order>",
+              "expect": "Create new policy with correct conditions and processing order"
+            },
+            {
+              "action": "Set-DhcpServerv4PolicyIPRange -Name <policy> -ScopeId <scope> -StartRange <start> -EndRange <end>",
+              "expect": "Correct IP range assignment for the policy"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "ipconfig /renew on affected client", "expect": "Client receives IP address and correct options based on policy" },
-            { "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where ClientId -eq '<client MAC>'", "expect": "Lease exists with correct IP and options" },
-            { "action": "ipconfig /all on client", "expect": "Client shows correct DNS, gateway, and other options matching policy" }
+            {
+              "action": "ipconfig /renew on affected client",
+              "expect": "Client receives IP address and correct options based on policy"
+            },
+            {
+              "action": "Get-DhcpServerv4Lease -ScopeId <scope> | Where ClientId -eq '<client MAC>'",
+              "expect": "Lease exists with correct IP and options"
+            },
+            {
+              "action": "ipconfig /all on client",
+              "expect": "Client shows correct DNS, gateway, and other options matching policy"
+            }
           ]
         }
       ]
     },
     "database_corruption": {
       "title": "DHCP database corruption or integrity issues",
-      "description": "Addresses DHCP Jet database (dhcp.mdb) corruption, service startup failures, and database integrity problems. Covers database compaction, backup restoration, and recovery procedures following Microsoft best practices.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 50 | Where Id -in 1014,1016", "expect": "Event 1014 (database corrupt) or 1016 (jet error) indicates database issues" },
-            { "action": "Get-Service DHCPServer | Select Status,StartType", "expect": "Service may be stopped or failing to start due to database corruption" },
-            { "action": "Get-DhcpServerDatabase | Select DatabasePath,BackupPath,BackupInterval", "expect": "Locate database file and verify backup configuration" }
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 50 | Where Id -in 1014,1016",
+              "expect": "Event 1014 (database corrupt) or 1016 (jet error) indicates database issues"
+            },
+            {
+              "action": "Get-Service DHCPServer | Select Status,StartType",
+              "expect": "Service may be stopped or failing to start due to database corruption"
+            },
+            {
+              "action": "Get-DhcpServerDatabase | Select DatabasePath,BackupPath,BackupInterval",
+              "expect": "Locate database file and verify backup configuration"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Test database file integrity: check file size and last modified time in C:\\Windows\\System32\\dhcp", "expect": "Database file should be reasonable size and recent — unusual size indicates corruption" },
-            { "action": "Check for database lock files (*.ldb) in dhcp folder", "expect": "Lock files may indicate database is in use or crashed during operation" },
-            { "action": "Review Application event log for Jet Database errors", "expect": "Jet errors provide specific corruption details" },
-            { "action": "Verify backup exists in backup path", "expect": "Recent backup available for restoration if needed" }
+            {
+              "action": "Test database file integrity: check file size and last modified time in C:\\Windows\\System32\\dhcp",
+              "expect": "Database file should be reasonable size and recent — unusual size indicates corruption"
+            },
+            {
+              "action": "Check for database lock files (*.ldb) in dhcp folder",
+              "expect": "Lock files may indicate database is in use or crashed during operation"
+            },
+            {
+              "action": "Review Application event log for Jet Database errors",
+              "expect": "Jet errors provide specific corruption details"
+            },
+            {
+              "action": "Verify backup exists in backup path",
+              "expect": "Recent backup available for restoration if needed"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Stop-Service DHCPServer -Force", "expect": "DHCP service stops — required before database operations" },
-            { "action": "Copy-Item C:\\Windows\\System32\\dhcp\\dhcp.mdb C:\\Windows\\System32\\dhcp\\dhcp.mdb.backup", "expect": "Create backup of current database before repair attempts" },
-            { "action": "cd C:\\Windows\\System32\\dhcp; jetcomp.exe dhcp.mdb", "expect": "Jet compaction tool repairs and compacts database — check for success message" },
-            { "action": "Start-Service DHCPServer", "expect": "Service starts successfully if database repair succeeded" },
-            { "action": "If jetcomp fails: Restore-DhcpServer -ComputerName <server> -Path <backup file> -Force", "expect": "Restore from known good backup if repair unsuccessful" },
-            { "action": "If no backup: Export-DhcpServer from another server with same config, then Import-DhcpServer", "expect": "Recreate database from another server's export as last resort" }
+            {
+              "action": "Stop-Service DHCPServer -Force",
+              "expect": "DHCP service stops — required before database operations"
+            },
+            {
+              "action": "Copy-Item C:\\Windows\\System32\\dhcp\\dhcp.mdb C:\\Windows\\System32\\dhcp\\dhcp.mdb.backup",
+              "expect": "Create backup of current database before repair attempts"
+            },
+            {
+              "action": "cd C:\\Windows\\System32\\dhcp; jetcomp.exe dhcp.mdb",
+              "expect": "Jet compaction tool repairs and compacts database — check for success message"
+            },
+            {
+              "action": "Start-Service DHCPServer",
+              "expect": "Service starts successfully if database repair succeeded"
+            },
+            {
+              "action": "If jetcomp fails: Restore-DhcpServer -ComputerName <server> -Path <backup file> -Force",
+              "expect": "Restore from known good backup if repair unsuccessful"
+            },
+            {
+              "action": "If no backup: Export-DhcpServer from another server with same config, then Import-DhcpServer",
+              "expect": "Recreate database from another server's export as last resort"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-Service DHCPServer | Select Status", "expect": "Service Status: Running — database is functional" },
-            { "action": "Get-DhcpServerv4Scope | Select ScopeId,Name,State", "expect": "All scopes load correctly — no database read errors" },
-            { "action": "ipconfig /renew on test client", "expect": "Client successfully obtains lease — database operations working" },
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 10", "expect": "No new database corruption events after fix" }
+            {
+              "action": "Get-Service DHCPServer | Select Status",
+              "expect": "Service Status: Running — database is functional"
+            },
+            {
+              "action": "Get-DhcpServerv4Scope | Select ScopeId,Name,State",
+              "expect": "All scopes load correctly — no database read errors"
+            },
+            {
+              "action": "ipconfig /renew on test client",
+              "expect": "Client successfully obtains lease — database operations working"
+            },
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Server/Operational -MaxEvents 10",
+              "expect": "No new database corruption events after fix"
+            }
           ]
         }
       ]

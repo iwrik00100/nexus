@@ -3,7 +3,6 @@
   "label": "DHCP Client",
   "icon": "📡",
   "domain": "networking",
-  "description": "The Windows DHCP Client service (Dhcp) automatically configures IPv4 and IPv6 network settings by obtaining IP addresses, subnet masks, default gateways, DNS servers, and other network parameters from DHCP servers. This includes support for DHCPv4 (Dynamic Host Configuration Protocol version 4), DHCPv6 (Stateful DHCPv6 with IA_NA/IA_PD), Automatic Private IP Addressing (APIPA) for 169.254.0.0/16 fallback, lease management and renewal, vendor-specific options, and integration with Windows networking components including NDIS, Winsock, and Windows Filtering Platform. Troubleshooting covers scenarios ranging from no IP assignment, intermittent lease renewal failures after sleep/hibernate, IPv6 addressing issues, DHCPv6 stateless vs stateful configuration, and conflicts with third-party network management agents.",
   "scoping": {
     "l1": [
       "What Windows version and build is the affected client running? Verify with: Get-ComputerInfo | Select WindowsProductName, WindowsVersion, OsHardwareAbstractionLayer",
@@ -91,229 +90,446 @@
   "playbooks": {
     "no_ip_assigned": {
       "title": "Client not receiving any IP address",
-      "description": "This playbook addresses scenarios where Windows clients fail to obtain an IP address from DHCP servers, resulting in APIPA (169.254.x.x) addresses or no connectivity. Covers DHCPv4 issues including service failures, network connectivity problems, broadcast domain issues, and misconfigurations. The systematic approach verifies DHCP service health, isolates the failure point (client, network, or server), applies targeted fixes, and confirms resolution.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
-          "description": "Confirm DHCP Client service status and current IP configuration state",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-Service Dhcp | Select Name,Status,StartType,DependentServices", "expect": "Status: Running, StartType: Automatic. If stopped, run: Start-Service Dhcp; Set-Service Dhcp -StartupType Automatic" },
-            { "action": "ipconfig /all", "expect": "DHCP Enabled: Yes — IP shows 169.254.x.x (APIPA) indicating no DHCP response, or 0.0.0.0 indicating no IP at all. Note the adapter name showing the issue" },
-            { "action": "ipconfig /release && ipconfig /renew", "expect": "Watch for error message — note exact text. Common errors: 'An error occurred while renewing interface', 'The DHCP client has attempted to obtain an address', 'Unable to contact your DHCP server'" }
+            {
+              "action": "Get-Service Dhcp | Select Name,Status,StartType,DependentServices",
+              "expect": "Status: Running, StartType: Automatic. If stopped, run: Start-Service Dhcp; Set-Service Dhcp -StartupType Automatic"
+            },
+            {
+              "action": "ipconfig /all",
+              "expect": "DHCP Enabled: Yes — IP shows 169.254.x.x (APIPA) indicating no DHCP response, or 0.0.0.0 indicating no IP at all. Note the adapter name showing the issue"
+            },
+            {
+              "action": "ipconfig /release && ipconfig /renew",
+              "expect": "Watch for error message — note exact text. Common errors: 'An error occurred while renewing interface', 'The DHCP client has attempted to obtain an address', 'Unable to contact your DHCP server'"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
-          "description": "Determine if the issue is at the client, network layer, or DHCP server",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Client/Operational | Sort TimeCreated -Descending | Select -First 20 | Format-List TimeCreated,Id,Message", "expect": "Look for Event ID 1007 (failed to obtain address), 1013 (APIPA assigned), 1006 (lease expired). Events indicate whether DISCOVER was sent and OFFER received" },
-            { "action": "arp -a", "expect": "No duplicate IP-to-MAC mappings — if duplicates exist for the same IP, IP conflict is preventing lease. PowerShell: Get-NetNeighbor | Group-Object IPAddress | Where Count -gt 1" },
-            { "action": "Try a different physical switchport or known-good network segment", "expect": "If IP received on different port/segment, original port has VLAN mismatch, 802.1X authentication issue, or spanning tree blocking" },
-            { "action": "Get-NetAdapter | Where Status -eq 'Up' | Select Name,LinkSpeed,MediaType", "expect": "Link speed should match port capability (e.g., 1Gbps). Check for duplex mismatch causing packet loss" }
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Client/Operational | Sort TimeCreated -Descending | Select -First 20 | Format-List TimeCreated,Id,Message",
+              "expect": "Look for Event ID 1007 (failed to obtain address), 1013 (APIPA assigned), 1006 (lease expired). Events indicate whether DISCOVER was sent and OFFER received"
+            },
+            {
+              "action": "arp -a",
+              "expect": "No duplicate IP-to-MAC mappings — if duplicates exist for the same IP, IP conflict is preventing lease. PowerShell: Get-NetNeighbor | Group-Object IPAddress | Where Count -gt 1"
+            },
+            {
+              "action": "Try a different physical switchport or known-good network segment",
+              "expect": "If IP received on different port/segment, original port has VLAN mismatch, 802.1X authentication issue, or spanning tree blocking"
+            },
+            {
+              "action": "Get-NetAdapter | Where Status -eq 'Up' | Select Name,LinkSpeed,MediaType",
+              "expect": "Link speed should match port capability (e.g., 1Gbps). Check for duplex mismatch causing packet loss"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
-          "description": "Apply remediation steps based on isolation findings",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Restart-Service Dhcp", "expect": "DHCP Client service restarts cleanly. Verify with: Get-Service Dhcp | Select Status" },
-            { "action": "Restart-NetAdapter -Name '<adapter>' -Confirm:$false", "expect": "NIC resets — forces fresh DHCP DISCOVER. Identify adapter with: Get-NetAdapter | Where Status -eq 'Up'" },
-            { "action": "Disable and re-enable DHCP on adapter: Set-NetIPInterface -InterfaceAlias '<adapter>' -Dhcp Disabled; Start-Sleep 2; Set-NetIPInterface -InterfaceAlias '<adapter>' -Dhcp Enabled", "expect": "DHCP reinitialized on the adapter" },
-            { "action": "netsh int ip reset C:\\ip_reset.log && netsh winsock reset (if above fails)", "expect": "TCP/IP stack and Winsock catalog reset — requires reboot. Alternative: Reset-NetIPConfiguration -Verbose" },
-            { "action": "Update NIC driver from OEM website or Windows Update", "expect": "Driver updated to latest version. Verify with: Get-NetAdapter | Select Name,DriverVersion,DriverDate" }
+            {
+              "action": "Restart-Service Dhcp",
+              "expect": "DHCP Client service restarts cleanly. Verify with: Get-Service Dhcp | Select Status"
+            },
+            {
+              "action": "Restart-NetAdapter -Name '<adapter>' -Confirm:$false",
+              "expect": "NIC resets — forces fresh DHCP DISCOVER. Identify adapter with: Get-NetAdapter | Where Status -eq 'Up'"
+            },
+            {
+              "action": "Disable and re-enable DHCP on adapter: Set-NetIPInterface -InterfaceAlias '<adapter>' -Dhcp Disabled; Start-Sleep 2; Set-NetIPInterface -InterfaceAlias '<adapter>' -Dhcp Enabled",
+              "expect": "DHCP reinitialized on the adapter"
+            },
+            {
+              "action": "netsh int ip reset C:\\ip_reset.log && netsh winsock reset (if above fails)",
+              "expect": "TCP/IP stack and Winsock catalog reset — requires reboot. Alternative: Reset-NetIPConfiguration -Verbose"
+            },
+            {
+              "action": "Update NIC driver from OEM website or Windows Update",
+              "expect": "Driver updated to latest version. Verify with: Get-NetAdapter | Select Name,DriverVersion,DriverDate"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
-          "description": "Validate that DHCP is now functioning correctly",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "ipconfig /all", "expect": "Valid IP from correct scope, DHCP Server field populated with server IP, Lease Obtained timestamp present (recent), Lease Expires shows future time" },
-            { "action": "Test-NetConnection -ComputerName <DHCP_Server_IP> -Port 67", "expect": "TcpTestSucceeded: True — confirms connectivity to DHCP server" },
-            { "action": "ping 8.8.8.8 or known internal server", "expect": "Successful ping replies — confirms full network connectivity" }
+            {
+              "action": "ipconfig /all",
+              "expect": "Valid IP from correct scope, DHCP Server field populated with server IP, Lease Obtained timestamp present (recent), Lease Expires shows future time"
+            },
+            {
+              "action": "Test-NetConnection -ComputerName <DHCP_Server_IP> -Port 67",
+              "expect": "TcpTestSucceeded: True — confirms connectivity to DHCP server"
+            },
+            {
+              "action": "ping 8.8.8.8 or known internal server",
+              "expect": "Successful ping replies — confirms full network connectivity"
+            }
           ]
         }
       ]
     },
     "lease_renewal_failing": {
       "title": "DHCP lease renewal failing — intermittent APIPA after sleep",
-      "description": "This playbook addresses intermittent DHCP failures that occur after system wake from sleep, hibernate, or fast startup. The issue typically stems from NIC power management settings that power down the network adapter during sleep, preventing timely lease renewal (T1 at 50% lease time, T2 at 87.5% lease time). When the client wakes with an expired lease, it may fail to renew and fall back to APIPA. Covers Windows power management, NIC driver power states, and sleep transition behaviors.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
-          "description": "Confirm the issue occurs after sleep/wake and identify power management settings",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "ipconfig /all before sleep", "expect": "Document current valid IP, lease obtained time, and lease expires time" },
-            { "action": "Put system to sleep (Sleep-Computer), wait 30+ seconds, wake, then run ipconfig /all", "expect": "IP shows 169.254.x.x (APIPA) or previous lease expired timestamp — confirms renewal failure occurred during sleep" },
-            { "action": "Get-NetAdapterPowerManagement -Name '<NIC>' | Select Name,AllowComputerToTurnOffDevice,WakeOnMagicPacket,WakeOnPattern,D0PacketCoalescing", "expect": "AllowComputerToTurnOffDevice: True means OS is powering off NIC during sleep, which blocks DHCP renewal" }
+            {
+              "action": "ipconfig /all before sleep",
+              "expect": "Document current valid IP, lease obtained time, and lease expires time"
+            },
+            {
+              "action": "Put system to sleep (Sleep-Computer), wait 30+ seconds, wake, then run ipconfig /all",
+              "expect": "IP shows 169.254.x.x (APIPA) or previous lease expired timestamp — confirms renewal failure occurred during sleep"
+            },
+            {
+              "action": "Get-NetAdapterPowerManagement -Name '<NIC>' | Select Name,AllowComputerToTurnOffDevice,WakeOnMagicPacket,WakeOnPattern,D0PacketCoalescing",
+              "expect": "AllowComputerToTurnOffDevice: True means OS is powering off NIC during sleep, which blocks DHCP renewal"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
-          "description": "Check event logs and trace the renewal failure timeline",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Client/Operational -MaxEvents 50 | Where TimeCreated -gt (Get-Date).AddMinutes(-30) | Format-List TimeCreated,Id,Message", "expect": "Events showing renewal attempt failed (ID 1007) or no response from server after wake. Look for events timestamped after wake time" },
-            { "action": "powercfg /energy (run before sleep, capture 60 seconds)", "expect": "Generates energy-report.html showing NIC power transitions and wake sources. Look for 'USB Selective Suspend' or 'PCI Express' power management affecting NIC" },
-            { "action": "Get-NetAdapterAdvancedProperty -Name '<NIC>' -DisplayName '*Power*' | Select DisplayName,DisplayValue", "expect": "Check for Energy Efficient Ethernet (EEE) or other power-saving features that may interfere" }
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Client/Operational -MaxEvents 50 | Where TimeCreated -gt (Get-Date).AddMinutes(-30) | Format-List TimeCreated,Id,Message",
+              "expect": "Events showing renewal attempt failed (ID 1007) or no response from server after wake. Look for events timestamped after wake time"
+            },
+            {
+              "action": "powercfg /energy (run before sleep, capture 60 seconds)",
+              "expect": "Generates energy-report.html showing NIC power transitions and wake sources. Look for 'USB Selective Suspend' or 'PCI Express' power management affecting NIC"
+            },
+            {
+              "action": "Get-NetAdapterAdvancedProperty -Name '<NIC>' -DisplayName '*Power*' | Select DisplayName,DisplayValue",
+              "expect": "Check for Energy Efficient Ethernet (EEE) or other power-saving features that may interfere"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
-          "description": "Disable NIC power management to maintain connectivity through sleep/wake",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Set-NetAdapterPowerManagement -Name '<NIC>' -AllowComputerToTurnOffDevice Disabled -WakeOnMagicPacket Disabled -D0PacketCoalescing Disabled", "expect": "NIC power management disabled — NIC stays active through sleep/wake cycles. Verify with: Get-NetAdapterPowerManagement -Name '<NIC>'" },
-            { "action": "Alternative via Device Manager: devmgmt.msc > Network Adapters > '<adapter>' > Properties > Power Management > uncheck 'Allow the computer to turn off this device to save power'", "expect": "GUI method achieves same result as PowerShell. Both methods require elevated permissions" },
-            { "action": "Disable Fast Startup if issue persists: powercfg /h off (note: affects hibernation and boot time)", "expect": "Fast startup can cause NIC to not fully initialize on wake. Test after disabling" },
-            { "action": "Set-NetIPInterface -InterfaceAlias '<NIC>' -Dhcp Enabled -AutomaticMetric Enabled", "expect": "Ensure DHCP is re-enabled and automatic metric is set for proper route selection" }
+            {
+              "action": "Set-NetAdapterPowerManagement -Name '<NIC>' -AllowComputerToTurnOffDevice Disabled -WakeOnMagicPacket Disabled -D0PacketCoalescing Disabled",
+              "expect": "NIC power management disabled — NIC stays active through sleep/wake cycles. Verify with: Get-NetAdapterPowerManagement -Name '<NIC>'"
+            },
+            {
+              "action": "Alternative via Device Manager: devmgmt.msc > Network Adapters > '<adapter>' > Properties > Power Management > uncheck 'Allow the computer to turn off this device to save power'",
+              "expect": "GUI method achieves same result as PowerShell. Both methods require elevated permissions"
+            },
+            {
+              "action": "Disable Fast Startup if issue persists: powercfg /h off (note: affects hibernation and boot time)",
+              "expect": "Fast startup can cause NIC to not fully initialize on wake. Test after disabling"
+            },
+            {
+              "action": "Set-NetIPInterface -InterfaceAlias '<NIC>' -Dhcp Enabled -AutomaticMetric Enabled",
+              "expect": "Ensure DHCP is re-enabled and automatic metric is set for proper route selection"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
-          "description": "Validate that IP is retained or renewed after sleep/wake",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Document current lease info: ipconfig /all | Select-String 'Lease Obtained','Lease Expires'", "expect": "Note current lease times for comparison" },
-            { "action": "Sleep and wake the machine, wait 10 seconds, then run ipconfig /all", "expect": "Valid IP retained (same as before sleep) or renewed immediately after wake (new Lease Obtained timestamp) — no APIPA (169.254.x.x)" },
-            { "action": "Test connectivity: ping <gateway> and ping <external_IP>", "expect": "Successful pings — confirms network connectivity maintained through sleep/wake" },
-            { "action": "Repeat sleep/wake cycle 3 times to verify consistency", "expect": "IP retained or renewed successfully on all attempts — issue resolved" }
+            {
+              "action": "Document current lease info: ipconfig /all | Select-String 'Lease Obtained','Lease Expires'",
+              "expect": "Note current lease times for comparison"
+            },
+            {
+              "action": "Sleep and wake the machine, wait 10 seconds, then run ipconfig /all",
+              "expect": "Valid IP retained (same as before sleep) or renewed immediately after wake (new Lease Obtained timestamp) — no APIPA (169.254.x.x)"
+            },
+            {
+              "action": "Test connectivity: ping <gateway> and ping <external_IP>",
+              "expect": "Successful pings — confirms network connectivity maintained through sleep/wake"
+            },
+            {
+              "action": "Repeat sleep/wake cycle 3 times to verify consistency",
+              "expect": "IP retained or renewed successfully on all attempts — issue resolved"
+            }
           ]
         }
       ]
     },
     "apipa_persistent": {
       "title": "Persistent APIPA (169.254.x.x) - client stuck in fallback mode",
-      "description": "This playbook addresses clients that consistently receive APIPA addresses (169.254.0.0/16) instead of DHCP-assigned addresses. APIPA is Microsoft's Automatic Private IP Addressing fallback when DHCP fails. Persistent APIPA indicates the client cannot communicate with any DHCP server on the network segment. Covers broadcast domain issues, DHCP server unavailability, IP helper misconfiguration, and scenarios where APIPA should be disabled.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
-          "description": "Confirm APIPA is in use and check APIPA registry settings",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "ipconfig /all", "expect": "IP Address: 169.254.x.x, Subnet Mask: 255.255.0.0, Default Gateway: (blank), DHCP Server: (blank). PrefixOrigin should show 'WellKnown'" },
-            { "action": "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'IPAutoconfigurationEnabled'", "expect": "Value: 1 (enabled) — allows APIPA. Value: 0 means APIPA disabled, but IP may still be 0.0.0.0 if DHCP fails" },
-            { "action": "Get-NetIPAddress -AddressFamily IPv4 | Where IPAddress -like '169.254.*' | Select InterfaceAlias,IPAddress,PrefixOrigin", "expect": "Identifies which adapter has APIPA address. PrefixOrigin: WellKnown confirms APIPA" }
+            {
+              "action": "ipconfig /all",
+              "expect": "IP Address: 169.254.x.x, Subnet Mask: 255.255.0.0, Default Gateway: (blank), DHCP Server: (blank). PrefixOrigin should show 'WellKnown'"
+            },
+            {
+              "action": "Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'IPAutoconfigurationEnabled'",
+              "expect": "Value: 1 (enabled) — allows APIPA. Value: 0 means APIPA disabled, but IP may still be 0.0.0.0 if DHCP fails"
+            },
+            {
+              "action": "Get-NetIPAddress -AddressFamily IPv4 | Where IPAddress -like '169.254.*' | Select InterfaceAlias,IPAddress,PrefixOrigin",
+              "expect": "Identifies which adapter has APIPA address. PrefixOrigin: WellKnown confirms APIPA"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
-          "description": "Determine why DHCP is not responding on this network segment",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "ping <known_DHCP_server_IP>", "expect": "If ping fails, network connectivity issue exists (VLAN, routing, firewall). If ping succeeds, DHCP service may be down or ports blocked" },
-            { "action": "Test-NetConnection -ComputerName <DHCP_server> -Port 67", "expect": "TcpTestSucceeded: False would indicate UDP 67 blocked by firewall or ACL. Note: Test-NetConnection for UDP may show false negatives" },
-            { "action": "Capture network trace: netsh trace start capture=yes tracefile=C:\\apipa_trace.etl; ipconfig /renew; netsh trace stop", "expect": "Analyze trace to see if DHCPDISCOVER is sent and whether DHCPOFFER is received. No OFFER = network/server issue. No DISCOVER = client issue" },
-            { "action": "Check switch/router for IP Helper: On Cisco IOS: show ip helper-address | include <VLAN>", "expect": "Verify IP Helper points to correct DHCP server IP. Missing or incorrect helper = broadcasts not forwarded to DHCP server" }
+            {
+              "action": "ping <known_DHCP_server_IP>",
+              "expect": "If ping fails, network connectivity issue exists (VLAN, routing, firewall). If ping succeeds, DHCP service may be down or ports blocked"
+            },
+            {
+              "action": "Test-NetConnection -ComputerName <DHCP_server> -Port 67",
+              "expect": "TcpTestSucceeded: False would indicate UDP 67 blocked by firewall or ACL. Note: Test-NetConnection for UDP may show false negatives"
+            },
+            {
+              "action": "Capture network trace: netsh trace start capture=yes tracefile=C:\\apipa_trace.etl; ipconfig /renew; netsh trace stop",
+              "expect": "Analyze trace to see if DHCPDISCOVER is sent and whether DHCPOFFER is received. No OFFER = network/server issue. No DISCOVER = client issue"
+            },
+            {
+              "action": "Check switch/router for IP Helper: On Cisco IOS: show ip helper-address | include <VLAN>",
+              "expect": "Verify IP Helper points to correct DHCP server IP. Missing or incorrect helper = broadcasts not forwarded to DHCP server"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
-          "description": "Resolve the underlying DHCP communication issue",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "If IP Helper missing/misconfigured: Configure on router/L3 switch for the client's VLAN. Example Cisco: interface VLAN<X>; ip helper-address <DHCP_server_IP>", "expect": "DHCP broadcasts now forwarded to DHCP server. Test by renewing lease on client" },
-            { "action": "If DHCP server unreachable: Verify server is running: Get-Service DhcpServer on server. Check network path: tracert <DHCP_server>", "expect": "DHCP server accessible and service running. If server down, start service or restore server" },
-            { "action": "If ports blocked: Configure firewall to allow UDP 67/68. Windows Firewall: New-NetFirewallRule -DisplayName 'DHCP Allow' -Direction Inbound -Protocol UDP -LocalPort 68 -RemotePort 67 -Action Allow", "expect": "Firewall rules allowing DHCP traffic. Verify with: Get-NetFirewallRule | Where DisplayName -like '*DHCP*'" },
-            { "action": "If APIPA should be disabled (e.g., for server or dedicated segment): Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'IPAutoconfigurationEnabled' -Value 0 -Type DWord; Restart-NetAdapter -Name '<adapter>'", "expect": "APIPA disabled after reboot. Client will show 0.0.0.0 if DHCP fails, making issues more obvious. Note: Microsoft recommends keeping APIPA enabled for most scenarios" }
+            {
+              "action": "If IP Helper missing/misconfigured: Configure on router/L3 switch for the client's VLAN. Example Cisco: interface VLAN<X>; ip helper-address <DHCP_server_IP>",
+              "expect": "DHCP broadcasts now forwarded to DHCP server. Test by renewing lease on client"
+            },
+            {
+              "action": "If DHCP server unreachable: Verify server is running: Get-Service DhcpServer on server. Check network path: tracert <DHCP_server>",
+              "expect": "DHCP server accessible and service running. If server down, start service or restore server"
+            },
+            {
+              "action": "If ports blocked: Configure firewall to allow UDP 67/68. Windows Firewall: New-NetFirewallRule -DisplayName 'DHCP Allow' -Direction Inbound -Protocol UDP -LocalPort 68 -RemotePort 67 -Action Allow",
+              "expect": "Firewall rules allowing DHCP traffic. Verify with: Get-NetFirewallRule | Where DisplayName -like '*DHCP*'"
+            },
+            {
+              "action": "If APIPA should be disabled (e.g., for server or dedicated segment): Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters' -Name 'IPAutoconfigurationEnabled' -Value 0 -Type DWord; Restart-NetAdapter -Name '<adapter>'",
+              "expect": "APIPA disabled after reboot. Client will show 0.0.0.0 if DHCP fails, making issues more obvious. Note: Microsoft recommends keeping APIPA enabled for most scenarios"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
-          "description": "Validate client receives DHCP-assigned IP instead of APIPA",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "ipconfig /release && ipconfig /renew", "expect": "Client receives valid IP from DHCP scope (not 169.254.x.x). Note DHCP Server IP and lease times" },
-            { "action": "Get-NetIPAddress -AddressFamily IPv4 | Where InterfaceAlias -eq '<adapter>' | Select IPAddress,PrefixOrigin", "expect": "PrefixOrigin: Dhcp (not WellKnown). IP address matches expected scope" },
-            { "action": "ping <gateway> and ping <external_IP>", "expect": "Successful pings — confirms full network connectivity with DHCP-assigned IP" },
-            { "action": "Test after reboot: Restart-Computer; after boot, run ipconfig /all", "expect": "DHCP IP obtained automatically on boot — no manual intervention required" }
+            {
+              "action": "ipconfig /release && ipconfig /renew",
+              "expect": "Client receives valid IP from DHCP scope (not 169.254.x.x). Note DHCP Server IP and lease times"
+            },
+            {
+              "action": "Get-NetIPAddress -AddressFamily IPv4 | Where InterfaceAlias -eq '<adapter>' | Select IPAddress,PrefixOrigin",
+              "expect": "PrefixOrigin: Dhcp (not WellKnown). IP address matches expected scope"
+            },
+            {
+              "action": "ping <gateway> and ping <external_IP>",
+              "expect": "Successful pings — confirms full network connectivity with DHCP-assigned IP"
+            },
+            {
+              "action": "Test after reboot: Restart-Computer; after boot, run ipconfig /all",
+              "expect": "DHCP IP obtained automatically on boot — no manual intervention required"
+            }
           ]
         }
       ]
     },
     "dhcpv6_issues": {
       "title": "DHCPv6 addressing problems - stateful vs stateless configuration",
-      "description": "This playbook addresses IPv6 DHCP issues including clients not receiving IPv6 addresses via DHCPv6, confusion between SLAAC (Stateless Address Autoconfiguration) and stateful DHCPv6, and prefix delegation (IA_PD) issues. Windows DHCPv6 behavior depends on Router Advertisement (RA) flags: Managed flag (M=1) triggers stateful DHCPv6, Other flag (O=1) triggers stateless DHCPv6 for DNS only. Covers IPv6 protocol configuration, RA settings, and DHCPv6 server configuration.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
-          "description": "Confirm IPv6 addressing state and DHCPv6 client behavior",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "ipconfig /all", "expect": "Look for IPv6 Address entries. Note if addresses start with 2001::/16 (global), fd::/8 (ULA), fe80::/10 (link-local), or 2600::/12 (temporary). Check if 'DHCPv6 IAID' and 'DUID' are present" },
-            { "action": "Get-NetIPAddress -AddressFamily IPv6 | Select InterfaceAlias,IPAddress,PrefixOrigin,SuffixOrigin,PreferredLifetime,ValidLifetime", "expect": "PrefixOrigin: RouterAdvertisement indicates SLAAC. PrefixOrigin: Dhcp indicates DHCPv6-assigned. SuffixOrigin: Random for privacy addresses, Link for EUI-64" },
-            { "action": "Get-NetIPConfiguration -Detailed | Select InterfaceAlias,IPv6DefaultGateway,IPv6Address", "expect": "Shows IPv6 default gateway (link-local of router) and all IPv6 addresses with their origins" }
+            {
+              "action": "ipconfig /all",
+              "expect": "Look for IPv6 Address entries. Note if addresses start with 2001::/16 (global), fd::/8 (ULA), fe80::/10 (link-local), or 2600::/12 (temporary). Check if 'DHCPv6 IAID' and 'DUID' are present"
+            },
+            {
+              "action": "Get-NetIPAddress -AddressFamily IPv6 | Select InterfaceAlias,IPAddress,PrefixOrigin,SuffixOrigin,PreferredLifetime,ValidLifetime",
+              "expect": "PrefixOrigin: RouterAdvertisement indicates SLAAC. PrefixOrigin: Dhcp indicates DHCPv6-assigned. SuffixOrigin: Random for privacy addresses, Link for EUI-64"
+            },
+            {
+              "action": "Get-NetIPConfiguration -Detailed | Select InterfaceAlias,IPv6DefaultGateway,IPv6Address",
+              "expect": "Shows IPv6 default gateway (link-local of router) and all IPv6 addresses with their origins"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
-          "description": "Determine if using SLAAC, stateless DHCPv6, or stateful DHCPv6",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Capture Router Advertisements: pktmon filter add -p 58; pktmon start --capture; Start-Sleep 60; pktmon stop; pktmon format C:\\ra_trace.etl -o C:\\ra_trace.txt", "expect": "Analyze RA packets for M flag (Managed) and O flag (Other). M=1 + O=1 = stateful DHCPv6. M=0 + O=1 = stateless DHCPv6. M=0 + O=0 = SLAAC only" },
-            { "action": "Get-NetIPv6Protocol | Select UseTemporaryAddresses,RandomizeIdentifiers,MediaSense", "expect": "UseTemporaryAddresses: Enabled (privacy addresses). RandomizeIdentifiers: Enabled. These affect which IPv6 addresses are generated" },
-            { "action": "Get-NetAdapterBinding -Name '<adapter>' -ComponentID ms_tcpip6 | Select Enabled", "expect": "Enabled: True — IPv6 protocol must be bound to adapter for DHCPv6 to work. Enable if needed: Enable-NetAdapterBinding -Name '<adapter>' -ComponentID ms_tcpip6" },
-            { "action": "On DHCPv6 server: Get-DhcpServerv6Scope -ComputerName <server> | Select ScopeId,Name,State", "expect": "Verify DHCPv6 scope exists and is Active. Check prefix delegation settings if using IA_PD for subnets" }
+            {
+              "action": "Capture Router Advertisements: pktmon filter add -p 58; pktmon start --capture; Start-Sleep 60; pktmon stop; pktmon format C:\\ra_trace.etl -o C:\\ra_trace.txt",
+              "expect": "Analyze RA packets for M flag (Managed) and O flag (Other). M=1 + O=1 = stateful DHCPv6. M=0 + O=1 = stateless DHCPv6. M=0 + O=0 = SLAAC only"
+            },
+            {
+              "action": "Get-NetIPv6Protocol | Select UseTemporaryAddresses,RandomizeIdentifiers,MediaSense",
+              "expect": "UseTemporaryAddresses: Enabled (privacy addresses). RandomizeIdentifiers: Enabled. These affect which IPv6 addresses are generated"
+            },
+            {
+              "action": "Get-NetAdapterBinding -Name '<adapter>' -ComponentID ms_tcpip6 | Select Enabled",
+              "expect": "Enabled: True — IPv6 protocol must be bound to adapter for DHCPv6 to work. Enable if needed: Enable-NetAdapterBinding -Name '<adapter>' -ComponentID ms_tcpip6"
+            },
+            {
+              "action": "On DHCPv6 server: Get-DhcpServerv6Scope -ComputerName <server> | Select ScopeId,Name,State",
+              "expect": "Verify DHCPv6 scope exists and is Active. Check prefix delegation settings if using IA_PD for subnets"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
-          "description": "Configure for desired IPv6 addressing mode",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "If stateful DHCPv6 required but not working: Configure router RA with M=1, O=1. On Windows Server RRAS: netsh interface ipv6 set interface '<interface>' advertise=enabled managed=enabled other=enabled", "expect": "Router advertisements now signal clients to use stateful DHCPv6. Clients will request IA_NA (address) and IA_PD (prefix)" },
-            { "action": "If stateless DHCPv6 desired (SLAAC + DHCP for DNS): Configure router RA with M=0, O=1. netsh interface ipv6 set interface '<interface>' advertise=enabled managed=disabled other=enabled", "expect": "Clients use SLAAC for IP address and DHCPv6 for DNS server addresses only" },
-            { "action": "If SLAAC only desired (no DHCPv6): Configure router RA with M=0, O=0. Disable DHCPv6 scope or set to inactive", "expect": "Clients self-assign IPv6 addresses via SLAAC only. No DHCPv6 communication" },
-            { "action": "Force DHCPv6 renewal on client: ipconfig /release6 && ipconfig /renew6. PowerShell: Remove-NetIPAddress -AddressFamily IPv6 -Confirm:$false; Restart-NetAdapter -Name '<adapter>'", "expect": "Client sends new DHCPv6 Solicit messages and receives addresses based on current RA flags" }
+            {
+              "action": "If stateful DHCPv6 required but not working: Configure router RA with M=1, O=1. On Windows Server RRAS: netsh interface ipv6 set interface '<interface>' advertise=enabled managed=enabled other=enabled",
+              "expect": "Router advertisements now signal clients to use stateful DHCPv6. Clients will request IA_NA (address) and IA_PD (prefix)"
+            },
+            {
+              "action": "If stateless DHCPv6 desired (SLAAC + DHCP for DNS): Configure router RA with M=0, O=1. netsh interface ipv6 set interface '<interface>' advertise=enabled managed=disabled other=enabled",
+              "expect": "Clients use SLAAC for IP address and DHCPv6 for DNS server addresses only"
+            },
+            {
+              "action": "If SLAAC only desired (no DHCPv6): Configure router RA with M=0, O=0. Disable DHCPv6 scope or set to inactive",
+              "expect": "Clients self-assign IPv6 addresses via SLAAC only. No DHCPv6 communication"
+            },
+            {
+              "action": "Force DHCPv6 renewal on client: ipconfig /release6 && ipconfig /renew6. PowerShell: Remove-NetIPAddress -AddressFamily IPv6 -Confirm:$false; Restart-NetAdapter -Name '<adapter>'",
+              "expect": "Client sends new DHCPv6 Solicit messages and receives addresses based on current RA flags"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
-          "description": "Validate IPv6 addressing matches desired configuration",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "ipconfig /all", "expect": "IPv6 addresses present with correct origin. For stateful DHCPv6: addresses from DHCPv6 scope, PrefixOrigin: Dhcp. For SLAAC: addresses based on router prefix, PrefixOrigin: RouterAdvertisement" },
-            { "action": "Get-NetIPAddress -AddressFamily IPv6 | Where PrefixOrigin -eq 'Dhcp' | Select IPAddress,PrefixOrigin", "expect": "If stateful DHCPv6, one or more addresses with PrefixOrigin: Dhcp. If stateless/SLAAC only, no DHCPv6 addresses" },
-            { "action": "Test IPv6 connectivity: Test-NetConnection -ComputerName 2001:4860:4860::8888 (Google DNS IPv6)", "expect": "TcpTestSucceeded: True — confirms IPv6 Internet connectivity. If fails, check IPv6 routing and firewall" },
-            { "action": "nslookup -type=AAAA example.com", "expect": "Returns IPv6 address (AAAA record) — confirms DNS resolution over IPv6 is working" }
+            {
+              "action": "ipconfig /all",
+              "expect": "IPv6 addresses present with correct origin. For stateful DHCPv6: addresses from DHCPv6 scope, PrefixOrigin: Dhcp. For SLAAC: addresses based on router prefix, PrefixOrigin: RouterAdvertisement"
+            },
+            {
+              "action": "Get-NetIPAddress -AddressFamily IPv6 | Where PrefixOrigin -eq 'Dhcp' | Select IPAddress,PrefixOrigin",
+              "expect": "If stateful DHCPv6, one or more addresses with PrefixOrigin: Dhcp. If stateless/SLAAC only, no DHCPv6 addresses"
+            },
+            {
+              "action": "Test IPv6 connectivity: Test-NetConnection -ComputerName 2001:4860:4860::8888 (Google DNS IPv6)",
+              "expect": "TcpTestSucceeded: True — confirms IPv6 Internet connectivity. If fails, check IPv6 routing and firewall"
+            },
+            {
+              "action": "nslookup -type=AAAA example.com",
+              "expect": "Returns IPv6 address (AAAA record) — confirms DNS resolution over IPv6 is working"
+            }
           ]
         }
       ]
     },
     "lease_expiration_conflicts": {
       "title": "DHCP lease expiration and IP address conflicts",
-      "description": "This playbook addresses scenarios where DHCP leases expire prematurely, clients receive NACK (Negative Acknowledgment) from DHCP servers, or IP address conflicts prevent lease acquisition. Lease expiration can occur if the client is offline longer than the lease duration, if the DHCP scope has insufficient leases, or if IP conflicts exist. Microsoft DHCP servers ping addresses before leasing to detect conflicts. Covers lease duration management, conflict detection, and scope capacity.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
-          "description": "Check lease status and look for conflict indicators",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "ipconfig /all", "expect": "Note Lease Obtained and Lease Expires timestamps. If Lease Expires is in the past, lease has expired. Check if IP is still usable or if APIPA appeared" },
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Client/Operational -MaxEvents 50 | Where Id -in (1006,1007,1010) | Format-List TimeCreated,Id,Message", "expect": "Event 1006: lease expired. Event 1007: failed to obtain address. Event 1010: DHCP NACK received (conflict detected)" },
-            { "action": "On DHCP server: Get-DhcpServerv4Lease -ScopeId <scope> -ComputerName <server> | Where ClientId -eq '<client_MAC>' | Select ClientId,IPAddress,LeaseExpiryTimes,AddressState", "expect": "Check if lease exists, its expiry time, and state (Active, Expired, Declined, ActiveOffer)" }
+            {
+              "action": "ipconfig /all",
+              "expect": "Note Lease Obtained and Lease Expires timestamps. If Lease Expires is in the past, lease has expired. Check if IP is still usable or if APIPA appeared"
+            },
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-Dhcp-Client/Operational -MaxEvents 50 | Where Id -in (1006,1007,1010) | Format-List TimeCreated,Id,Message",
+              "expect": "Event 1006: lease expired. Event 1007: failed to obtain address. Event 1010: DHCP NACK received (conflict detected)"
+            },
+            {
+              "action": "On DHCP server: Get-DhcpServerv4Lease -ScopeId <scope> -ComputerName <server> | Where ClientId -eq '<client_MAC>' | Select ClientId,IPAddress,LeaseExpiryTimes,AddressState",
+              "expect": "Check if lease exists, its expiry time, and state (Active, Expired, Declined, ActiveOffer)"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
-          "description": "Determine cause of lease expiration or conflict",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "On DHCP server: Get-DhcpServerv4ScopeStatistics -ScopeId <scope> -ComputerName <server> | Select PercentageInUse,Free,InUse", "expect": "PercentageInUse > 90% indicates scope exhaustion. Need to expand scope or reduce lease duration" },
-            { "action": "Check for duplicate IP on network: ping <client_IP>; arp -a | Select-String <client_IP>", "expect": "If ping succeeds from different MAC, IP conflict exists. Identify conflicting device" },
-            { "action": "On DHCP server: Get-DhcpServerv4Scope -ScopeId <scope> -ComputerName <server> | Select Name,LeaseDuration", "expect": "LeaseDuration determines how long leases are valid. Short leases (e.g., 1 hour) expire quickly if client is offline" },
-            { "action": "Check DHCP server conflict detection: Get-DhcpServerv4Setting -ComputerName <server> | Select ConflictDetectionAttempts", "expect": "Default is 1 (ping once). Higher values increase conflict detection but slow lease assignment" }
+            {
+              "action": "On DHCP server: Get-DhcpServerv4ScopeStatistics -ScopeId <scope> -ComputerName <server> | Select PercentageInUse,Free,InUse",
+              "expect": "PercentageInUse > 90% indicates scope exhaustion. Need to expand scope or reduce lease duration"
+            },
+            {
+              "action": "Check for duplicate IP on network: ping <client_IP>; arp -a | Select-String <client_IP>",
+              "expect": "If ping succeeds from different MAC, IP conflict exists. Identify conflicting device"
+            },
+            {
+              "action": "On DHCP server: Get-DhcpServerv4Scope -ScopeId <scope> -ComputerName <server> | Select Name,LeaseDuration",
+              "expect": "LeaseDuration determines how long leases are valid. Short leases (e.g., 1 hour) expire quickly if client is offline"
+            },
+            {
+              "action": "Check DHCP server conflict detection: Get-DhcpServerv4Setting -ComputerName <server> | Select ConflictDetectionAttempts",
+              "expect": "Default is 1 (ping once). Higher values increase conflict detection but slow lease assignment"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
-          "description": "Resolve lease expiration or conflict issues",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "If scope exhausted: Expand scope (add more IP addresses) or reduce lease duration: Set-DhcpServerv4Scope -ScopeId <scope> -LeaseDuration <TimeSpan> -ComputerName <server>", "expect": "More leases available or leases recycle faster. Example: 4 hours instead of 8 days for mobile devices" },
-            { "action": "If IP conflict found: Identify conflicting device and remove its static IP or correct reservation. Delete conflicting lease: Remove-DhcpServerv4Lease -ScopeId <scope> -ClientId <conflicting_MAC> -ComputerName <server>", "expect": "Conflict resolved. Client can now obtain lease without NACK" },
-            { "action": "If client lease is stuck in bad state: Delete lease on server and force client renewal: Remove-DhcpServerv4Lease -ScopeId <scope> -ClientId <client_MAC> -ComputerName <server>; On client: ipconfig /release && ipconfig /renew", "expect": "Fresh lease obtained. Client should get same or different IP depending on availability" },
-            { "action": "Create DHCP reservation for critical clients: Add-DhcpServerv4Reservation -ScopeId <scope> -IPAddress <IP> -ClientId <MAC> -Name '<description>' -ComputerName <server>", "expect": "Client always receives same IP, prevents conflicts and lease expiration issues for static devices" }
+            {
+              "action": "If scope exhausted: Expand scope (add more IP addresses) or reduce lease duration: Set-DhcpServerv4Scope -ScopeId <scope> -LeaseDuration <TimeSpan> -ComputerName <server>",
+              "expect": "More leases available or leases recycle faster. Example: 4 hours instead of 8 days for mobile devices"
+            },
+            {
+              "action": "If IP conflict found: Identify conflicting device and remove its static IP or correct reservation. Delete conflicting lease: Remove-DhcpServerv4Lease -ScopeId <scope> -ClientId <conflicting_MAC> -ComputerName <server>",
+              "expect": "Conflict resolved. Client can now obtain lease without NACK"
+            },
+            {
+              "action": "If client lease is stuck in bad state: Delete lease on server and force client renewal: Remove-DhcpServerv4Lease -ScopeId <scope> -ClientId <client_MAC> -ComputerName <server>; On client: ipconfig /release && ipconfig /renew",
+              "expect": "Fresh lease obtained. Client should get same or different IP depending on availability"
+            },
+            {
+              "action": "Create DHCP reservation for critical clients: Add-DhcpServerv4Reservation -ScopeId <scope> -IPAddress <IP> -ClientId <MAC> -Name '<description>' -ComputerName <server>",
+              "expect": "Client always receives same IP, prevents conflicts and lease expiration issues for static devices"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
-          "description": "Validate lease is stable and no conflicts exist",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "ipconfig /all", "expect": "Valid IP assigned, Lease Obtained is recent, Lease Expires is in future (typically 50% of lease duration later)" },
-            { "action": "On DHCP server: Get-DhcpServerv4Lease -ScopeId <scope> -ClientId <client_MAC> -ComputerName <server> | Select AddressState,LeaseExpiryTimes", "expect": "AddressState: Active, LeaseExpiryTimes shows future expiry time" },
-            { "action": "Test connectivity: ping <gateway>; ping <external_IP>", "expect": "Successful pings — confirms IP is unique and routing is working" },
-            { "action": "Monitor for renewal: Wait until T1 (50% of lease), check event log for Event ID 1003 (lease renewed)", "expect": "Lease renewed automatically without user intervention. Confirms healthy DHCP operation" }
+            {
+              "action": "ipconfig /all",
+              "expect": "Valid IP assigned, Lease Obtained is recent, Lease Expires is in future (typically 50% of lease duration later)"
+            },
+            {
+              "action": "On DHCP server: Get-DhcpServerv4Lease -ScopeId <scope> -ClientId <client_MAC> -ComputerName <server> | Select AddressState,LeaseExpiryTimes",
+              "expect": "AddressState: Active, LeaseExpiryTimes shows future expiry time"
+            },
+            {
+              "action": "Test connectivity: ping <gateway>; ping <external_IP>",
+              "expect": "Successful pings — confirms IP is unique and routing is working"
+            },
+            {
+              "action": "Monitor for renewal: Wait until T1 (50% of lease), check event log for Event ID 1003 (lease renewed)",
+              "expect": "Lease renewed automatically without user intervention. Confirms healthy DHCP operation"
+            }
           ]
         }
       ]

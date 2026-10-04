@@ -3,7 +3,6 @@
   "label": "802.1x Wireless",
   "icon": "📶",
   "domain": "networking",
-  "description": "IEEE 802.1X authenticated wireless access provides secure network connectivity using enterprise-grade authentication methods. This service supports WPA2-Enterprise and WPA3-Enterprise security with EAP-TLS (certificate-based), PEAP-MSCHAPv2 (username/password), TEAP, and other EAP methods. The Windows WLAN AutoConfig service (WLANSVC) manages wireless connections, scanning, authentication, and roaming. Proper configuration requires coordination between Windows clients, wireless access points/controllers, RADIUS servers (NPS or third-party), and certificate infrastructure for EAP-TLS deployments.",
   "scoping": {
     "l1": [
       "What Windows version is the wireless client running? (Run: [System.Environment]::OSVersion.Version; Get-CimInstance Win32_OperatingSystem | Select Caption,Version,BuildNumber)",
@@ -113,221 +112,494 @@
   "playbooks": {
     "auth_fails_after_associate": {
       "title": "Client associates to SSID but 802.1x authentication fails",
-      "description": "This playbook addresses scenarios where Windows clients successfully associate to an enterprise SSID (WPA2-Enterprise or WPA3-Enterprise) but fail during the 802.1X EAP authentication phase. Common causes include RADIUS shared secret mismatches, certificate trust issues (EAP-TLS), Credential Guard interference with PEAP-MSCHAPv2, RADIUS timeout settings, NPS Network Policy condition mismatches, and wireless profile configuration errors. The WLAN AutoConfig service (WLANSVC) manages the EAP exchange with the RADIUS server via the wireless access point controller.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-Service WLANSVC | Select Name,Status,StartType,DisplayName", "expect": "Status: Running, StartType: Automatic — service must be running for wireless authentication" },
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5632 or EventID=5633)]]\" | Select TimeCreated,Id,Message | Format-List", "expect": "Event 5633 = 802.1x auth failed — note EAP error code and reason string in event message" },
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272 or EventID=6273)]]\" | Select TimeCreated,Id,Message | Format-List", "expect": "Event 6273 on NPS server shows Reason Code (e.g., 68=auth method not supported, 65=group mismatch)" },
-            { "action": "Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\\Microsoft\\Windows\\DeviceGuard | Select SecurityServicesConfigured", "expect": "If Credential Guard enabled, PEAP-MSCHAPv2 will fail — switch to EAP-TLS or disable Credential Guard" }
+            {
+              "action": "Get-Service WLANSVC | Select Name,Status,StartType,DisplayName",
+              "expect": "Status: Running, StartType: Automatic — service must be running for wireless authentication"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5632 or EventID=5633)]]\" | Select TimeCreated,Id,Message | Format-List",
+              "expect": "Event 5633 = 802.1x auth failed — note EAP error code and reason string in event message"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272 or EventID=6273)]]\" | Select TimeCreated,Id,Message | Format-List",
+              "expect": "Event 6273 on NPS server shows Reason Code (e.g., 68=auth method not supported, 65=group mismatch)"
+            },
+            {
+              "action": "Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\\Microsoft\\Windows\\DeviceGuard | Select SecurityServicesConfigured",
+              "expect": "If Credential Guard enabled, PEAP-MSCHAPv2 will fail — switch to EAP-TLS or disable Credential Guard"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "netsh wlan show profile name='<SSID>' key=clear", "expect": "EAP type matches what NPS expects — PEAP-MSCHAPv2 (Type 25), EAP-TLS (Type 13), or TEAP (Type 55)" },
-            { "action": "netsh nps show client", "expect": "WAP controller IP registered as RADIUS client with correct shared secret hash" },
-            { "action": "On WAP controller: check RADIUS server timeout setting", "expect": "Timeout at least 15 seconds — EAP-TLS with OCSP/CRL checking requires multiple round trips" },
-            { "action": "certutil -store My (machine) and certutil -store -user My (user)", "expect": "For EAP-TLS: certificates valid, not expired, EKU includes Client Authentication (1.3.6.1.5.5.7.3.2)" },
-            { "action": "Get-ADUser <user> -Properties PasswordExpired,PasswordLastSet", "expect": "For PEAP-MSCHAPv2: PasswordExpired = False — expired passwords cause auth failures" }
+            {
+              "action": "netsh wlan show profile name='<SSID>' key=clear",
+              "expect": "EAP type matches what NPS expects — PEAP-MSCHAPv2 (Type 25), EAP-TLS (Type 13), or TEAP (Type 55)"
+            },
+            {
+              "action": "netsh nps show client",
+              "expect": "WAP controller IP registered as RADIUS client with correct shared secret hash"
+            },
+            {
+              "action": "On WAP controller: check RADIUS server timeout setting",
+              "expect": "Timeout at least 15 seconds — EAP-TLS with OCSP/CRL checking requires multiple round trips"
+            },
+            {
+              "action": "certutil -store My (machine) and certutil -store -user My (user)",
+              "expect": "For EAP-TLS: certificates valid, not expired, EKU includes Client Authentication (1.3.6.1.5.5.7.3.2)"
+            },
+            {
+              "action": "Get-ADUser <user> -Properties PasswordExpired,PasswordLastSet",
+              "expect": "For PEAP-MSCHAPv2: PasswordExpired = False — expired passwords cause auth failures"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "netsh wlan delete profile name='<SSID>' then gpupdate /force /target:computer", "expect": "Profile recreated from GPO with correct EAP settings and authentication mode" },
-            { "action": "Verify and re-enter RADIUS shared secret on both NPS and WAP controller", "expect": "Secrets match exactly including case — check for trailing whitespace" },
-            { "action": "Increase RADIUS timeout on WAP controller to 15-30 seconds (30-45s if CRL checking enabled)", "expect": "EAP-TLS handshake has enough time to complete without timeout" },
-            { "action": "For EAP-TLS: Deploy root CA certificate via GPO to Trusted Root Certification Authorities", "expect": "Clients trust NPS server certificate issuer — prevents 'unknown_ca' TLS alert" },
-            { "action": "For PEAP-MSCHAPv2 with Credential Guard: Disable Credential Guard or switch to EAP-TLS", "expect": "Authentication succeeds — Credential Guard blocks MSCHAPv2 credential usage" }
+            {
+              "action": "netsh wlan delete profile name='<SSID>' then gpupdate /force /target:computer",
+              "expect": "Profile recreated from GPO with correct EAP settings and authentication mode"
+            },
+            {
+              "action": "Verify and re-enter RADIUS shared secret on both NPS and WAP controller",
+              "expect": "Secrets match exactly including case — check for trailing whitespace"
+            },
+            {
+              "action": "Increase RADIUS timeout on WAP controller to 15-30 seconds (30-45s if CRL checking enabled)",
+              "expect": "EAP-TLS handshake has enough time to complete without timeout"
+            },
+            {
+              "action": "For EAP-TLS: Deploy root CA certificate via GPO to Trusted Root Certification Authorities",
+              "expect": "Clients trust NPS server certificate issuer — prevents 'unknown_ca' TLS alert"
+            },
+            {
+              "action": "For PEAP-MSCHAPv2 with Credential Guard: Disable Credential Guard or switch to EAP-TLS",
+              "expect": "Authentication succeeds — Credential Guard blocks MSCHAPv2 credential usage"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3", "expect": "Event 6272 = authentication succeeded on NPS server" },
-            { "action": "netsh wlan show interfaces", "expect": "State: Connected, Authentication: WPA2-Enterprise or WPA3-Enterprise, Cipher: AES or AES-256" },
-            { "action": "ipconfig /all", "expect": "Valid IP address received from correct VLAN scope — indicates successful auth and VLAN assignment" }
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3",
+              "expect": "Event 6272 = authentication succeeded on NPS server"
+            },
+            {
+              "action": "netsh wlan show interfaces",
+              "expect": "State: Connected, Authentication: WPA2-Enterprise or WPA3-Enterprise, Cipher: AES or AES-256"
+            },
+            {
+              "action": "ipconfig /all",
+              "expect": "Valid IP address received from correct VLAN scope — indicates successful auth and VLAN assignment"
+            }
           ]
         }
       ]
     },
     "roaming_drops": {
       "title": "Client drops connection when roaming between APs",
-      "description": "This playbook addresses roaming failures where Windows clients successfully authenticate to an enterprise SSID but lose connectivity when moving between access points. This is typically caused by 802.11r Fast Transition (FT) incompatibility, disabled PMK caching/OKC (Opportunistic Key Caching), RADIUS timeout issues during re-authentication, or WAP controller misconfiguration. Windows 10/11 supports 802.11r, 802.11k, and 802.11v for fast roaming, but requires driver support and AP-side configuration. When FT is unavailable, Windows falls back to OKC for optimized roaming.",
       "severity": "medium",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-WLAN-AutoConfig/Operational | Where Message -like \"*roam*\" | Format-List TimeCreated,Id,Message", "expect": "Look for roam initiation events followed by auth failure or disconnection events" },
-            { "action": "On WAP controller: check if 802.11r Fast Transition (FT) is enabled on the SSID", "expect": "FT-EAP may be failing for clients that do not fully support it — some drivers have incomplete FT implementation" },
-            { "action": "netsh wlan show drivers | Select-String -Pattern '802.11r|Fast Transition'", "expect": "Verify wireless driver supports 802.11r — older drivers may not support FT roaming" }
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-WLAN-AutoConfig/Operational | Where Message -like \"*roam*\" | Format-List TimeCreated,Id,Message",
+              "expect": "Look for roam initiation events followed by auth failure or disconnection events"
+            },
+            {
+              "action": "On WAP controller: check if 802.11r Fast Transition (FT) is enabled on the SSID",
+              "expect": "FT-EAP may be failing for clients that do not fully support it — some drivers have incomplete FT implementation"
+            },
+            {
+              "action": "netsh wlan show drivers | Select-String -Pattern '802.11r|Fast Transition'",
+              "expect": "Verify wireless driver supports 802.11r — older drivers may not support FT roaming"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "On WAP controller: check PMK caching and OKC settings", "expect": "If PMK cache entries are stale or OKC is disabled, full re-authentication occurs on every roam causing timeouts" },
-            { "action": "Check RADIUS server timeout on WAP controller", "expect": "If timeout too short (under 15s), full EAP-TLS re-auth during roam times out before completing" },
-            { "action": "netsh wlan show profile name='<SSID>' key=clear | Select-String -Pattern 'PMKCacheMode|PMKCacheTTL|preAuthMode'", "expect": "PMKCacheMode should be 'enabled', PMKCacheTTL typically 720 minutes, preAuthMode 'disabled' for FT compatibility" },
-            { "action": "Get-NetAdapter | Where InterfaceDescription -like '*wireless*' | Select Name,DriverVersion", "expect": "Check driver version — update to latest OEM driver for best roaming support" }
+            {
+              "action": "On WAP controller: check PMK caching and OKC settings",
+              "expect": "If PMK cache entries are stale or OKC is disabled, full re-authentication occurs on every roam causing timeouts"
+            },
+            {
+              "action": "Check RADIUS server timeout on WAP controller",
+              "expect": "If timeout too short (under 15s), full EAP-TLS re-auth during roam times out before completing"
+            },
+            {
+              "action": "netsh wlan show profile name='<SSID>' key=clear | Select-String -Pattern 'PMKCacheMode|PMKCacheTTL|preAuthMode'",
+              "expect": "PMKCacheMode should be 'enabled', PMKCacheTTL typically 720 minutes, preAuthMode 'disabled' for FT compatibility"
+            },
+            {
+              "action": "Get-NetAdapter | Where InterfaceDescription -like '*wireless*' | Select Name,DriverVersion",
+              "expect": "Check driver version — update to latest OEM driver for best roaming support"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Disable 802.11r Fast Transition on the SSID (test environment first)", "expect": "Removes FT-EAP requirement — clients fall back to full re-auth or OKC which is more compatible" },
-            { "action": "Enable OKC (Opportunistic Key Caching) on WAP controller", "expect": "OKC allows fast roam without full EAP re-authentication — caches PMK across APs" },
-            { "action": "Increase RADIUS timeout on WAP controller to 15-30 seconds", "expect": "Full re-auth during roam has enough time to complete without timeout" },
-            { "action": "Update wireless adapter driver to latest version from OEM (Intel, Realtek, Broadcom)", "expect": "Latest drivers include improved 802.11r, 802.11k, and 802.11v support for fast roaming" },
-            { "action": "Verify PMK caching is enabled in wireless profile: PMKCacheMode=enabled, PMKCacheTTL=720", "expect": "Client caches PMK locally to speed up re-authentication on roam" }
+            {
+              "action": "Disable 802.11r Fast Transition on the SSID (test environment first)",
+              "expect": "Removes FT-EAP requirement — clients fall back to full re-auth or OKC which is more compatible"
+            },
+            {
+              "action": "Enable OKC (Opportunistic Key Caching) on WAP controller",
+              "expect": "OKC allows fast roam without full EAP re-authentication — caches PMK across APs"
+            },
+            {
+              "action": "Increase RADIUS timeout on WAP controller to 15-30 seconds",
+              "expect": "Full re-auth during roam has enough time to complete without timeout"
+            },
+            {
+              "action": "Update wireless adapter driver to latest version from OEM (Intel, Realtek, Broadcom)",
+              "expect": "Latest drivers include improved 802.11r, 802.11k, and 802.11v support for fast roaming"
+            },
+            {
+              "action": "Verify PMK caching is enabled in wireless profile: PMKCacheMode=enabled, PMKCacheTTL=720",
+              "expect": "Client caches PMK locally to speed up re-authentication on roam"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Walk client between APs and monitor netsh wlan show interfaces continuously", "expect": "BSSID changes as client roams but State remains Connected throughout — no disconnection or re-auth delays" },
-            { "action": "Get-WinEvent -LogName Microsoft-Windows-WLAN-AutoConfig/Operational -MaxEvents 50 | Where Message -like \"*roam*\"", "expect": "Roam events present without subsequent authentication failure events" },
-            { "action": "Continuous ping test during roam: ping -t <gateway_ip>", "expect": "Ping may drop 1-2 packets during roam but recovers quickly (<2 seconds) — no extended outages" }
+            {
+              "action": "Walk client between APs and monitor netsh wlan show interfaces continuously",
+              "expect": "BSSID changes as client roams but State remains Connected throughout — no disconnection or re-auth delays"
+            },
+            {
+              "action": "Get-WinEvent -LogName Microsoft-Windows-WLAN-AutoConfig/Operational -MaxEvents 50 | Where Message -like \"*roam*\"",
+              "expect": "Roam events present without subsequent authentication failure events"
+            },
+            {
+              "action": "Continuous ping test during roam: ping -t <gateway_ip>",
+              "expect": "Ping may drop 1-2 packets during roam but recovers quickly (<2 seconds) — no extended outages"
+            }
           ]
         }
       ]
     },
     "cannot_associate": {
       "title": "Client cannot associate to enterprise SSID",
-      "description": "This playbook addresses scenarios where Windows clients cannot establish a wireless association to an enterprise SSID (WPA2-Enterprise or WPA3-Enterprise). The client may not see the SSID, may fail at the 802.11 association phase, or may not have a valid wireless profile. Common causes include WLAN AutoConfig service issues, missing or incorrect wireless profiles, Group Policy application failures, outdated wireless drivers that don't support WPA3 or newer EAP methods, incorrect SSID security configuration, and hardware compatibility issues.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "netsh wlan show interfaces", "expect": "State: Disconnected or Authenticating — not Connected. Check for 'There is no wireless interface on the system' error" },
-            { "action": "netsh wlan show networks mode=bssid", "expect": "Target SSID visible with correct security type WPA2-Enterprise or WPA3-Enterprise. If not visible, check RF coverage and SSID broadcast settings" },
-            { "action": "Get-Service WLANSVC | Select Name,Status,StartType,DisplayName", "expect": "Status: Running, StartType: Automatic — if stopped, wireless functionality is unavailable" },
-            { "action": "Get-NetAdapter | Where InterfaceDescription -like '*wireless*' | Select Name,Status", "expect": "Wireless adapter present and enabled — if disabled, enable via 'Enable-NetAdapter -Name <adapter_name>'" }
+            {
+              "action": "netsh wlan show interfaces",
+              "expect": "State: Disconnected or Authenticating — not Connected. Check for 'There is no wireless interface on the system' error"
+            },
+            {
+              "action": "netsh wlan show networks mode=bssid",
+              "expect": "Target SSID visible with correct security type WPA2-Enterprise or WPA3-Enterprise. If not visible, check RF coverage and SSID broadcast settings"
+            },
+            {
+              "action": "Get-Service WLANSVC | Select Name,Status,StartType,DisplayName",
+              "expect": "Status: Running, StartType: Automatic — if stopped, wireless functionality is unavailable"
+            },
+            {
+              "action": "Get-NetAdapter | Where InterfaceDescription -like '*wireless*' | Select Name,Status",
+              "expect": "Wireless adapter present and enabled — if disabled, enable via 'Enable-NetAdapter -Name <adapter_name>'"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "netsh wlan show profile name='<SSID>'", "expect": "Profile present — if missing, GPO has not applied or profile was deleted manually" },
-            { "action": "gpresult /r | Select-String -Pattern 'Wireless|WLAN|802.11'", "expect": "Wireless Network IEEE 802.11 GPO listed in Applied GPOs for Computer or User configuration" },
-            { "action": "netsh wlan show drivers", "expect": "Driver version and supported authentication types — outdated driver may not support WPA3-Enterprise, WPA3-Enterprise 192-bit, or TEAP" },
-            { "action": "netsh wlan show drivers | Select-String -Pattern 'WPA3|192-bit|TEAP'", "expect": "For WPA3-Enterprise deployments: verify driver explicitly supports WPA3 authentication" },
-            { "action": "Get-CimInstance Win32_OperatingSystem | Select Caption,Version,BuildNumber", "expect": "Windows 10 1703+ or Windows 11 required for WPA3-Enterprise support" }
+            {
+              "action": "netsh wlan show profile name='<SSID>'",
+              "expect": "Profile present — if missing, GPO has not applied or profile was deleted manually"
+            },
+            {
+              "action": "gpresult /r | Select-String -Pattern 'Wireless|WLAN|802.11'",
+              "expect": "Wireless Network IEEE 802.11 GPO listed in Applied GPOs for Computer or User configuration"
+            },
+            {
+              "action": "netsh wlan show drivers",
+              "expect": "Driver version and supported authentication types — outdated driver may not support WPA3-Enterprise, WPA3-Enterprise 192-bit, or TEAP"
+            },
+            {
+              "action": "netsh wlan show drivers | Select-String -Pattern 'WPA3|192-bit|TEAP'",
+              "expect": "For WPA3-Enterprise deployments: verify driver explicitly supports WPA3 authentication"
+            },
+            {
+              "action": "Get-CimInstance Win32_OperatingSystem | Select Caption,Version,BuildNumber",
+              "expect": "Windows 10 1703+ or Windows 11 required for WPA3-Enterprise support"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Restart-Service WLANSVC -Force", "expect": "Wireless AutoConfig restarted — retry connection. If service fails to start, check Windows event log for service-specific errors" },
-            { "action": "gpupdate /force /target:computer", "expect": "Wireless profile redeployed from GPO — may require reboot for computer profile application" },
-            { "action": "Update wireless NIC driver from OEM website (Intel Driver & Support Assistant, OEM support site)", "expect": "Driver updated to latest version — supports current authentication types and cipher suites" },
-            { "action": "If profile missing: manually create profile via Settings > Network & Internet > WiFi > Manage known networks > Add new network", "expect": "Profile created with correct SSID, security type (WPA2-Enterprise/WPA3-Enterprise), and EAP method" },
-            { "action": "Enable wireless adapter if disabled: Enable-NetAdapter -Name <adapter_name>", "expect": "Adapter enabled — client can now scan for and associate to wireless networks" },
-            { "action": "For WPA3-Enterprise on older Windows: upgrade to Windows 10 1703+ or Windows 11, or downgrade SSID to WPA2-Enterprise", "expect": "OS/driver compatibility resolved — client can associate to SSID" }
+            {
+              "action": "Restart-Service WLANSVC -Force",
+              "expect": "Wireless AutoConfig restarted — retry connection. If service fails to start, check Windows event log for service-specific errors"
+            },
+            {
+              "action": "gpupdate /force /target:computer",
+              "expect": "Wireless profile redeployed from GPO — may require reboot for computer profile application"
+            },
+            {
+              "action": "Update wireless NIC driver from OEM website (Intel Driver & Support Assistant, OEM support site)",
+              "expect": "Driver updated to latest version — supports current authentication types and cipher suites"
+            },
+            {
+              "action": "If profile missing: manually create profile via Settings > Network & Internet > WiFi > Manage known networks > Add new network",
+              "expect": "Profile created with correct SSID, security type (WPA2-Enterprise/WPA3-Enterprise), and EAP method"
+            },
+            {
+              "action": "Enable wireless adapter if disabled: Enable-NetAdapter -Name <adapter_name>",
+              "expect": "Adapter enabled — client can now scan for and associate to wireless networks"
+            },
+            {
+              "action": "For WPA3-Enterprise on older Windows: upgrade to Windows 10 1703+ or Windows 11, or downgrade SSID to WPA2-Enterprise",
+              "expect": "OS/driver compatibility resolved — client can associate to SSID"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "netsh wlan show interfaces", "expect": "State: Connected, SSID matches target, Authentication: WPA2-Enterprise or WPA3-Enterprise, Cipher: AES or AES-256" },
-            { "action": "ipconfig /all", "expect": "Valid IP address received from correct VLAN scope — indicates successful association, authentication, and DHCP" },
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 1", "expect": "Event 6272 present on NPS server — confirms successful RADIUS authentication" },
-            { "action": "ping -n 4 <gateway_ip>", "expect": "Successful ping responses — confirms network connectivity after association" }
+            {
+              "action": "netsh wlan show interfaces",
+              "expect": "State: Connected, SSID matches target, Authentication: WPA2-Enterprise or WPA3-Enterprise, Cipher: AES or AES-256"
+            },
+            {
+              "action": "ipconfig /all",
+              "expect": "Valid IP address received from correct VLAN scope — indicates successful association, authentication, and DHCP"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 1",
+              "expect": "Event 6272 present on NPS server — confirms successful RADIUS authentication"
+            },
+            {
+              "action": "ping -n 4 <gateway_ip>",
+              "expect": "Successful ping responses — confirms network connectivity after association"
+            }
           ]
         }
       ]
     },
     "wpa3_enterprise_issues": {
       "title": "WPA3-Enterprise authentication failures",
-      "description": "This playbook addresses WPA3-Enterprise and WPA3-Enterprise 192-bit mode authentication issues. WPA3-Enterprise requires Windows 10 1703+ or Windows 11, wireless adapter driver support, and strict certificate requirements. WPA3-Enterprise 192-bit mode imposes very strict certificate requirements including minimum RSA 3072-bit or ECC P-384 keys, SHA-384 hashing, and no MD5/SHA-1 signatures. Common failures include driver incompatibility, certificate non-compliance, and incorrect profile configuration (authentication value must be 'WPA3ENT' or 'WPA3ENT192').",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-CimInstance Win32_OperatingSystem | Select Caption,Version,BuildNumber", "expect": "Windows 10 1703+ (Build 15063) or Windows 11 required for WPA3-Enterprise support" },
-            { "action": "netsh wlan show drivers | Select-String -Pattern 'WPA3|192-bit'", "expect": "Driver explicitly supports WPA3-Enterprise — if not listed, driver or hardware does not support WPA3" },
-            { "action": "netsh wlan show profile name='<SSID>' key=clear | Select-String -Pattern 'authentication'", "expect": "Authentication value must be 'WPA3ENT' for WPA3-Enterprise or 'WPA3ENT192' for 192-bit mode" },
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5633)]]\" | Select -First 3", "expect": "Event 5633 error code indicates WPA3-specific failure (e.g., cipher suite mismatch, certificate non-compliance)" }
+            {
+              "action": "Get-CimInstance Win32_OperatingSystem | Select Caption,Version,BuildNumber",
+              "expect": "Windows 10 1703+ (Build 15063) or Windows 11 required for WPA3-Enterprise support"
+            },
+            {
+              "action": "netsh wlan show drivers | Select-String -Pattern 'WPA3|192-bit'",
+              "expect": "Driver explicitly supports WPA3-Enterprise — if not listed, driver or hardware does not support WPA3"
+            },
+            {
+              "action": "netsh wlan show profile name='<SSID>' key=clear | Select-String -Pattern 'authentication'",
+              "expect": "Authentication value must be 'WPA3ENT' for WPA3-Enterprise or 'WPA3ENT192' for 192-bit mode"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=5633)]]\" | Select -First 3",
+              "expect": "Event 5633 error code indicates WPA3-specific failure (e.g., cipher suite mismatch, certificate non-compliance)"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "certutil -v -store My (machine) and certutil -v -store -user My (user)", "expect": "For WPA3-Enterprise 192-bit: verify RSA >=3072-bit or ECC P-384, SHA-384, no MD5/SHA-1 signatures" },
-            { "action": "certutil -store -user My | Select-String -Pattern 'EKU'", "expect": "EKU includes Client Authentication (1.3.6.1.5.5.7.3.2) — Smart Card Logon EKU also acceptable for user auth" },
-            { "action": "On WAP controller: verify SSID security mode is WPA3-Enterprise or WPA3-Enterprise 192-bit", "expect": "Controller configuration matches client profile expectations — mismatch causes association failures" },
-            { "action": "Get-NetAdapter | Where InterfaceDescription -like '*wireless*' | Select Name,DriverVersion", "expect": "Driver version is recent — older drivers may have incomplete WPA3 implementation" }
+            {
+              "action": "certutil -v -store My (machine) and certutil -v -store -user My (user)",
+              "expect": "For WPA3-Enterprise 192-bit: verify RSA >=3072-bit or ECC P-384, SHA-384, no MD5/SHA-1 signatures"
+            },
+            {
+              "action": "certutil -store -user My | Select-String -Pattern 'EKU'",
+              "expect": "EKU includes Client Authentication (1.3.6.1.5.5.7.3.2) — Smart Card Logon EKU also acceptable for user auth"
+            },
+            {
+              "action": "On WAP controller: verify SSID security mode is WPA3-Enterprise or WPA3-Enterprise 192-bit",
+              "expect": "Controller configuration matches client profile expectations — mismatch causes association failures"
+            },
+            {
+              "action": "Get-NetAdapter | Where InterfaceDescription -like '*wireless*' | Select Name,DriverVersion",
+              "expect": "Driver version is recent — older drivers may have incomplete WPA3 implementation"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Update wireless adapter driver to latest OEM version with WPA3 support", "expect": "Driver now supports WPA3-Enterprise authentication and cipher suites" },
-            { "action": "For WPA3-Enterprise 192-bit: reissue certificates with compliant key sizes (RSA 3072+ or ECC P-384)", "expect": "Certificates meet WPA3-Enterprise 192-bit strict requirements" },
-            { "action": "Recreate wireless profile with correct authentication value: 'WPA3ENT' or 'WPA3ENT192'", "expect": "Profile configuration matches WAP controller security mode" },
-            { "action": "If OS version incompatible: upgrade to Windows 10 1703+ or Windows 11, or downgrade SSID to WPA2-Enterprise", "expect": "OS/driver compatibility resolved — or fallback to WPA2-Enterprise for older clients" },
-            { "action": "Verify root CA certificate chain is complete and deployed to clients via GPO", "expect": "Clients have full certificate chain including root and intermediate CAs in Trusted Root store" }
+            {
+              "action": "Update wireless adapter driver to latest OEM version with WPA3 support",
+              "expect": "Driver now supports WPA3-Enterprise authentication and cipher suites"
+            },
+            {
+              "action": "For WPA3-Enterprise 192-bit: reissue certificates with compliant key sizes (RSA 3072+ or ECC P-384)",
+              "expect": "Certificates meet WPA3-Enterprise 192-bit strict requirements"
+            },
+            {
+              "action": "Recreate wireless profile with correct authentication value: 'WPA3ENT' or 'WPA3ENT192'",
+              "expect": "Profile configuration matches WAP controller security mode"
+            },
+            {
+              "action": "If OS version incompatible: upgrade to Windows 10 1703+ or Windows 11, or downgrade SSID to WPA2-Enterprise",
+              "expect": "OS/driver compatibility resolved — or fallback to WPA2-Enterprise for older clients"
+            },
+            {
+              "action": "Verify root CA certificate chain is complete and deployed to clients via GPO",
+              "expect": "Clients have full certificate chain including root and intermediate CAs in Trusted Root store"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "netsh wlan show interfaces", "expect": "State: Connected, Authentication: WPA3-Enterprise or WPA3-Enterprise 192-bit, Cipher: AES-256-GCM or CCMP" },
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 1", "expect": "Event 6272 present on NPS server — confirms successful WPA3-Enterprise authentication" },
-            { "action": "ipconfig /all", "expect": "Valid IP address received from correct VLAN scope — indicates successful WPA3-Enterprise connection" }
+            {
+              "action": "netsh wlan show interfaces",
+              "expect": "State: Connected, Authentication: WPA3-Enterprise or WPA3-Enterprise 192-bit, Cipher: AES-256-GCM or CCMP"
+            },
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 1",
+              "expect": "Event 6272 present on NPS server — confirms successful WPA3-Enterprise authentication"
+            },
+            {
+              "action": "ipconfig /all",
+              "expect": "Valid IP address received from correct VLAN scope — indicates successful WPA3-Enterprise connection"
+            }
           ]
         }
       ]
     },
     "wap_controller_integration": {
       "title": "WAP controller and RADIUS integration issues",
-      "description": "This playbook addresses integration issues between Windows clients, wireless access point controllers (Cisco WLC, Aruba, Meraki, Ruckus, Ubiquiti), and RADIUS servers (NPS, ISE, ClearPass). Common issues include RADIUS shared secret mismatches, NAS-Port-Type attribute mismatches in NPS policies, incorrect RADIUS server IP configuration, Dynamic VLAN assignment failures, RADIUS CoA (Change of Authorization) issues, and timeout misconfigurations. Proper integration requires matching client expectations with controller and RADIUS server configurations.",
       "severity": "high",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "On WAP controller: verify RADIUS server IP addresses (primary and secondary) configured correctly", "expect": "Primary and secondary NPS/RADIUS server IPs are correct and reachable (test with ping)" },
-            { "action": "On WAP controller: verify RADIUS shared secret matches NPS configuration exactly", "expect": "Shared secret identical on both sides — check for trailing whitespace or case sensitivity" },
-            { "action": "On NPS: run 'netsh nps show client' to verify WAP controller IP registration", "expect": "WAP controller IP is registered as RADIUS client with correct shared secret hash" },
-            { "action": "On WAP controller: check RADIUS timeout setting (typically 5-30 seconds)", "expect": "Timeout sufficient for EAP method — EAP-TLS with OCSP requires 15-30s minimum" }
+            {
+              "action": "On WAP controller: verify RADIUS server IP addresses (primary and secondary) configured correctly",
+              "expect": "Primary and secondary NPS/RADIUS server IPs are correct and reachable (test with ping)"
+            },
+            {
+              "action": "On WAP controller: verify RADIUS shared secret matches NPS configuration exactly",
+              "expect": "Shared secret identical on both sides — check for trailing whitespace or case sensitivity"
+            },
+            {
+              "action": "On NPS: run 'netsh nps show client' to verify WAP controller IP registration",
+              "expect": "WAP controller IP is registered as RADIUS client with correct shared secret hash"
+            },
+            {
+              "action": "On WAP controller: check RADIUS timeout setting (typically 5-30 seconds)",
+              "expect": "Timeout sufficient for EAP method — EAP-TLS with OCSP requires 15-30s minimum"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Capture RADIUS traffic on NPS server with Wireshark (filter: 'radius')", "expect": "Identify exact NAS-Port-Type value sent by WAP (Wireless=19, IEEE 802.11=5, Ethernet=15)" },
-            { "action": "On NPS: check Network Policy conditions for NAS-Port-Type match", "expect": "NAS-Port-Type condition matches value sent by WAP controller — mismatch causes policy rejection" },
-            { "action": "On WAP controller: check Dynamic VLAN assignment configuration (Tunnel-Private-Group-ID)", "expect": "VLAN assignment attributes configured correctly if using per-user/per-machine VLANs" },
-            { "action": "On NPS: check Network Policy for RADIUS standard attributes (Tunnel-Private-Group-ID, Filter-Id)", "expect": "RADIUS attributes configured in policy match WAP controller expectations" },
-            { "action": "Test RADIUS connectivity: 'Test-NetConnection -ComputerName <NPS_IP> -Port 1812'", "expect": "TCP test succeeds — UDP 1812 may not show as open but connectivity is confirmed" }
+            {
+              "action": "Capture RADIUS traffic on NPS server with Wireshark (filter: 'radius')",
+              "expect": "Identify exact NAS-Port-Type value sent by WAP (Wireless=19, IEEE 802.11=5, Ethernet=15)"
+            },
+            {
+              "action": "On NPS: check Network Policy conditions for NAS-Port-Type match",
+              "expect": "NAS-Port-Type condition matches value sent by WAP controller — mismatch causes policy rejection"
+            },
+            {
+              "action": "On WAP controller: check Dynamic VLAN assignment configuration (Tunnel-Private-Group-ID)",
+              "expect": "VLAN assignment attributes configured correctly if using per-user/per-machine VLANs"
+            },
+            {
+              "action": "On NPS: check Network Policy for RADIUS standard attributes (Tunnel-Private-Group-ID, Filter-Id)",
+              "expect": "RADIUS attributes configured in policy match WAP controller expectations"
+            },
+            {
+              "action": "Test RADIUS connectivity: 'Test-NetConnection -ComputerName <NPS_IP> -Port 1812'",
+              "expect": "TCP test succeeds — UDP 1812 may not show as open but connectivity is confirmed"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Re-enter RADIUS shared secret on both NPS and WAP controller — verify no trailing whitespace", "expect": "Shared secrets match exactly — authentication attempts no longer fail with shared secret error" },
-            { "action": "Update NPS Network Policy NAS-Port-Type condition to match WAP controller value", "expect": "Policy now matches — RADIUS requests pass condition matching and proceed to authentication" },
-            { "action": "Increase RADIUS timeout on WAP controller to 15-30 seconds (30-45s for EAP-TLS with CRL)", "expect": "Timeout sufficient for complete EAP exchange — no more timeout failures" },
-            { "action": "Configure Dynamic VLAN assignment on WAP controller to accept Tunnel-Private-Group-ID attribute", "expect": "VLAN assignment works correctly — clients placed in appropriate VLANs based on user/group" },
-            { "action": "Enable RADIUS Dead Server Detection on WAP controller for failover", "expect": "Failover to secondary RADIUS server works if primary becomes unavailable" },
-            { "action": "For Cisco WLC: verify 'RADIUS Network Access' vs 'RADIUS Accounting' server configuration", "expect": "Authentication server configured correctly in RADIUS Network Access section" }
+            {
+              "action": "Re-enter RADIUS shared secret on both NPS and WAP controller — verify no trailing whitespace",
+              "expect": "Shared secrets match exactly — authentication attempts no longer fail with shared secret error"
+            },
+            {
+              "action": "Update NPS Network Policy NAS-Port-Type condition to match WAP controller value",
+              "expect": "Policy now matches — RADIUS requests pass condition matching and proceed to authentication"
+            },
+            {
+              "action": "Increase RADIUS timeout on WAP controller to 15-30 seconds (30-45s for EAP-TLS with CRL)",
+              "expect": "Timeout sufficient for complete EAP exchange — no more timeout failures"
+            },
+            {
+              "action": "Configure Dynamic VLAN assignment on WAP controller to accept Tunnel-Private-Group-ID attribute",
+              "expect": "VLAN assignment works correctly — clients placed in appropriate VLANs based on user/group"
+            },
+            {
+              "action": "Enable RADIUS Dead Server Detection on WAP controller for failover",
+              "expect": "Failover to secondary RADIUS server works if primary becomes unavailable"
+            },
+            {
+              "action": "For Cisco WLC: verify 'RADIUS Network Access' vs 'RADIUS Accounting' server configuration",
+              "expect": "Authentication server configured correctly in RADIUS Network Access section"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3", "expect": "Event 6272 present on NPS server — confirms successful RADIUS authentication" },
-            { "action": "netsh wlan show interfaces", "expect": "State: Connected with correct authentication mode and cipher" },
-            { "action": "ipconfig /all", "expect": "IP address from expected VLAN scope — confirms Dynamic VLAN assignment working" },
-            { "action": "On WAP controller: verify client shows in active client list with correct VLAN", "expect": "Controller shows client associated and authenticated in correct VLAN" }
+            {
+              "action": "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=6272)]]\" | Select -First 3",
+              "expect": "Event 6272 present on NPS server — confirms successful RADIUS authentication"
+            },
+            {
+              "action": "netsh wlan show interfaces",
+              "expect": "State: Connected with correct authentication mode and cipher"
+            },
+            {
+              "action": "ipconfig /all",
+              "expect": "IP address from expected VLAN scope — confirms Dynamic VLAN assignment working"
+            },
+            {
+              "action": "On WAP controller: verify client shows in active client list with correct VLAN",
+              "expect": "Controller shows client associated and authenticated in correct VLAN"
+            }
           ]
         }
       ]

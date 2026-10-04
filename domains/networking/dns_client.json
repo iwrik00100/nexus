@@ -3,7 +3,6 @@
   "label": "DNS Client",
   "icon": "💻",
   "domain": "networking",
-  "description": "Windows DNS Client resolver configuration, caching, NRPT policies, and DNS over HTTPS",
   "scoping": {
     "l1": [
       "What Windows version and build number is the affected client running? (Get-ComputerInfo | Select OsName,OsVersion,OsBuildNumber)",
@@ -105,37 +104,73 @@
     "client_not_resolving": {
       "title": "Client cannot resolve any DNS names",
       "severity": "high",
-      "description": "Complete DNS resolution failure on client - no names resolve from default DNS server",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-Service Dnscache | Select Status,StartType", "expect": "Status: Running, StartType: Automatic — DNS Client service must be operational" },
-            { "action": "ipconfig /all", "expect": "DNS Servers field shows valid IPs — not blank, not 0.0.0.0, not 127.0.0.1 (unless self-hosting DNS)" },
-            { "action": "Test-NetConnection <DNS IP> -Port 53", "expect": "TcpTestSucceeded: True — confirms DNS server is reachable on network" }
+            {
+              "action": "Get-Service Dnscache | Select Status,StartType",
+              "expect": "Status: Running, StartType: Automatic — DNS Client service must be operational"
+            },
+            {
+              "action": "ipconfig /all",
+              "expect": "DNS Servers field shows valid IPs — not blank, not 0.0.0.0, not 127.0.0.1 (unless self-hosting DNS)"
+            },
+            {
+              "action": "Test-NetConnection <DNS IP> -Port 53",
+              "expect": "TcpTestSucceeded: True — confirms DNS server is reachable on network"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "nslookup <name> <DNS IP>", "expect": "If resolves with explicit IP but not default, DNS client configuration or cache is the issue" },
-            { "action": "Resolve-DnsName <name> -Server 8.8.8.8", "expect": "If resolves via public DNS, internal DNS server is the problem; if fails with both, client-side issue" },
-            { "action": "Get-DnsClientNrptPolicy", "expect": "Check for NRPT rules routing queries to a wrong or unreachable DNS server" }
+            {
+              "action": "nslookup <name> <DNS IP>",
+              "expect": "If resolves with explicit IP but not default, DNS client configuration or cache is the issue"
+            },
+            {
+              "action": "Resolve-DnsName <name> -Server 8.8.8.8",
+              "expect": "If resolves via public DNS, internal DNS server is the problem; if fails with both, client-side issue"
+            },
+            {
+              "action": "Get-DnsClientNrptPolicy",
+              "expect": "Check for NRPT rules routing queries to a wrong or unreachable DNS server"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Clear-DnsClientCache; ipconfig /registerdns", "expect": "Cache cleared and DNS records re-registered — retest immediately" },
-            { "action": "Restart-Service Dnscache", "expect": "DNS Client service restarts cleanly — verify with Get-Service" },
-            { "action": "gpupdate /force", "expect": "Refreshes NRPT rules and DNS suffix search list from Group Policy — may require reboot for GPO changes" }
+            {
+              "action": "Clear-DnsClientCache; ipconfig /registerdns",
+              "expect": "Cache cleared and DNS records re-registered — retest immediately"
+            },
+            {
+              "action": "Restart-Service Dnscache",
+              "expect": "DNS Client service restarts cleanly — verify with Get-Service"
+            },
+            {
+              "action": "gpupdate /force",
+              "expect": "Refreshes NRPT rules and DNS suffix search list from Group Policy — may require reboot for GPO changes"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Resolve-DnsName <failing name>", "expect": "Resolves correctly using default DNS server with reasonable response time" },
-            { "action": "ping <failing hostname>", "expect": "Name resolves to correct IP and ICMP succeeds (if not blocked by firewall)" }
+            {
+              "action": "Resolve-DnsName <failing name>",
+              "expect": "Resolves correctly using default DNS server with reasonable response time"
+            },
+            {
+              "action": "ping <failing hostname>",
+              "expect": "Name resolves to correct IP and ICMP succeeds (if not blocked by firewall)"
+            }
           ]
         }
       ]
@@ -143,34 +178,61 @@
     "nrpt_misdirecting": {
       "title": "NRPT rules misdirecting DNS queries",
       "severity": "medium",
-      "description": "Name Resolution Policy Table rules routing queries to incorrect DNS servers",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Get-DnsClientNrptPolicy", "expect": "Lists active NRPT rules — check if any namespace matches the failing name" },
-            { "action": "Get-DnsClientNrptRule", "expect": "Shows source of each rule (GPO, DirectAccess, manual) and target DNS server addresses" }
+            {
+              "action": "Get-DnsClientNrptPolicy",
+              "expect": "Lists active NRPT rules — check if any namespace matches the failing name"
+            },
+            {
+              "action": "Get-DnsClientNrptRule",
+              "expect": "Shows source of each rule (GPO, DirectAccess, manual) and target DNS server addresses"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Resolve-DnsName <failing name> -Server <NRPT target DNS>", "expect": "If fails here, NRPT is routing to a broken or unreachable DNS server" },
-            { "action": "gpresult /h C:\\gpo_report.html — open and check Name Resolution Policy section", "expect": "Identify which GPO is pushing the offending NRPT rule — check security filtering and WMI filters" }
+            {
+              "action": "Resolve-DnsName <failing name> -Server <NRPT target DNS>",
+              "expect": "If fails here, NRPT is routing to a broken or unreachable DNS server"
+            },
+            {
+              "action": "gpresult /h C:\\gpo_report.html — open and check Name Resolution Policy section",
+              "expect": "Identify which GPO is pushing the offending NRPT rule — check security filtering and WMI filters"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "Remove-DnsClientNrptRule -Namespace '<namespace>' (if manually added)", "expect": "Rule removed immediately — test resolution" },
-            { "action": "If GPO-pushed: edit in GPMC — Computer Config > Windows Settings > Name Resolution Policy — remove or correct rule — gpupdate /force", "expect": "Offending rule removed from client after GPO refresh" }
+            {
+              "action": "Remove-DnsClientNrptRule -Namespace '<namespace>' (if manually added)",
+              "expect": "Rule removed immediately — test resolution"
+            },
+            {
+              "action": "If GPO-pushed: edit in GPMC — Computer Config > Windows Settings > Name Resolution Policy — remove or correct rule — gpupdate /force",
+              "expect": "Offending rule removed from client after GPO refresh"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Get-DnsClientNrptPolicy", "expect": "Offending rule no longer present in NRPT table" },
-            { "action": "Resolve-DnsName <previously failing name>", "expect": "Resolves correctly via default DNS server" }
+            {
+              "action": "Get-DnsClientNrptPolicy",
+              "expect": "Offending rule no longer present in NRPT table"
+            },
+            {
+              "action": "Resolve-DnsName <previously failing name>",
+              "expect": "Resolves correctly via default DNS server"
+            }
           ]
         }
       ]
@@ -178,33 +240,57 @@
     "ipv6_resolution_failing": {
       "title": "IPv6 (AAAA) resolution failing while IPv4 works",
       "severity": "medium",
-      "description": "Client cannot resolve AAAA records but A records resolve successfully",
       "phases": [
         {
-          "name": "Verify", "icon": "✅",
+          "name": "Verify",
+          "icon": "✅",
           "steps": [
-            { "action": "Resolve-DnsName <name> -Type A", "expect": "Returns IPv4 address successfully" },
-            { "action": "Resolve-DnsName <name> -Type AAAA", "expect": "Fails with timeout or NXDOMAIN — confirms IPv6-specific issue" }
+            {
+              "action": "Resolve-DnsName <name> -Type A",
+              "expect": "Returns IPv4 address successfully"
+            },
+            {
+              "action": "Resolve-DnsName <name> -Type AAAA",
+              "expect": "Fails with timeout or NXDOMAIN — confirms IPv6-specific issue"
+            }
           ]
         },
         {
-          "name": "Isolate", "icon": "🔍",
+          "name": "Isolate",
+          "icon": "🔍",
           "steps": [
-            { "action": "Get-NetIPAddress -AddressFamily IPv6", "expect": "Check if client has valid IPv6 address — if no IPv6, AAAA queries may fail due to lack of source address" },
-            { "action": "Get-DnsClientServerAddress -AddressFamily IPv6", "expect": "Check if IPv6 DNS servers are configured — if blank, AAAA queries may not be sent" }
+            {
+              "action": "Get-NetIPAddress -AddressFamily IPv6",
+              "expect": "Check if client has valid IPv6 address — if no IPv6, AAAA queries may fail due to lack of source address"
+            },
+            {
+              "action": "Get-DnsClientServerAddress -AddressFamily IPv6",
+              "expect": "Check if IPv6 DNS servers are configured — if blank, AAAA queries may not be sent"
+            }
           ]
         },
         {
-          "name": "Fix", "icon": "🛠",
+          "name": "Fix",
+          "icon": "🛠",
           "steps": [
-            { "action": "If IPv6 not needed: Disable IPv6 on adapter via Set-NetAdapterBinding -Name '<adapter>' -ComponentID ms_tcpip6 -Enabled $false", "expect": "IPv6 disabled — client will only query A records" },
-            { "action": "If IPv6 needed: Configure IPv6 DNS servers via DHCPv6 or static assignment", "expect": "IPv6 DNS servers configured — AAAA queries will succeed" }
+            {
+              "action": "If IPv6 not needed: Disable IPv6 on adapter via Set-NetAdapterBinding -Name '<adapter>' -ComponentID ms_tcpip6 -Enabled $false",
+              "expect": "IPv6 disabled — client will only query A records"
+            },
+            {
+              "action": "If IPv6 needed: Configure IPv6 DNS servers via DHCPv6 or static assignment",
+              "expect": "IPv6 DNS servers configured — AAAA queries will succeed"
+            }
           ]
         },
         {
-          "name": "Confirm", "icon": "🎯",
+          "name": "Confirm",
+          "icon": "🎯",
           "steps": [
-            { "action": "Resolve-DnsName <name> -Type AAAA", "expect": "Returns IPv6 address successfully" }
+            {
+              "action": "Resolve-DnsName <name> -Type AAAA",
+              "expect": "Returns IPv6 address successfully"
+            }
           ]
         }
       ]
