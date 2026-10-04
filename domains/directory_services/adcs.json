@@ -57,7 +57,8 @@
     ],
     "l2": [
       "%SystemRoot%\\certsrv.log this is the main source of info for CA Server problems\n%SystemRoot%\\certenroll.log this is the main source of info for PKI client enrollment issues\n%SystemRoot%\\certutil.log this is the main source of info for certutil errors\n%SystemRoot%\\certocm.log this is the main source of info for CA setup issues",
-      "Gather complete cryptographic service provider diagnostic trace files outputs summaries details."
+      "Gather complete cryptographic service provider diagnostic trace files outputs summaries details.",
+      "Export CA configuration registry keys from HKLM\\SYSTEM\\CurrentControlSet\\Services\\CertSvc\\Configuration for advanced troubleshooting analysis."
     ]
   },
   "playbooks": {
