@@ -92,9 +92,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const savedDomain   = LS.get('pcy_domain', null);
   const savedTech     = LS.get('pcy_tech', null);
   const savedProvider = LS.get('pcy_ai_provider', 'gemini');
-  const savedThemeIndex = LS.get('pcy_theme_index', 0);
+  const savedThemeIndex = LS.get('pcy_theme_index', null);
+  const savedGlass = LS.get('pcy_glass', true);
 
-  _themeIndex = savedThemeIndex;
+  // Determine initial theme: use saved theme index if available, otherwise migrate from old glass/dark setting
+  let initialIndex = 0; // default to glass
+  if (savedThemeIndex !== null) {
+    // User has new theme index, use it
+    initialIndex = savedThemeIndex;
+  } else {
+    // Migrate from old glass/dark setting
+    initialIndex = savedGlass ? 0 : 1; // glass -> 0, dark -> 1
+  }
+
+  _themeIndex = initialIndex;
   applyTheme(_themeIndex);
 
   renderDomainGrid();
@@ -995,7 +1006,6 @@ function _inlineMarkdown(escaped) {
 // ─── Theme Toggle ─────────────────────────────────────────────────────────────
 let _themeIndex = 0;
 const _themes = [
-  { name: 'light', icon: '☀️', class: '' },
   { name: 'glass', icon: '💎', class: 'theme-glass' },
   { name: 'dark', icon: '🌙', class: 'theme-dark' },
   { name: 'cyberpunk', icon: '⚡', class: 'theme-cyberpunk' }
