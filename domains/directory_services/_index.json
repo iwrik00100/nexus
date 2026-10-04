@@ -128,6 +128,11 @@
       "key": "folder_redirection",
       "label": "Folder Redirection",
       "icon": "📂"
+    },
+    {
+      "key": "whfb",
+      "label": "Windows Hello for Business (WHFB)",
+      "icon": "🧑‍💻"
     }
   ]
 }

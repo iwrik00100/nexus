@@ -7,16 +7,25 @@
     "l1": [
       "Are there specific domain controllers reporting replication errors?",
       "When did the replication failure symptoms first begin occurring?",
-      "Is the replication issue happening intra-site or inter-site?"
+      "Is the replication issue happening intra-site or inter-site?",
+      "Are there any recent changes to the Active Directory schema or configuration?",
+      "Total number of domain controllers in the forest and their OS versions?"
     ],
     "l2": [
       "Have there been recent changes to the network topology or firewalls between sites?",
       "Are there any lingering objects or USN rollback indications in the event logs?",
-      "Is the KCC (Knowledge Consistency Checker) failing to generate the replication topology?"
+      "Is the KCC (Knowledge Consistency Checker) failing to generate the replication topology?",
+      "Are there any DNS resolution issues between the domain controllers?",
+      "Are there any errors in the Directory Service event log related to replication (Event IDs 1311, 1865, 1925, 1566)?",
+      "Are there any issues with the SYSVOL share or DFSR replication?",
+      "Are there any issues with the secure channel between domain controllers?",
+      "Are there any issues with the RPC service or ports required for replication?"
     ]
   },
   "probing": {
     "l1": [
+      "Check the events and conclude are they related to Topology or Replication failures using Event Viewer on the affected DCs.",
+      "Run 'dcdiag /test:replications /v' on the affected Domain Controller.",
       "Run 'repadmin /showrepl' on the affected Domain Controller.",
       "Run 'repadmin /replsummary' to check the overall replication health status.",
       "Check the Directory Service event log for Event IDs 1311, 1864, or 1925."
@@ -83,6 +92,80 @@
           "icon": "🎯",
           "steps": [
             { "action": "repadmin /syncall /q source_dc_name", "expect": "Syncall terminates without errors, and subsequent repadmin /showrepl displays Successful status" }
+          ]
+        }
+      ]
+    },
+    "replication_access_denied": {
+      "title": "Active Directory Replication fails with 'Replication Access Was Denied'",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Check UserAccountControl attribute on destination DC computer account",
+              "expect": "SERVER_TRUST_ACCOUNT or TRUSTED_FOR_DELEGATION flags must be present"
+            },
+            {
+              "action": "Review default permissions on directory partitions",
+              "expect": "Scheduled replication must be allowed under OS security context"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Validate permissions on directory partitions for ad-hoc replication",
+              "expect": "Users must have rights for 'replicate now', 'repadmin /replicate', 'repadmin /syncall'"
+            },
+            {
+              "action": "Check user membership in replication-related security groups",
+              "expect": "User must belong to groups granted 'Replicating Directory Changes' permission"
+            },
+            {
+              "action": "Evaluate User Account Control (UAC) split token behavior",
+              "expect": "UAC may remove replication group membership from user's security token"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Correct UserAccountControl flags on DC computer account",
+              "expect": "Ensure SERVER_TRUST_ACCOUNT or TRUSTED_FOR_DELEGATION is set"
+            },
+            {
+              "action": "Restore default or custom permissions on affected directory partitions",
+              "expect": "Scheduled and ad-hoc replication should succeed"
+            },
+            {
+              "action": "Run RODCPREP if destination DC is an RODC",
+              "expect": "Enterprise Read-Only Domain Controllers group must have Replicate Directory Changes permission"
+            },
+            {
+              "action": "Review forest for legacy Office Communications Server installations",
+              "expect": "Newer OS version DCs may fail replication until OCS-related schema/permissions are corrected"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "repadmin /syncall /q destination_dc_name",
+              "expect": "Replication completes without 'access denied' errors"
+            },
+            {
+              "action": "repadmin /showrepl",
+              "expect": "All partitions show 'Successful' status."
+            }
           ]
         }
       ]

@@ -5,30 +5,40 @@
   "domain": "directory_services",
   "scoping": {
     "l1": [
-      "Question 1 — Is the issue affecting user policies, computer policies, or both?",
-      "Question 2 — Does the problem occur for all users or only specific OUs?",
-      "Question 3 — Is the GPO not applying at all, or applying incorrectly?",
-      "Question 4 — Is the issue limited to one site/domain or multiple?",
-      "Question 5 — Did the problem start after a recent GPO change or update?",
-      "Question 6 — Are permissions or security filtering restricting GPO application?"
+      "Is the issue affecting user policies, computer policies, or both?",
+      "What type of environment are the impacted clients a part of? Virtual Desktop Infrastructure (VDI), Remote Desktop Services (RDS), End user environment (laptop/desktop)",
+      "What users/computers are impacted?\nCross Domain/Forest users?\nAll Users, admins, non-admins, local account vs domain account, etc",
+      "Does the problem occur for all users or only specific OUs?",
+      "Is the GPO not applying at all, or applying incorrectly?",
+      "Is the issue limited to one site/domain or multiple?",
+      "Did the problem start after a recent GPO change or update?",
+      "Are permissions or security filtering restricting GPO application?"
     ],
     "l2": [
       "Is the GPO linked correctly to the target OU/domain?",
+      "A Group Policy Object (GPO) or specific settings failing to apply or being slow? Which ones?",
+      "Has any Security Filtering been applied to the GPO?",
       "Are WMI filters or item-level targeting causing unexpected exclusions?",
       "Is replication of SYSVOL/Policies folder consistent across Domain Controllers?",
       "Are client machines processing policies within expected timeframes?",
+      "Is the GPO enforced or blocked?",
       "Are conflicting GPOs overriding intended settings?",
-      "Is loopback processing enabled and affecting results?"
+      "Is loopback processing being used? (If yes: merge or replace mode? What is the design/expectations?)",
+      "If it is GPP, does it use item level-targeting? Any other common config applied?",
+      "Are settings processed synchronously or asynchronously?"
     ]
   },
   "probing": {
     "l1": [
-      "Question 1 — Does 'gpresult /r' show the expected GPOs applied?",
-      "Question 2 — Are there errors/warnings in Group Policy Operational logs?",
-      "Question 3 — Is the client connected to the domain during policy refresh?",
-      "Question 4 — Does forcing 'gpupdate /force' resolve the issue?",
-      "Question 5 — Are startup/logon scripts executing as expected?",
-      "Question 6 — Is the issue reproducible across multiple machines?"
+      "Does 'gpresult /r' show the expected GPOs applied?",
+      "Are there errors/warnings in Group Policy Operational logs?",
+      "Can the client machine reach the domain controller?\nIs DNS working as expected?",
+      "Is the client connected to the domain during policy refresh?",
+      "Does forcing 'gpupdate /force' resolve the issue?",
+      "Are startup/logon scripts executing as expected?",
+      "Is the issue reproducible across multiple machines?",
+      "Is the problem intra-site or inter-site specific?",
+      "Is the GPO not replicating at Active Directory (AD) or Sysvol level?"
     ],
     "l2": [
       "Do Event IDs 1058 or 1030 indicate SYSVOL/Netlogon access issues?",
@@ -45,7 +55,9 @@
       "Force a policy refresh using 'gpupdate /force'.",
       "Check Group Policy Operational logs for errors/warnings.",
       "Verify OU linkage and security filtering of the GPO.",
-      "Test with a clean user/computer account to isolate scope."
+      "Test with a clean user/computer account to isolate scope.",
+      "Check SYSVOL/Policies folder replication across Domain Controllers.",
+      "If Group Policy replication issues suspected: Enable Group Policy Service (GPSVC) debug log on the machine with the problem.\nEnable Netlogon debug logging on the affected machine if you suspect domain controller (DC) location/connectivity issues."
     ],
     "l2": [
       "Run 'dcdiag /test:frssysvol' to check SYSVOL health.",
@@ -60,7 +72,8 @@
       "Collect 'gpresult /h gp.html' from affected clients.",
       "Export Group Policy Operational logs (Microsoft-Windows-GroupPolicy/Operational).",
       "Gather System and Application event logs in .evtx format.",
-      "Record timestamps of policy refresh attempts using Event Viewer."
+      "Record timestamps of policy refresh attempts using Event Viewer.",
+      "GPSVC debug log: %windir%\\debug\\usermode\\gpsvc.log\nNetlogon debug log: %windir%\\debug\\netlogon.log"
     ],
     "l2": [
       "Run 'dcdiag /v /q' on Domain Controllers and export results.",

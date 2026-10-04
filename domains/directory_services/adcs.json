@@ -5,49 +5,58 @@
   "domain": "directory_services",
   "scoping": {
     "l1": [
-      "Is the Certification Authority (CA) service completely failing to start up on the host?",
+      "What is the error they are getting in ADCS?",
       "When did clients start encountering trust or validation issues with issued certificates?",
-      "Is this an enterprise root CA integrated with Active Directory or a standalone unit?"
+      "Is this an enterprise root CA integrated with Active Directory or a standalone unit?",
+      "Undetand the configuration of the CA service and its role in the PKI hierarchy.",
+      "When they are experiencing issues, are they related to certificate enrollment, revocation checking, or validation failures?",
+      "Are there any recent changes to the CA configuration, network topology, or certificate templates that could have triggered the issue?"
     ],
     "l2": [
       "Is a hardware security module (HSM) connection failure preventing the CA key from loading?",
       "Has the CA certificate itself expired or been inadvertently added to a revocation list?",
-      "Are Active Directory AIA and CDP container extensions accessible to validation checkers?"
+      "Check the PKIVIEW.msc and validate Active Directory AIA and CDP container extensions accessible to validation checkers?"
     ]
   },
   "probing": {
     "l1": [
       "Run 'certutil -cainfo' to dump configuration states and structural summary metrics.",
+      "Check the CA service status using 'net start certsvc' to confirm if the service is running.",
+      "Check the CA validity and operational status using 'certutil -ping' to verify network reachability and service responsiveness.",
+      "Check the configuration of CA with this registry path: HKLM\\SYSTEM\\CurrentControlSet\\Services\\CertSvc\\Configuration\\CA_Name or by running command certutil -getreg ca\\CAType",
       "Check the Application event log for errors tagged under source 'CertificationAuthority'.",
-      "Run 'certutil -ping' to verify cross-network accessibility parameters to the CA service endpoint."
+      "Check the System event log for errors tagged under source 'CertSvc'."
     ],
     "l2": [
       "Execute 'certutil -v -verifyStore My' to evaluate the integrity of the core CA store.",
-      "Check VSS writer health metrics flags using command 'vssadmin list writers' summaries.",
-      "Query Active Directory PKI configurations tracking using configuration command 'certutil -viewstore'."
+      "Run 'certutil -store My' to list all certificates in the CA store and check for any anomalies.",
+      "Query Active Directory PKI configurations tracking using configuration command 'certutil -viewstore'.",
+      "Run 'certutil -getreg ca\\CRLPublicationURLs' to verify the CRL distribution points are correctly configured and reachable."
     ]
   },
   "troubleshooting": {
     "l1": [
       "Start the service using command tool options 'net start certsvc' via administration consoles.",
       "Fix network parameters to restore links between the CA and corporate domain controllers.",
-      "Update missing certificate distribution points data links tracking definitions elements manually."
+      "Make sure the CA service account has proper permissions to access the CA database and configuration files.",
+      "Check for any recent changes to the CA configuration, network topology."
     ],
     "l2": [
       "Renew the primary Certification Authority certificate utilizing current active root template formats.",
       "Fix broken cryptographic provider service associations using certutil repairs pathways switches.",
-      "Clear out invalid metadata records from systemic AD CS configuration containers partitions maps."
+      "Clear out invalid metadata records from systemic AD CS configuration containers partitions maps.",
+      "Check database integrity using 'esentutl /r edb /d' to repair any detected corruption in the CA database."
     ]
   },
   "datacollection": {
     "l1": [
       "Export complete application logs tracking CA system service startup attempt histories.",
       "Collect basic output metrics logs produced by target certutil query strings entries.",
-      "Gather target system hardware status updates logs reflecting active crypto card modules mappings."
+      "Application Event Log and System Event Log entries related to CA service operations and errors.",
+      "Enable CA Debug logging:\ncertutil.exe -f -setreg ca\\debug 0xffffffe3\nCA Service must be restarted after running the above command\nThis can be done by running Net stop certsvc && net start certsvc "
     ],
     "l2": [
-      "Dump complete registry keys sets from HKLM\\SYSTEM\\CurrentControlSet\\Services\\CertSvc\\Configuration.",
-      "Collect binary copies of corporate active CRL files for structural evaluation parsing tasks.",
+      "%SystemRoot%\\certsrv.log this is the main source of info for CA Server problems\n%SystemRoot%\\certenroll.log this is the main source of info for PKI client enrollment issues\n%SystemRoot%\\certutil.log this is the main source of info for certutil errors\n%SystemRoot%\\certocm.log this is the main source of info for CA setup issues",
       "Gather complete cryptographic service provider diagnostic trace files outputs summaries details."
     ]
   },

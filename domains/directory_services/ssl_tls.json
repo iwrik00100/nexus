@@ -6,23 +6,29 @@
   "scoping": {
     "l1": [
       "Are web browsers or applications reporting handshake failures during secure connections?",
-      "When did the secure socket layer channel drop, and what specific error string is thrown?",
+      "Are there any recent changes to the server's SSL/TLS configuration or certificate chain?",
+      "What is the specific error message or alert code being returned during the handshake process?",
+      "Are the issues occurring on specific clients or across multiple platforms and browsers?",
+      "Are there any recent changes to the network infrastructure, such as firewalls or load balancers, that could be affecting SSL/TLS traffic?",
+      "Are there any known vulnerabilities or security advisories related to the SSL/TLS protocols or cipher suites being used?",
       "Is the issue occurring during internal corporate traffic runs or external internet connections?"
     ],
     "l2": [
-      "Has a cipher suite mismatch broken negotiation channels between the client and server?",
+      "Has any cipher suite mismatch broken negotiation channels between the client and server?",
       "Are older, insecure protocol versions like TLS 1.0 or 1.1 disabled on the server side?",
-      "Is the application server trying to utilize an ephemeral key size that the client rejects?"
+      "Is the application server trying to utilize an ephemeral key size that the client rejects?",
+      "Are there any legacy applications or devices that do not support modern TLS versions or cipher suites?"
     ]
   },
   "probing": {
     "l1": [
       "Use tool commands 'curl -v' paths to trace secure channel connection milestones details.",
       "Check the target server System log for Schannel error events tagged with specific hex alerts.",
-      "Verify target listener port availability using basic netstat commands pathways patterns."
+      "Verify target listener port availability using basic netstat commands pathways patterns.",
+      "Verify OS versions and patch levels on both client and server nodes to ensure compatibility with modern TLS standards."
     ],
     "l2": [
-      "Run automated cipher profiling utilities to extract active allowed cryptographic lists maps blocks.",
+      "Verify ciphers with the PowerShell command line Get-TlsCipherSuite",
       "Verify local machine Schannel configuration registry data trees variations metrics.",
       "Check server certificate chain path integrity variables using tool sets like 'certutil -verify'."
     ]
@@ -31,24 +37,33 @@
     "l1": [
       "Bind a valid, unexpired certificate to the target application port via configuration tools.",
       "Update modern browser client components to ensure compatibility with high-grade security protocols.",
+      "Update server-side SSL/TLS configuration to enable mutually supported cipher suites and protocol versions.",
+      "Check for any network devices or firewalls that may be intercepting or modifying SSL/TLS traffic, and adjust their settings accordingly.",
+      "Update .net framework or Java runtime environments to support the latest TLS versions and cipher suites.",
+      "Ensure valid intermediate and root certificates are installed on both the client and server sides to establish a complete trust chain.",
+      "Check for any expired or revoked certificates in the server's certificate chain and replace them as necessary.",
       "Synchronize client and server time clocks to prevent certificate validity window errors."
     ],
     "l2": [
       "Deploy standardized cipher suite order definitions utilizing corporate Group Policy structures.",
       "Enable TLS 1.2 or TLS 1.3 settings keys parameters inside target registries configurations spaces.",
-      "Remove weak or broken legacy hashing algorithm options from active server negotiation lists."
+      "Remove weak or broken legacy hashing algorithm options from active server negotiation lists.",
+      "Check HKLM\\SOFTWARE\\Policies\\Microsoft\\Cryptography\\Configuration\\SSL\\00010002 for any overrides that may be causing handshake failures."
     ]
   },
   "datacollection": {
     "l1": [
       "Collect complete curl diagnostic verbose trace outputs documents mapping handshake phases.",
       "Export target System log outputs isolating Schannel alert event entries details.",
-      "Gather server deployment configuration summaries listing active socket binds variables."
+      "Gather server deployment configuration summaries listing active socket binds variables.",
+      "Collect client and server OS version and patch level information to ensure compatibility with modern TLS standards."
     ],
     "l2": [
-      "Capture full packet traces using Wireshark to isolate raw Client Hello / Server Hello packets.",
-      "Export keys structures from HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL.",
-      "Save copies of the complete target certificate chain data blocks in base64 layout formats."
+      "Capture full packet traces using Wireshark or netmon to isolate raw Client Hello / Server Hello packets.",
+      "Export keys structures from HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL from sender and receiver nodes for comparison.",
+      "Check Schannel events in the System log for alert codes and error messages related to SSL/TLS handshakes.",
+      "Collect schannel.etl logs from both client and server machines to analyze the handshake process and identify any discrepancies.",
+      "Collect SSL.etl logs from both client and server machines to analyze the handshake process and identify any discrepancies."
     ]
   },
   "playbooks": {

@@ -1,0 +1,107 @@
+{
+  "key": "whfb",
+  "label": "Windows Hello for Business (WHFB)",
+  "icon": "🧑‍💻",
+  "domain": "directory_services",
+  "scoping": {
+    "l1": [
+      "What is the exact error message or error code the user is experiencing with Windows Hello for Business?",
+      "What is the OS version and build number of the affected device?",
+      "Does the issue reproduce on the latest Windows build or updates?",
+      "Is there any signing error when using a PIN for authentication?",
+      "Is there any signing error when using biometric features like fingerprint or face recognition?",
+      "If biometrics are enabled, which specific biometric features have been configured on the device?",
+      "Did Windows Hello for Business previously work correctly, or is this a first-time setup attempt?",
+      "What is the specific error code displayed in the event logs or UI when the failure occurs?"
+    ],
+    "l2": [
+      "How is Windows Hello for Business configured in the environment via Group Policy or Intune?",
+      "Is the issue happening on a domain-joined device or a hybrid Azure AD joined device?",
+      "Is the device enrolled in Intune or any other Mobile Device Management (MDM) solution?",
+      "What is the WHFB deployment model - Key Trust or Certificate Trust?",
+      "Are there any specific Kerberos certificate requirements configured for WHFB?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Run 'dsregcmd /status' on the affected machine to check the device registration status and Azure AD join state.",
+      "Check the Directory Service event logs on the Domain Controller when the user attempts to logon.",
+      "Verify if the device is successfully registered with Azure AD by checking the Azure AD portal or dsregcmd output.",
+      "Check if the user has a valid Primary Refresh Token (PRT) issued by Azure AD."
+    ],
+    "l2": [
+      "Check how the Group Policy Object (GPO) is configured for Windows Hello for Business settings.",
+      "Verify network connectivity from the client machine to the Domain Controller and Azure AD endpoints.",
+      "Check the registry path HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\CredentialProviders\\{D6886603-9D2F-4EB2-B667-1971041FA96B} to see if any accounts are registered under the WHFB credential provider.",
+      "Verify the NGC (Next Generation Credentials) folder structure in the user profile."
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "The fastest way to detect an issue is by using the Dsregcmd /status /debug command or by looking into the User Device Registration Event log.\nHybrid Key Trust\nEvent 358 for success and 360 for failure\n\nHybrid Certificate Trust\nEvent 358 for success and 362 for failure",
+      "IsUserAzureAD: NO\nThis indicates the user failed to pass Azure Active Directory (AAD) authentication during the logon process and did not get the Azure AD Primary Refresh Token (PRT). Please check if the user can sign in to Azure Portal from the device successfully.\nCollect the following event logs during the logon process to check why the authentication against AAD failed:\nEvent Viewer -> Applications and Services -> Microsoft -> Windows -> AAD -> Operational\nEvent Viewer -> Applications and Services -> Microsoft -> Windows -> AAD -> Analytic",
+      "If Azureprt is missing engage AzureAD team to check the AAD logs for the user and device to see why the PRT was not issued. Engage AAD team to check the AAD logs for the user and device to see why the Enterprise PRT was not issued."
+    ],
+    "l2": [
+      "AADJ cloud-only join scenarios\nWhen you join a Windows 10/11 device to AAD (cloud-only join), the user will be prompted to enroll WHFB. This is a Windows 10/11 OS default.\nSome customers ask how to disable this. It is recommended to manage these non-domain joined systems with Intune. This feature can be managed and disabled by Intune or registry keys.\nUse Intune to disable Windows Hello for Business enrollment\nUser Policy\nHKEY_USERS\\UserSID\\SOFTWARE\\Policies\\Microsoft\\PassportForWork\nDevice Policy\nHKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\PassportForWork\nDWORD \"Enabled\"\nValue = 0 for Disable and Value = 1 for Enable",
+      "AdfsRefreshToken: NO\nThis indicates the user failed to get authenticated with Active Directory Federation Services (ADFS) and did not get the Enterprise PRT.",
+      "Collect data using auth script and validate Confirm they have Server 2016/2019/2022 domain controllers with certificates intended for Kerberos Authentication and Smart card logon",
+      "Check KDC event logs and validate If a suitable certificate is found by the KDC service, an event ID 302 (Kerberos-Key-Distribution-Center) will be logged, detailing the issuer name, serial number, thumbprint, and certificate template.\nIf no suitable certificate is found by the KDC service, an event ID 200 (Kerberos-Key-Distribution-Center) will be logged to notify that the KDC could not find a suitable certificate to use.",
+      "The issuing CA of the KDC certificate must be present in the computer NTAuth store, both on the Domain Controller (DC) and on the WHFB client device."
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collect Windows Hello for Business event logs from Event Viewer -> Applications and Services -> Microsoft -> Windows -> HelloForBusiness.",
+      "Collect User Device Registration event logs from Event Viewer -> Applications and Services -> Microsoft -> Windows -> User Device Registration.",
+      "Run 'dsregcmd /status' and capture the output to check device registration state.",
+      "Collect ng_trace.zip if available for comprehensive authentication tracing.",
+      "Run the Microsoft WHFB diagnostic collection script if available in the environment."
+    ],
+    "l2": [
+      "Collect Kerberos.etl trace to analyze error codes received from the Domain Controller or authentication point, including which identity was authenticating and what SPN or URL was being accessed.",
+      "Collect KDC.etl from the Domain Controller when the KDC service is returning errors to understand why the KDC failed to find a SPN or route a UPN.",
+      "Collect Hfb_Oper.evtx which contains detailed information about Windows Hello for Business provisioning processes.",
+      "Export NgcPolicyGp-key.txt and NgcPolicyGpUser-key.txt to capture the Group Policy settings applied to devices related to WHFB configuration."
+    ]
+  },
+  "playbooks": {
+    "prt_not_issued": {
+      "title": "Windows Hello for Business fails with Primary Refresh Token (PRT) not issued",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "dsregcmd /status", "expect": "Check if 'IsUserAzureAD' shows NO, indicating PRT was not issued" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Verify user can sign in to Azure Portal from the device", "expect": "If sign-in fails, the issue is with Azure AD authentication, not WHFB specifically" },
+            { "action": "Check Event Viewer -> Applications and Services -> Microsoft -> Windows -> AAD -> Operational", "expect": "Look for authentication failure events during logon process" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Ensure the device is properly registered with Azure AD and hybrid join is working", "expect": "Device registration status should show as connected in Azure AD portal" },
+            { "action": "Verify network connectivity to Azure AD endpoints and DNS resolution", "expect": "All required Azure AD endpoints should be reachable from the device" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "dsregcmd /status", "expect": "IsUserAzureAD should show YES, confirming PRT is now issued" },
+            { "action": "Attempt Windows Hello for Business sign-in", "expect": "User should be able to successfully authenticate using WHFB" }
+          ]
+        }
+      ]
+    }
+  }
+}

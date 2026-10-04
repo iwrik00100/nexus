@@ -5,50 +5,76 @@
   "domain": "directory_services",
   "scoping": {
     "l1": [
-      "Which specific user account or security principal is getting locked out?",
+      "Which specific user account is getting locked out?",
+      "What is the frequency of the lockout events?",
       "When did the repeated lockout cycles start happening to this account?",
-      "Does the lockout clear temporarily upon administrator manual unlock actions?"
+      "Does the lockout seem to happen when the user tries to do something specific?",
+      "Is this user a member of any high-privilege groups like Domain Admins?",
+      "What is the Password policy set to? What is the Account lockout policy set to (if configured)?",
+      "Does the user have the same username on any non-domain systems or personal devices?",
+      "Are other users in the same department or office experiencing similar issues?"
     ],
     "l2": [
       "Is the lockout happening from a domain workstation, server, or external VPN?",
       "Are there multiple devices or applications simultaneously submitting old credentials?",
-      "Is the lockout threshold configuration policy set domain-wide or via FGPP?"
+      "Is the lockout threshold configuration policy set domain-wide or via FGPP?",
+      "Was there a recent password change or forced reset prior to the lockouts starting?",
+      "Does the lockout occur specifically when the user is logged into a specific VDI or RDS session?",
+      "Are there any third-party SMTP or FTP services configured to use this account's credentials?",
+      "Is the user/users experiencing the issue configured for Exchange (mailbox, Active Sync)? If so, check the following:\n• Check with basics and common devices / apps that may cause the same:\n1. Exchange ActiveSync mobile devices\n2. Apple MobileMe – contacts sync\n3. Applications / Web applications / tools which sync with Active Directory for authentication\n4. Vault for credentials in Windows Control Panel or Credential Manager\n5. Stored usernames and passwords – rundll32.exe keymgr.dll, KRShowKeyMgr\n6. Rename AD Profile on the user machine"
     ]
   },
   "probing": {
     "l1": [
       "Query the PDC Emulator for Event ID 4740 logs identifying the lockout origin.",
       "Run 'net user <username> /domain' to verify current lock status and lock time.",
-      "Use the LockoutStatus tool to check state across all active domain controllers."
+      "Use the LockoutStatus tool to check state across all active domain controllers.",
+      "Check the 'lastBadPasswordAttempt' attribute in AD using PowerShell or ADSI Edit.",
+      "Verify if the account is currently locked out on the local machine's SAM database.",
+      "Check if any Active Directory replication latency is delaying the unlock state.",
+      "If FGPP is enabled, what is the FGPP configuration?\nYou can use the \"Get-ADFineGrainedPasswordPolicy\" command for more details."
     ],
     "l2": [
+      "Enable auditing at the domain level.",
+      "Enable Netlogon logging.\n• Enable Kerberos logging.\n• Netlogon.log from the user's workstation\n• Alockout.log from the user's workstation\n• Security Event Logs from the user's workstation\n• Security Event Logs from the PDC (Authenticating DC)",
       "Search Security logs for Event IDs 4625 to find bad password attempt data details.",
       "Inspect the caller computer name field listed inside the 4740 event properties.",
-      "Check network connection sessions to map persistent open authentications."
+      "Check network connection sessions to map persistent open authentications.",
+      "Analyze Netlogon logs to determine if the auth request is NTLM or Kerberos.",
+      "Use 'klist purge' on the suspect workstation to clear any stale Kerberos tickets.",
+      "Review IIS logs on web servers if the source is identified as an internal web portal."
     ]
   },
   "troubleshooting": {
     "l1": [
       "Unlock the user account utilizing Active Directory Administrative Center UI.",
       "Have the user update passwords on known mobile devices and persistent apps.",
-      "Clear cached network credentials from the Windows Credential Manager vault."
+      "Clear cached network credentials from the Windows Credential Manager vault.",
+      "Instruct the user to sign out of all active Windows sessions and reboot.",
+      "Disconnect mobile devices from corporate Wi-Fi and Exchange ActiveSync temporarily.",
+      "Reset the user's password to a temporary one to break existing automated retry loops."
     ],
     "l2": [
       "Identify and terminate old mapped network drives or scheduled background tasks.",
       "Restart persistent Windows Services configured with outdated user service accounts.",
-      "Flush cached interactive web application credentials causing invisible background calls."
+      "Flush cached interactive web application credentials causing invisible background calls.",
+      "Check for 'Saved Passwords' in browsers (Chrome/Edge) for internal applications.",
+      "Examine COM+ applications or IIS Application Pools running under the user identity.",
+      "Remove the user's account from any automated scripts or batch jobs found on servers.",
+      "In case there is an Active Sync configured (only in that case), collaborate with the Exchange engineer to get:Get-ActiveSyncDeviceStatistics -Mailbox <Username> using the Exchange Management Shell to identify the devices the user is using right now and any past devices that have established a connection with Exchange at least once."
     ]
   },
   "datacollection": {
     "l1": [
       "Collect text outputs from LockoutStatus tool executed against the target domain.",
       "Export Event 4740 logs from all Domain Controllers in the infrastructure.",
-      "Gather local client security authentication failure logs during reproduction."
+      "• Security Event Logs from the user's workstation\n• Security Event Logs from the PDC (Authenticating DC)"
     ],
     "l2": [
       "Enable Netlogon verbose debug logging via 'nltest /dbflag:0x2080ffff' on target controllers.",
       "Collect network captures filtering on Kerberos and NTLM traffic from client source.",
-      "Dump active scheduled tasks lists from the identified caller workstation machine."
+      "Dump active scheduled tasks lists from the identified caller workstation machine.",
+      "Collect Procmon to verify the Caller Process ID or Caller Process Name in the 4625 logon security event shown."
     ]
   },
   "playbooks": {
@@ -60,31 +86,110 @@
           "name": "Verify",
           "icon": "✅",
           "steps": [
-            { "action": "net user targetuser /domain", "expect": "Account status should output 'Account active: Lockout'" }
+            {
+              "action": "net user targetuser /domain",
+              "expect": "Account status should output 'Account active: Lockout'"
+            }
           ]
         },
         {
           "name": "Isolate",
           "icon": "🔍",
           "steps": [
-            { "action": "Get-WinEvent -ComputerName <PDC_Name> -FilterHashtable @{LogName='Security';Id=4740} | Select-Object -First 1 -ExpandProperty Message", "expect": "Extract Caller Computer Name to uncover the actual origin workstation" }
+            {
+              "action": "Get-WinEvent -ComputerName <PDC_Name> -FilterHashtable @{LogName='Security';Id=4740} | Select-Object -First 1 -ExpandProperty Message",
+              "expect": "Extract Caller Computer Name to uncover the actual origin workstation"
+            }
           ]
         },
         {
           "name": "Fix",
           "icon": "🛠",
           "steps": [
-            { "action": "rundll32.exe keymgr.dll,KRShowKeyMgr", "expect": "Open credential UI on source client and remove outdated entries for the domain" }
+            {
+              "action": "rundll32.exe keymgr.dll,KRShowKeyMgr",
+              "expect": "Open credential UI on source client and remove outdated entries for the domain"
+            }
           ]
         },
         {
           "name": "Confirm",
           "icon": "🎯",
           "steps": [
-            { "action": "Unlock-ADAccount -Identity targetuser", "expect": "Account remains in unlocked status without triggering successive 4740 events" }
+            {
+              "action": "Unlock-ADAccount -Identity targetuser",
+              "expect": "Account remains in unlocked status without triggering successive 4740 events"
+            }
+          ]
+        }
+      ]
+    },
+    "cirt_engagement_guidance": {
+      "title": "When and How to Engage the Security Team (CIRT)",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Initial Verification",
+          "icon": "🔎",
+          "steps": [
+            {
+              "action": "Review account lockout threshold and password policies",
+              "expect": "Confirm lockouts are not caused by misconfiguration (e.g., threshold too low)"
+            },
+            {
+              "action": "Check applications or services using outdated credentials",
+              "expect": "Identify systems still using old passwords causing repeated failures"
+            }
+          ]
+        },
+        {
+          "name": "Source Identification",
+          "icon": "🌐",
+          "steps": [
+            {
+              "action": "Trace failed authentication attempts to originating machine",
+              "expect": "Determine where bad authentication requests are coming from"
+            },
+            {
+              "action": "Analyze authentication logs for patterns",
+              "expect": "Detect high-volume failures, multiple accounts, or suspicious success attempts"
+            }
+          ]
+        },
+        {
+          "name": "Threat Assessment",
+          "icon": "⚠️",
+          "steps": [
+            {
+              "action": "Evaluate if failed authentications indicate compromise or malware",
+              "expect": "Decide if evidence suggests malicious activity rather than normal user error"
+            },
+            {
+              "action": "Check for domain-wide lockouts or alphabetical username attempts",
+              "expect": "Identify brute-force or password-breaking attacks"
+            },
+            {
+              "action": "Review for low-volume but persistent failed authentications",
+              "expect": "Detect advanced attacks staying below the radar"
+            }
+          ]
+        },
+        {
+          "name": "Engage CIRT",
+          "icon": "🚨",
+          "steps": [
+            {
+              "action": "Compile evidence: logs, source machine, authentication patterns",
+              "expect": "Provide CIRT with proof of concept (PoC) for collaboration"
+            },
+            {
+              "action": "Escalate only when malicious activity is suspected",
+              "expect": "CIRT investigates attacks, not configuration issues or normal lockouts"
+            }
           ]
         }
       ]
     }
   }
 }
+

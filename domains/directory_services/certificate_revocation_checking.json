@@ -7,21 +7,26 @@
     "l1": [
       "Are authentication actions dropping due to revocation checking timeout conditions?",
       "When did the certificate validation engine begin flagging revocation status failures?",
-      "Is the checking method evaluating CRL files or querying online OCSP responders?"
+      "Is the checking method evaluating CRL files or querying online OCSP responders?",
+      "check the configuration of the CA service and its role in the PKI hierarchy."
     ],
     "l2": [
       "Are web firewalls blocking HTTP paths leading to corporate CDP distribution endpoints?",
       "Has the published CRL file exceeded its validity period without updates running successfully?",
-      "Is the OCSP response signing certificate expired or unrecognized by validation clients?"
+      "Is the OCSP response signing certificate expired or unrecognized by validation clients?",
+      "permission issues on the CA server preventing CRL publication or OCSP signing operations."
     ]
   },
   "probing": {
     "l1": [
+      "certutil -url <certificate_file.cer> to check revocation status and fetch CRL/OCSP data.",
       "Run 'certutil -verify -urlfetch <cert.cer>' to validate revocation pathways details tracking.",
+      "Manually publish a new CRL and Delta CRL: certutil -crl",
       "Check local client Crypto32 operational log structures via event viewer tracking tools screens.",
       "Verify network line availability targeting raw CDP distribution endpoints using simple download commands."
     ],
     "l2": [
+      "Check the CRL publication path (e.g., \\<servername>\\CertEnroll) and ensure:\nThe CA has write permissions.\nThe path is shared and accessible to clients.",
       "Use certutil options to parse and view CRL cache properties parameters values tables charts.",
       "Check OCSP configurations settings data trees using targeted diagnostic parsing parameters entries.",
       "Verify systemic validation behavior thresholds configurations using automated script queries readouts."
@@ -34,6 +39,7 @@
       "Resolve network rule parameters to permit connection flows out toward verification path endpoints."
     ],
     "l2": [
+      "Use certutil -v -getreg to inspect registry settings for CRL and CDP.",
       "Correct explicit AIA and CDP extension definitions located inside base issuance models templates.",
       "Reconfigure OCSP array synchronization loops to ensure consistent validation token delivery frameworks.",
       "Deploy temporary registry overrides allowing checking fallback sequences during physical network restorations."
@@ -41,6 +47,7 @@
   },
   "datacollection": {
     "l1": [
+      "Event Viewer > Applications and Services Logs > Microsoft > Windows > CertificateServices\nLook for CRL publishing or access errors.",
       "Export full diagnostic text transcripts outputted by certutil verification fetch checks loops.",
       "Collect client CAPI2 operational event logs in native binary formats configuration types.",
       "Gather network access history log snippets showing attempts targeting revocation paths."

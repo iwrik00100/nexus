@@ -7,7 +7,9 @@
     "l1": [
       "Are users encountering enrollment failures during auto-enrollment or manual requests?",
       "When did endpoints stop receiving updated certificate objects from deployment templates?",
-      "What specific template naming structure is active during the enrollment failure event?"
+      "What specific template naming structure is active during the enrollment failure event?",
+      "Where it is faling on manual enrollment, is the CA reachable and responding to requests?",
+      "Are there any recent changes to the CA configuration, network topology, or certificate templates that could have triggered the issue?"
     ],
     "l2": [
       "Are Active Directory permissions on the target template blocking the user from enrolling?",
@@ -19,7 +21,9 @@
     "l1": [
       "Run 'certutil -template' to view active templates listings configurations details sheets.",
       "Check client Application log files for specific Event ID 13 or 6 auto-enrollment errors.",
-      "Use command 'certreq -enroll' path options to test manual generation capabilities directly."
+      "Use command 'certreq -enroll' path options to test manual generation capabilities directly.",
+      "Check AEpolicy registry keys under HKLM\\SOFTWARE\\Microsoft\\Cryptography\\AutoEnrollment for configuration flags if AE is failing.",
+      "AEEventLogLevel registry key under HKLM\\SOFTWARE\\Microsoft\\Cryptography\\AutoEnrollment can be set to 0x00000003 to enable verbose logging for auto-enrollment issues."
     ],
     "l2": [
       "Verify template security DACL lists mapping settings utilizing advanced certtmpl.msc tools layout.",
@@ -41,8 +45,9 @@
   },
   "datacollection": {
     "l1": [
+      "Applications and Services Logs → Microsoft → Windows → CertificateServicesClientAutoEnrollment → Operational log entries can be exported to .evtx files for analysis.",
       "Export client application log branches capturing certificate enrollment engine event summaries.",
-      "Collect text representations of target failed request profiles generated via certreq utilities.",
+      "Event 73 — Autoenrollment failed\nShows error codes like:\n\n0x800706ba (RPC server unavailable)\n\n0x80094800 (Policy module denied request)\n\n0x80092004 (Cannot find object or property)",
       "Gather target templates assignment parameters maps details utilizing automated scripting sweeps."
     ],
     "l2": [

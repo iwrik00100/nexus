@@ -5,13 +5,21 @@
   "domain": "directory_services",
   "scoping": {
     "l1": [
+      "What abnormal behaviors are observed during file replication?",
+      "Where are the impacted systems physically located?",
+      "Are there any recent changes to the DFSR configuration, network topology, or replication group membership that could have triggered the issue?",
       "Are all members in the replication group reporting the backlog or sync issues?",
+      "Slow replication; failing replication; root cause analysis of prior behavior or failure identified that",
       "When did files stop syncing between the target replication partners?",
-      "Is the replication failure affecting the SYSVOL share or data volumes?"
+      "Is the replication failure affecting the SYSVOL share or data volumes?",
+      "What is the OS version? Is it physical or virtualized? Is it a member of a file server cluster?"
     ],
     "l2": [
+      "Were configuration changes implemented recently, such as adding or removing members, software or hardware changes, network configuration changes, or server or data restorations?",
       "Have any of the replication group members recently suffered a dirty shutdown?",
       "Is the DFSR database corrupted or reporting event ID 2213 or 4012?",
+      "What is a rough estimate of the total size and number of files replicated?",
+      "What specific servers, identified by Fully Qualified Domain Name (FQDN), are involved? Are there any that are not reporting errors or symptoms?",
       "Are firewalls blocking RPC ports dynamic range 49152-65535 between partners?"
     ]
   },
@@ -19,6 +27,11 @@
     "l1": [
       "Run 'dfsrdiag backlog /rgname:<group> /rfname:<folder> /sme:<source> /rme:<dest>' to check queue size.",
       "Check the DFS Replication event log for Warning or Error event entries.",
+      "Network requirements for DFSR: RPC- TCP-Port 135; RPC-TCP-Randomly assigned port number between 49152-65535.",
+      "Monitor disk performance counters (LogicalDisk, PhysicalDisk), check staging folder size, and confirm DFSR database path is on performant storage.",
+      "Run 'dfsrdiag dumpguid' to dump the replication group and folder GUIDs.",
+      "Run 'dfsrdiag pollad' to force a poll of Active Directory for replication group membership and configuration changes.",
+      "Run 'dfsrdiag replicationstate' to dump the current replication state of all members in the replication group.",
       "Run 'wmic /namespace:\\\\root\\microsoftdfs path dfsrreplicatedfolderinfo get replicationgroupname,replicatedfoldername,state' to see folder status."
     ],
     "l2": [
@@ -31,24 +44,33 @@
     "l1": [
       "Restart the DFS Replication service on the affected member.",
       "Verify network connectivity and RPC port availability between partners.",
-      "Clear up disk space if the staging folder or volume is hitting full thresholds."
+      "Clear up disk space if the staging folder or volume is hitting full thresholds.",
+      "Check migration state: Use dfsrmig /getmigrationstate to confirm all domain controllers are in sync.",
+      "Permissions: Ensure SYSVOL and NETLOGON share permissions are correct; mismatched ACLs can block replication."
     ],
     "l2": [
       "Resume replication after a dirty shutdown by running the specific WMI method for ID 2213.",
       "Perform a non-authoritative synchronization rebuild by altering the msDFSR-Enabled attribute.",
-      "Adjust the staging quota limits upward if large files are blocking the pipeline."
+      "Adjust the staging quota limits upward if large files are blocking the pipeline.",
+      "Event logs: Monitor DFS Replication and Directory Service logs for events like 8014 (migration complete) or errors during transition.",
+      "Event logs: Watch for DFSR events 4412 (preseeded file accepted) or 4413 (file mismatch, retransferred)."
     ]
   },
   "datacollection": {
     "l1": [
       "Export the complete DFS Replication event log into an .evtx package.",
       "Collect the generated HTML health report from dfsrdiag utility.",
-      "Gather 'dfsrdiag dumpguid' and basic system storage metrics logs."
+      "Gather 'dfsrdiag dumpguid' and basic system storage metrics logs.",
+      "For storage performance issues monitor application logs and check events 508, 510, 533, 902, 906, 482, 428.",
+      "Check Application event log for DFS Replication events 636, 640 ESENT database access issues; E 454, 455 ESENT database logging/recovery attempted/failed."
     ],
     "l2": [
       "Collect complete DFSR debug logs located under the %SystemRoot%\\Debug folder.",
       "Export the registry configuration keys for the DFSR service parameters.",
-      "Run a continuous packet trace during forced sync attempts using built-in netsh."
+      "Run a continuous packet trace during forced sync attempts using built-in netsh.",
+      "Collect staging folder size and usage metrics from all replication partners.",
+      "Use D2 when a DFSR members data is considered stale or corrupted and must pull fresh data from its partners.",
+      "Use D4 when a DFSR members data is the master copy and should be pushed out to all partners."
     ]
   },
   "playbooks": {
