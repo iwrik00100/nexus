@@ -1162,8 +1162,13 @@ body {
 }
 .cn-tab:hover .cn-tab-label { color: var(--accent); }
 
+.cn-tab-daily {
+  top: calc(50% + 160px);
+}
+
 /* ── Case Notes Overlay ──────────────────────────────────────── */
-.cn-overlay {
+.cn-overlay,
+.daily-cn-overlay {
   position: fixed;
   inset: 0;
   z-index: 299;
@@ -1173,7 +1178,8 @@ body {
   pointer-events: none;
   transition: opacity 0.3s;
 }
-.cn-overlay.open { opacity: 1; pointer-events: all; }
+.cn-overlay.open,
+.daily-cn-overlay.open { opacity: 1; pointer-events: all; }
 
 /* ── Case Notes Panel ────────────────────────────────────────── */
 .cn-panel {

@@ -225,7 +225,14 @@
   <span class="cn-tab-label">Incident Log</span>
 </div>
 
+<!-- Daily Log Tab -->
+<div class="cn-tab cn-tab-daily" id="dailyCnTab" onclick="toggleDailyCaseNotes()" role="button" tabindex="0" aria-label="Open Daily Incident Log">
+  <span class="cn-tab-icon">📅</span>
+  <span class="cn-tab-label">Daily Log</span>
+</div>
+
 <div class="cn-overlay" id="cnOverlay" onclick="toggleCaseNotes()"></div>
+<div class="cn-overlay daily-cn-overlay" id="dailyCnOverlay" onclick="toggleDailyCaseNotes()"></div>
 
 <div class="cn-panel" id="cnPanel" role="dialog" aria-label="Incident Log" aria-modal="true">
   <div class="cn-panel-header">
@@ -309,6 +316,44 @@
     <div class="cn-preview-wrap">
       <button class="cn-preview-toggle" onclick="toggleCnPreview()"><span id="cnPreviewToggleIcon">▶</span> Formatted Note Preview</button>
       <pre class="cn-preview" id="cnPreview" style="display:none"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Daily Log Panel -->
+<div class="cn-panel" id="dailyCnPanel" role="dialog" aria-label="Daily Incident Log" aria-modal="true">
+  <div class="cn-panel-header">
+    <div class="cn-panel-title">
+      <span class="cn-panel-icon">📅</span>
+      <div>
+        <div class="cn-panel-name">Daily Incident Log</div>
+        <div class="cn-panel-sub">Daily Documentation Builder</div>
+      </div>
+    </div>
+    <div class="cn-header-actions">
+      <span class="cn-saved-indicator" id="dailyCnSavedIndicator"></span>
+      <button class="cn-action-btn" onclick="clearDailyNotes()">🗑 Clear</button>
+      <button class="cn-action-btn" onclick="copyDailyCaseNote()">📋 Copy Note</button>
+      <button class="cn-close" onclick="toggleDailyCaseNotes()">✕</button>
+    </div>
+  </div>
+  <div class="cn-body">
+    <div class="cn-meta-row">
+      <div class="cn-meta-field"><label class="cn-label" for="daily-cn-date">Date</label><input class="cn-input" id="daily-cn-date" type="date" oninput="updateDailyPreview()"></div>
+    </div>
+    <div class="cn-divider"></div>
+    <div class="cn-sections">
+      <div class="cn-section"><div class="cn-section-header"><span class="cn-section-icon">🔍</span><span class="cn-section-title">Troubleshooting Done</span><span class="cn-section-hint">What has already been investigated?</span></div><textarea class="cn-textarea" id="daily-cn-troubleshooting" rows="5" placeholder="• Steps already taken&#10;• Commands run and findings&#10;• Event IDs reviewed&#10;• Current root cause hypothesis" oninput="updateDailyPreview()"></textarea></div>
+      <div class="cn-section"><div class="cn-section-header"><span class="cn-section-icon">📋</span><span class="cn-section-title">Action Plan</span><span class="cn-section-hint">Next steps split by owner.</span></div>
+        <div class="cn-action-split">
+          <div class="cn-action-col"><div class="cn-action-col-label pending-customer">⏳ Pending on Customer</div><textarea class="cn-textarea" id="daily-cn-action-customer" rows="5" placeholder="• Run [command] and share output&#10;• Collect [log/trace]&#10;• Confirm if workaround resolves" oninput="updateDailyPreview()"></textarea></div>
+          <div class="cn-action-col"><div class="cn-action-col-label pending-ms">🔬 Pending on Microsoft</div><textarea class="cn-textarea" id="daily-cn-action-ms" rows="5" placeholder="• Review logs provided&#10;• Research KB / known issue&#10;• Follow up by [date]" oninput="updateDailyPreview()"></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="cn-preview-wrap">
+      <button class="cn-preview-toggle" onclick="toggleDailyCnPreview()"><span id="dailyCnPreviewToggleIcon">▶</span> Formatted Note Preview</button>
+      <pre class="cn-preview" id="dailyCnPreview" style="display:none"></pre>
     </div>
   </div>
 </div>

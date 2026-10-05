@@ -127,6 +127,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   updatePreview();
 
+  // Restore daily case notes
+  _dailyCnFields.forEach(id => {
+    const el = document.getElementById(id);
+    const val = LS.get('pcy_daily_cn_' + id, '');
+    if (el && val) el.value = val;
+  });
+  _doUpdateDailyPreview();
+
   // Restore chat history bubbles
   if (_chatHistory.length) {
     const output = document.getElementById('aiOutput');
@@ -1034,6 +1042,7 @@ function toggleTheme() {
 
 // ─── Case Notes Panel ─────────────────────────────────────────────────────────
 let _cnOpen = false;
+let _dailyCnOpen = false;
 
 const _cnFields = [
   'cn-sr','cn-date','cn-followup','cn-engineer','cn-customer','cn-tech',
@@ -1043,7 +1052,15 @@ const _cnFields = [
   'cn-resolution','cn-kb','cn-escalation','cn-related-sr','cn-notes'
 ];
 
+const _dailyCnFields = [
+  'daily-cn-date','daily-cn-troubleshooting','daily-cn-action-customer','daily-cn-action-ms'
+];
+
 function toggleCaseNotes() {
+  if (_dailyCnOpen) {
+    toggleDailyCaseNotes();
+    return;
+  }
   _cnOpen = !_cnOpen;
   document.getElementById('cnPanel').classList.toggle('open', _cnOpen);
   document.getElementById('cnOverlay').classList.toggle('open', _cnOpen);
@@ -1170,9 +1187,94 @@ function toggleCnPreview() {
   if (open) pre.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// ─── Daily Case Notes Panel ─────────────────────────────────────────────────────
+function toggleDailyCaseNotes() {
+  if (_cnOpen) {
+    toggleCaseNotes();
+    return;
+  }
+  _dailyCnOpen = !_dailyCnOpen;
+  document.getElementById('dailyCnPanel').classList.toggle('open', _dailyCnOpen);
+  document.getElementById('dailyCnOverlay').classList.toggle('open', _dailyCnOpen);
+  document.getElementById('dailyCnTab').style.display = _dailyCnOpen ? 'none' : '';
+}
+
+function clearDailyNotes() {
+  _dailyCnFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  _dailyCnFields.forEach(id => LS.set('pcy_daily_cn_' + id, ''));
+  _doUpdateDailyPreview();
+}
+
+function updateDailyPreview() {
+  clearTimeout(updateDailyPreview._t);
+  updateDailyPreview._t = setTimeout(_doUpdateDailyPreview, 300);
+  const ind = document.getElementById('dailyCnSavedIndicator');
+  if (ind) {
+    ind.textContent = '✓ Draft saved';
+    ind.classList.add('show');
+    clearTimeout(ind._t);
+    ind._t = setTimeout(() => ind.classList.remove('show'), 1800);
+  }
+}
+
+function _doUpdateDailyPreview() {
+  _dailyCnFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) LS.set('pcy_daily_cn_' + id, el.value);
+  });
+
+  const date          = _val('daily-cn-date');
+  const troubleshooting = _val('daily-cn-troubleshooting');
+  const actCust       = _val('daily-cn-action-customer');
+  const actMs         = _val('daily-cn-action-ms');
+
+  const hasAny = [date, troubleshooting, actCust, actMs].some(v => v);
+
+  if (!hasAny) {
+    document.getElementById('dailyCnPreview').textContent =
+      'Fill in the sections above to generate your formatted daily log...';
+    return;
+  }
+
+  let out = 'Nexus — Daily Incident Log\n';
+  out += '─'.repeat(60) + '\n';
+  if (date) out += `Date         : ${date}\n`;
+
+  out += _section('Troubleshooting Done', troubleshooting);
+
+  if (actCust || actMs) {
+    out += `\n${'='.repeat(60)}\nACTION PLAN\n${'='.repeat(60)}\n`;
+    if (actCust) out += `\n⏳ PENDING ON CUSTOMER\n${'─'.repeat(40)}\n${actCust}\n`;
+    if (actMs)   out += `\n🔬 PENDING ON MICROSOFT\n${'─'.repeat(40)}\n${actMs}\n`;
+  }
+
+  out += `\n${'─'.repeat(60)}\n[End of Daily Log]`;
+
+  document.getElementById('dailyCnPreview').textContent = out;
+}
+
+function copyDailyCaseNote() {
+  const text = document.getElementById('dailyCnPreview').textContent;
+  if (!text || text.startsWith('Fill in')) { showToast('Nothing to copy yet.'); return; }
+  navigator.clipboard.writeText(text).then(() => showToast('Daily log copied!'));
+}
+
+function toggleDailyCnPreview() {
+  const pre  = document.getElementById('dailyCnPreview');
+  const icon = document.getElementById('dailyCnPreviewToggleIcon');
+  const open = pre.style.display === 'none';
+  pre.style.display = open ? 'block' : 'none';
+  icon.textContent  = open ? '▼' : '▶';
+  if (open) pre.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // ─── Keyboard Shortcuts ───────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    if (_dailyCnOpen) { toggleDailyCaseNotes(); return; }
     if (_cnOpen) { toggleCaseNotes(); return; }
     if (state.activeDomain) { backToLanding(); return; }
   }
@@ -1196,6 +1298,10 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'cnTab') {
     e.preventDefault();
     toggleCaseNotes();
+  }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'dailyCnTab') {
+    e.preventDefault();
+    toggleDailyCaseNotes();
   }
 });
 
