@@ -1,0 +1,101 @@
+{
+  "key": "winrm",
+  "label": "WinRM Troubleshooting",
+  "icon": "🔧",
+  "domain": "user_experience",
+  "scoping": {
+    "l1": [
+      "Provide general information about the server or workstation being affected",
+      "What is the role of the machine if it is a server (file server, DC, application server)?",
+      "Is the machine a virtual machine or a physical machine?",
+      "Is only one machine affected or are several machines affected?",
+      "What is the name of the application or process that is having the issue?"
+    ],
+    "l2": [
+      "How do users work with that application (logging in to a server, connecting to a database, running locally)?",
+      "What is the behavior of the application (crashing, hanging, slow, unable to connect)?",
+      "How do they recover when the issue happens (wait, reboot, hard shutdown, kill program)?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "When did the problem first start occurring?",
+      "When did the problem last occur?",
+      "Is this the only machine showing this behavior or are there others?",
+      "How often has the issue occurred?"
+    ],
+    "l2": [
+      "How do they know the issue is happening (what symptoms do end users or admins see)?",
+      "Is it always the same symptoms? What is the same and what is different?",
+      "Is the issue gradual or sudden in onset?",
+      "Are there any associated events being logged in the event viewer?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Check the status of the WinRM service on the affected machine",
+      "Run the command WinRM quickconfig to verify WinRM configuration",
+      "Telnet to the remote machine on ports 5985 and 5986 to test connectivity",
+      "Check the properties of the WinRM listener by running winrm enumerate winrm/config/listener",
+      "Compare the output of winrm get winrm/config with a working machine",
+      "Run sfc /scannow to check for system file corruption",
+      "Check health of component store by running DISM /Online /Cleanup-Image /ScanHealth"
+    ],
+    "l2": [
+      "Check the resultant set of policies for any restrictive WinRM communication policies",
+      "Delete and recreate the WinRM listener after noting the previous configuration",
+      "Check if PowerShell remoting is working using Enter-PSSession -ComputerName",
+      "Run winrm invoke Restore winrm/config to restore listener configuration",
+      "Test WinRM connectivity between machines by running winrm id -r <remote computer name>",
+      "Reproduce the issue and check Event Viewer logs (Application and Services logs- Microsoft-Windows-WinRM)"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Check event logs in Application and Services logs- Microsoft-Windows-WinRM",
+      "Collect gpresult output to review Group Policy settings",
+      "Collect system information using the systeminfo command"
+    ],
+    "l2": [
+      "Collect WinRM-Collect diagnostic data",
+      "Collect WinRM trace logs for detailed troubleshooting",
+      "Capture a network trace during WinRM connection attempts"
+    ]
+  },
+  "playbooks": {
+    "winrm_connection_failure": {
+      "title": "WinRM connection fails or times out",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Check WinRM service status and configuration", "expect": "Service is running or misconfigured" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Test network connectivity on ports 5985 and 5986", "expect": "Ports blocked or firewall issues identified" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Run WinRM quickconfig and recreate listener", "expect": "WinRM connectivity restored" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Test WinRM connection and monitor Event Viewer", "expect": "Connection stable with no errors" }
+          ]
+        }
+      ]
+    }
+  }
+}

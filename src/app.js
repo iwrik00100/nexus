@@ -178,7 +178,7 @@ const DOMAIN_TECH_COUNTS = {
   networking: '13 technologies',
   directory_services: '26 technologies',
   performance: '5 technologies',
-  user_experience: '6 technologies',
+  user_experience: '8 technologies',
   device_deployment: '12 technologies',
   storage_ha: '9 technologies',
   collaboration: '6 technologies'

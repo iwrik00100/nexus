@@ -1,0 +1,105 @@
+{
+  "key": "rds",
+  "label": "RDS Troubleshooting",
+  "icon": "🖥",
+  "domain": "user_experience",
+  "scoping": {
+    "l1": [
+      "What is the exact issue being experienced by users?",
+      "Are there any error messages displayed to the user?",
+      "When did the issue first start occurring?",
+      "Have there been any recent changes in the environment like updates or hardware changes?",
+      "Is the issue constant or sporadic and intermittent?",
+      "Has any preliminary troubleshooting been done on the customer side?",
+      "Are there any known temporary workarounds being used?",
+      "Do workarounds include rebooting servers or disconnecting and reconnecting sessions?"
+    ],
+    "l2": [
+      "Is there a single Connection Broker or multiple brokers configured in High Availability?",
+      "When using multiple Connection Brokers in HA, how many brokers are configured?",
+      "Can you load the RDMS UI content on each Connection Broker successfully?",
+      "Has the SQL connection string been altered or has the SQL server been renamed?",
+      "Do you get error messages when loading the RDMS UI in Server Manager?",
+      "Are all RDS deployment servers added to the server pool in Server Manager?",
+      "Have all certificates been properly configured and trusted in the RDS deployment?",
+      "Can the same actions be performed using equivalent PowerShell cmdlets if RDMS UI fails?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Is this an RDS environment or direct RDP connection scenario?",
+      "Where are the client and server machines hosted (on-premises or cloud)?",
+      "What roles and features are installed on the RDS server?",
+      "Since when have users been reporting this issue?"
+    ],
+    "l2": [
+      "What is the connection flow architecture? Is load balancing, MFA, or proxy involved?",
+      "Is the issue happening for internal users, external users, or both?",
+      "What is the behavior after disabling UDP transport for RDP?",
+      "What happens with other users on the same session host when one disconnects?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Check basic network connectivity by pinging the server and testing port 3389",
+      "Check if you can sign in locally on the server to perform tests",
+      "Verify Remote Desktop Services service is in running state on the server",
+      "Check if Remote Desktop is enabled in the system properties",
+      "From the server console, try connecting to localhost via RDP"
+    ],
+    "l2": [
+      "Recreate the RDP listener if it is corrupted or misconfigured",
+      "Recreate the RDP listener certificate if authentication issues occur",
+      "Change the RDP port temporarily to test if port conflicts exist",
+      "Check if RD Gateway is configured and test behavior by bypassing the Gateway",
+      "Identify at which level the error occurs to determine the starting point for troubleshooting"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Check event logs while replicating the issue (System, Application)",
+      "Collect gpresult output to review Group Policy settings",
+      "Collect system information using the systeminfo command"
+    ],
+    "l2": [
+      "Collect RDS traces for detailed session and connection information",
+      "Capture a network trace during RDP connection attempts"
+    ]
+  },
+  "playbooks": {
+    "rds_connection_failure": {
+      "title": "RDS connection fails or disconnects frequently",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Check Remote Desktop Services service status", "expect": "Service is running or stopped" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Test network connectivity and port 3389 availability", "expect": "Port blocked or network issues identified" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Restart RDS service and recreate RDP listener", "expect": "Connection restored after service restart" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Test RDP connection and monitor Event Viewer", "expect": "Connection stable with no new errors" }
+          ]
+        }
+      ]
+    }
+  }
+}

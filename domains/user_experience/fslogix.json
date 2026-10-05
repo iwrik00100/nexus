@@ -1,0 +1,105 @@
+{
+  "key": "fslogix",
+  "label": "FSLogix",
+  "icon": "🗂",
+  "domain": "user_experience",
+  "scoping": {
+    "l1": [
+      "What is the version of FSLogix being used in the environment?",
+      "Since when has the customer been facing the profile issue?",
+      "Is this happening with all users or only certain users?",
+      "Is this happening with all VMs or only specific VMs?",
+      "Is this happening with Azure Virtual Machines or Azure Virtual Desktop?",
+      "Is the environment AVD-FSLogix, RDS-FSLogix, or Citrix-FSLogix?"
+    ],
+    "l2": [
+      "Where is the profile storage located? Is it on Azure or on-premises?",
+      "Is there any other profile solution currently in use alongside FSLogix?",
+      "What is the exact error message when users try to connect to their profile?",
+      "What error messages are visible in the Event Viewer logs?",
+      "Is the customer using Citrix+FSLogix in their environment?",
+      "Is the environment on-premises, hybrid, or a full cloud solution?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Provide general information about the environment architecture",
+      "Are there any error messages displayed on screen when the issue occurs?",
+      "Is the issue random or does it occur consistently at specific times?",
+      "How often has the issue occurred? Note specific days and times",
+      "When did the problem last occur?",
+      "Can the issue be reproduced on demand and quickly?"
+    ],
+    "l2": [
+      "What exactly are the observed symptoms? (e.g., login delay, profile load failure)",
+      "Is the customer using both Office 365 Container and Profile container?",
+      "If using only Office 365 container, what profile solution is being used?",
+      "Do new users experience issues on first logon when creating FSLogix VHD?",
+      "Are there any custom configurations in place using FSLogix Redirection.xml?"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Clarify how FSLogix was configured (manually, Group Policy, System Center)",
+      "Validate all session hosts are running the same FSLogix version",
+      "Check if NTFS and share permissions are correctly set for profile storage",
+      "Check for customer configurations like Redirectios.xml and test after disabling",
+      "Verify the FSLogix version is updated to the latest on all session hosts"
+    ],
+    "l2": [
+      "Verify the user's FSLogix profile is not in use on another device",
+      "Verify no existing local profile conflicts with the FSLogix profile",
+      "Verify no open handle is preventing the user session",
+      "Verify the user account is not locked out or disabled in Active Directory",
+      "Delete any existing roaming or UPD profiles from the session host and storage"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Check event logs while replicating the issue (System, Application, User Profile Service)",
+      "Check the FSLogix profile logs in the event viewer",
+      "Collect system information using systeminfo command"
+    ],
+    "l2": [
+      "Collect MSRD logs for detailed session information",
+      "Collect FSLogix Support Tool logs for troubleshooting",
+      "Capture a network trace during profile load attempts"
+    ]
+  },
+  "playbooks": {
+    "fslogix_profile_load_failure": {
+      "title": "FSLogix profile fails to load",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            { "action": "Check Event Viewer for FSLogix errors", "expect": "Profile load or VHD access errors present" }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            { "action": "Verify storage connectivity and permissions", "expect": "Storage accessible or permission issues identified" }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            { "action": "Update FSLogix version and fix permissions", "expect": "Profile loads successfully after correction" }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            { "action": "Test user logon and monitor Event Viewer", "expect": "Profile loads without errors" }
+          ]
+        }
+      ]
+    }
+  }
+}
