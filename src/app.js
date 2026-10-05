@@ -1271,9 +1271,74 @@ function toggleDailyCnPreview() {
   if (open) pre.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// ─── Keyboard Shortcuts ───────────────────────────────────────────────────────
+let _cnMaximizeSource = null;
+
+function maximizeTextarea(fieldId) {
+  const sourceTextarea = document.getElementById(fieldId);
+  const modal = document.getElementById('cnMaximizeModal');
+  const modalTextarea = document.getElementById('cnMaximizeTextarea');
+  const title = document.getElementById('cnMaximizeTitle');
+  
+  // Save the source field ID
+  _cnMaximizeSource = fieldId;
+  
+  // Get the section title
+  const section = sourceTextarea.closest('.cn-section');
+  const sectionTitle = section.querySelector('.cn-section-title')?.textContent || 'Expanded View';
+  title.textContent = sectionTitle;
+  
+  // Copy content to modal textarea
+  modalTextarea.value = sourceTextarea.value;
+  
+  // Show modal
+  modal.classList.add('open');
+  
+  // Focus on modal textarea
+  modalTextarea.focus();
+  
+  // Sync changes back to source
+  modalTextarea.oninput = function() {
+    sourceTextarea.value = modalTextarea.value;
+    if (fieldId.startsWith('daily-cn')) {
+      updateDailyPreview();
+    } else {
+      updatePreview();
+    }
+  };
+}
+
+function closeMaximize() {
+  const modal = document.getElementById('cnMaximizeModal');
+  const modalTextarea = document.getElementById('cnMaximizeTextarea');
+  const sourceTextarea = document.getElementById(_cnMaximizeSource);
+  
+  // Copy content back to source
+  if (sourceTextarea) {
+    sourceTextarea.value = modalTextarea.value;
+  }
+  
+  // Trigger preview update before clearing source
+  if (_cnMaximizeSource && _cnMaximizeSource.startsWith('daily-cn')) {
+    updateDailyPreview();
+  } else {
+    updatePreview();
+  }
+  
+  // Hide modal
+  modal.classList.remove('open');
+  
+  // Clear source reference
+  _cnMaximizeSource = null;
+}
+
+// Close modal on Escape key
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    const modal = document.getElementById('cnMaximizeModal');
+    if (modal.classList.contains('open')) {
+      closeMaximize();
+      return;
+    }
     if (_dailyCnOpen) { toggleDailyCaseNotes(); return; }
     if (_cnOpen) { toggleCaseNotes(); return; }
     if (state.activeDomain) { backToLanding(); return; }

@@ -1281,6 +1281,18 @@ input[type="date"].cn-input::-webkit-calendar-picker-indicator { opacity: 1; cur
 .cn-textarea:focus { outline: none; background: rgba(0,120,212,0.03); }
 .cn-textarea::placeholder { color: var(--text3); font-size: 0.72rem; }
 
+.cn-textarea-wrap { position: relative; }
+.cn-maximize-btn { position: absolute; top: 8px; right: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-size: 0.9rem; cursor: pointer; opacity: 0.6; transition: var(--transition); z-index: 10; }
+.cn-maximize-btn:hover { opacity: 1; background: var(--accent-dim); border-color: var(--accent); }
+
+.cn-maximize-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); z-index: 10000; display: none; flex-direction: column; }
+.cn-maximize-modal.open { display: flex; }
+.cn-maximize-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.cn-maximize-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+.cn-maximize-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text2); padding: 4px 12px; border-radius: 4px; transition: var(--transition); }
+.cn-maximize-close:hover { background: var(--accent-dim); color: var(--accent); }
+.cn-maximize-textarea { flex: 1; width: 100%; background: var(--bg); border: none; padding: 20px; font-family: var(--mono); font-size: 0.9rem; color: var(--text); line-height: 1.6; resize: none; outline: none; }
+
 .cn-action-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
 .cn-action-col { display: flex; flex-direction: column; }
 .cn-action-col:first-child { border-right: 1px solid var(--border); }
