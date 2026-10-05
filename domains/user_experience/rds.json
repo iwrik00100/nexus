@@ -63,7 +63,8 @@
     ],
     "l2": [
       "Collect RDS traces for detailed session and connection information",
-      "Capture a network trace during RDP connection attempts"
+      "Capture a network trace during RDP connection attempts",
+      "Collect RDMS database logs if SQL backend is configured"
     ]
   },
   "playbooks": {
