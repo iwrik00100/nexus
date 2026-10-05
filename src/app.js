@@ -175,12 +175,12 @@ function _showPage(pageId) {
 
 // ─── Domain Grid ──────────────────────────────────────────────────────────────
 const DOMAIN_TECH_COUNTS = {
-  networking: '11 technologies',
-  directory_services: '25 technologies',
-  performance: '4 technologies',
-  user_experience: '5 technologies',
-  device_deployment: '7 technologies',
-  storage_ha: '7 technologies',
+  networking: '13 technologies',
+  directory_services: '26 technologies',
+  performance: '5 technologies',
+  user_experience: '6 technologies',
+  device_deployment: '12 technologies',
+  storage_ha: '9 technologies',
   collaboration: '6 technologies'
 };
 

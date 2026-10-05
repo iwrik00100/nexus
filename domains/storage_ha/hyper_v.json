@@ -1,0 +1,130 @@
+{
+  "key": "hyperv_vm_boot",
+  "label": "Hyper-V VM Fails to Boot",
+  "icon": "💻",
+  "domain": "storage_ha",
+  "scoping": {
+    "l1": [
+      "Question 1 — When did the VM boot issue first occur?",
+      "Question 2 — Is the problem affecting a single VM or multiple VMs?",
+      "Question 3 — Has the VM configuration been modified recently?",
+      "Question 4 — Is the VM stored on local disk or clustered storage?",
+      "Question 5 — Did the issue start after an OS patch or Hyper-V update?"
+    ],
+    "l2": [
+      "Advanced question 1 — Are there any changes in VM generation (Gen1 vs Gen2)?",
+      "Advanced question 2 — Is Secure Boot enabled and compatible with the guest OS?",
+      "Advanced question 3 — Are checkpoints or snapshots impacting VM state?",
+      "Advanced question 4 — Is the VM part of a failover cluster or replication setup?",
+      "Advanced question 5 — Are there performance or I/O errors reported before boot failure?"
+    ]
+  },
+  "probing": {
+    "l1": [
+      "Command or question 1 — Open Hyper-V Manager and check VM state",
+      "Command or question 2 — Run PowerShell Get-VM to confirm VM status",
+      "Command or question 3 — Review Event Viewer → Applications and Services Logs → Microsoft → Windows → Hyper-V-VMMS → Admin",
+      "Command or question 4 — Verify VM configuration file (.vmcx) integrity",
+      "Command or question 5 — Check if the VM’s VHDX file is accessible"
+    ],
+    "l2": [
+      "Advanced command 1 — Run Get-VMFirmware to check Secure Boot and boot order",
+      "Advanced command 2 — Use Get-VHD to validate VHDX health and state",
+      "Advanced command 3 — Run Get-ClusterResource if VM is clustered",
+      "Advanced command 4 — Review Hyper-V Replica logs if replication is enabled",
+      "Advanced command 5 — Run Test-VMReplicationHealth for replicated VMs"
+    ]
+  },
+  "troubleshooting": {
+    "l1": [
+      "Resolution step 1 — Restart the Hyper-V Virtual Machine Management Service",
+      "Resolution step 2 — Verify VM boot order and ensure OS disk is first",
+      "Resolution step 3 — Check VHDX file path and permissions",
+      "Resolution step 4 — Remove and re-add VM checkpoints if corrupted",
+      "Resolution step 5 — Ensure sufficient free disk space for VM startup"
+    ],
+    "l2": [
+      "Advanced fix 1 — Disable Secure Boot if guest OS is incompatible",
+      "Advanced fix 2 — Repair or recreate corrupted VHDX using Hyper-V Manager or PowerShell",
+      "Advanced fix 3 — Validate cluster configuration and re-register VM resource",
+      "Advanced fix 4 — Restore VM from backup or checkpoint if corruption persists",
+      "Advanced fix 5 — Escalate to Microsoft support if VM configuration files are unrecoverable"
+    ]
+  },
+  "datacollection": {
+    "l1": [
+      "Collection 1 — Export Event Viewer logs from Applications and Services Logs → Microsoft → Windows → Hyper-V-VMMS → Admin",
+      "Collection 2 — Run Get-VM and export results",
+      "Collection 3 — Execute Get-VHD and save output",
+      "Collection 4 — Capture screenshot of Hyper-V Manager showing VM state",
+      "Collection 5 — Collect OS build and Hyper-V role version"
+    ],
+    "l2": [
+      "Advanced collection 1 — Export Get-VMFirmware configuration details",
+      "Advanced collection 2 — Collect cluster logs if VM is part of failover cluster",
+      "Advanced collection 3 — Gather performance monitor counters for Hyper-V VM startup",
+      "Advanced collection 4 — Export Hyper-V Replica health reports",
+      "Advanced collection 5 — Collect VM configuration files (.vmcx, .vmrs) for analysis"
+    ]
+  },
+  "playbooks": {
+    "vm_boot_failure": {
+      "title": "Hyper-V VM fails to boot",
+      "severity": "high",
+      "phases": [
+        {
+          "name": "Verify",
+          "icon": "✅",
+          "steps": [
+            {
+              "action": "Run Get-VM to confirm VM state",
+              "expect": "VM shows as Off or Boot Failed"
+            },
+            {
+              "action": "Check Event Viewer Hyper-V-VMMS logs",
+              "expect": "Errors related to VM startup or configuration"
+            }
+          ]
+        },
+        {
+          "name": "Isolate",
+          "icon": "🔍",
+          "steps": [
+            {
+              "action": "Run Get-VHD to validate disk health",
+              "expect": "VHDX is healthy and accessible"
+            },
+            {
+              "action": "Run Get-VMFirmware to check boot order",
+              "expect": "OS disk is first in boot sequence"
+            }
+          ]
+        },
+        {
+          "name": "Fix",
+          "icon": "🛠",
+          "steps": [
+            {
+              "action": "Restart VMMS service and adjust boot order",
+              "expect": "VM boots successfully after correction"
+            },
+            {
+              "action": "Repair or replace corrupted VHDX",
+              "expect": "VM boots with healthy disk"
+            }
+          ]
+        },
+        {
+          "name": "Confirm",
+          "icon": "🎯",
+          "steps": [
+            {
+              "action": "Run Get-VM and monitor Event Viewer",
+              "expect": "VM remains stable and boots without errors"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

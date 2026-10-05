@@ -2,7 +2,7 @@
   "key": "storage_ha",
   "label": "Storage & High Availability",
   "icon": "💾",
-  "description": "Storage Spaces, Failover Clustering, Hyper-V, ReFS, iSCSI, S2D",
+  "description": "Storage Spaces, Failover Clustering, Hyper-V, ReFS, NTFS, iSCSI, FC/SAN, Windows Server Backup",
   "technologies": [
     {
       "key": "disk_issues",
@@ -11,7 +11,7 @@
     },
     {
       "key": "storage_spaces",
-      "label": "Storage Spaces and Storage Pool",
+      "label": "Storage Spaces / S2D",
       "icon": "🗄"
     },
     {
@@ -20,18 +20,28 @@
       "icon": "🌐"
     },
     {
-      "key": "failover_cluster",
-      "label": "Failover Clustering",
-      "icon": "🔁"
+      "key": "iscsi_fc_san",
+      "label": "FC / SAN",
+      "icon": "🧩"
     },
     {
-      "key": "hyper_v",
-      "label": "Hyper-V",
-      "icon": "🖥"
+      "key": "failover_clustering",
+      "label": "Failover Clustering",
+      "icon": "🖧"
+    },
+    {
+      "key": "hyperv_vm_boot",
+      "label": "Hyper-V VM Fails to Boot",
+      "icon": "💻"
     },
     {
       "key": "refs",
       "label": "ReFS / NTFS",
+      "icon": "🗄"
+    },
+    {
+      "key": "ntfs_refs",
+      "label": "NTFS",
       "icon": "📁"
     },
     {
