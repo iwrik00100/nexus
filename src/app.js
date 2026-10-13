@@ -1047,7 +1047,7 @@ let _dailyCnOpen = false;
 const _cnFields = [
   'cn-sr','cn-date','cn-followup','cn-engineer','cn-customer','cn-tech',
   'cn-severity','cn-status','cn-contact',
-  'cn-issue','cn-env','cn-assessment','cn-data','cn-repro',
+  'cn-issue','cn-scope','cn-env','cn-assessment','cn-data','cn-repro',
   'cn-changes','cn-action-customer','cn-action-ms',
   'cn-resolution','cn-kb','cn-escalation','cn-related-sr','cn-notes'
 ];
@@ -1114,6 +1114,7 @@ function _doUpdatePreview() {
   const status     = _val('cn-status');
   const contact    = _val('cn-contact');
   const issue      = _val('cn-issue');
+  const scope      = _val('cn-scope');
   const env        = _val('cn-env');
   const assess     = _val('cn-assessment');
   const data       = _val('cn-data');
@@ -1128,7 +1129,7 @@ function _doUpdatePreview() {
   const notes      = _val('cn-notes');
 
   const hasAny = [sr,date,followup,engineer,customer,tech,severity,status,contact,
-                  issue,env,assess,data,repro,changes,actCust,actMs,
+                  issue,scope,env,assess,data,repro,changes,actCust,actMs,
                   resolution,kb,escalation,relatedSr,notes].some(v => v);
 
   if (!hasAny) {
@@ -1153,6 +1154,7 @@ function _doUpdatePreview() {
   if (relatedSr)  out += `Related SR   : ${relatedSr}\n`;
 
   out += _section('Issue', issue);
+  out += _section('Case Scope', scope);
   out += _section('Environment Details', env);
   out += _section('Assessment / Troubleshooting Done', assess);
   out += _section('Data Collection', data);
