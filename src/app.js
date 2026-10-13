@@ -1053,7 +1053,7 @@ const _cnFields = [
 ];
 
 const _dailyCnFields = [
-  'daily-cn-date','daily-cn-troubleshooting','daily-cn-action-customer','daily-cn-action-ms'
+  'daily-cn-date','daily-cn-followup-date','daily-cn-followup-time','daily-cn-timezone','daily-cn-troubleshooting','daily-cn-action-customer','daily-cn-action-ms'
 ];
 
 function toggleCaseNotes() {
@@ -1227,11 +1227,14 @@ function _doUpdateDailyPreview() {
   });
 
   const date          = _val('daily-cn-date');
+  const followupDate  = _val('daily-cn-followup-date');
+  const followupTime  = _val('daily-cn-followup-time');
+  const timezone      = _val('daily-cn-timezone');
   const troubleshooting = _val('daily-cn-troubleshooting');
   const actCust       = _val('daily-cn-action-customer');
   const actMs         = _val('daily-cn-action-ms');
 
-  const hasAny = [date, troubleshooting, actCust, actMs].some(v => v);
+  const hasAny = [date, followupDate, followupTime, timezone, troubleshooting, actCust, actMs].some(v => v);
 
   if (!hasAny) {
     document.getElementById('dailyCnPreview').textContent =
@@ -1242,6 +1245,9 @@ function _doUpdateDailyPreview() {
   let out = 'Nexus — Daily Incident Log\n';
   out += '─'.repeat(60) + '\n';
   if (date) out += `Date         : ${date}\n`;
+  if (followupDate) out += `Follow-up Date: ${followupDate}\n`;
+  if (followupTime) out += `Follow-up Time: ${followupTime}\n`;
+  if (timezone) out += `Timezone     : ${timezone}\n`;
 
   out += _section('Troubleshooting Done', troubleshooting);
 

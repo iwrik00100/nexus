@@ -340,6 +340,113 @@
   <div class="cn-body">
     <div class="cn-meta-row">
       <div class="cn-meta-field"><label class="cn-label" for="daily-cn-date">Date</label><input class="cn-input" id="daily-cn-date" type="date" oninput="updateDailyPreview()"></div>
+      <div class="cn-meta-field"><label class="cn-label" for="daily-cn-followup-date">Next Follow-up Date</label><input class="cn-input" id="daily-cn-followup-date" type="date" oninput="updateDailyPreview()"></div>
+      <div class="cn-meta-field"><label class="cn-label" for="daily-cn-followup-time">Next Follow-up Time</label><input class="cn-input" id="daily-cn-followup-time" type="time" oninput="updateDailyPreview()"></div>
+      <div class="cn-meta-field"><label class="cn-label" for="daily-cn-timezone">Timezone</label>
+        <select class="cn-input cn-select" id="daily-cn-timezone" onchange="updateDailyPreview()">
+          <option value="">Select timezone</option>
+          <optgroup label="UTC / GMT">
+            <option value="UTC">UTC (UTC+0)</option>
+            <option value="GMT">GMT (UTC+0)</option>
+          </optgroup>
+          <optgroup label="North America">
+            <option value="PST">PST (UTC-8)</option>
+            <option value="PDT">PDT (UTC-7)</option>
+            <option value="MST">MST (UTC-7)</option>
+            <option value="MDT">MDT (UTC-6)</option>
+            <option value="CST">CST (UTC-6)</option>
+            <option value="CDT">CDT (UTC-5)</option>
+            <option value="EST">EST (UTC-5)</option>
+            <option value="EDT">EDT (UTC-4)</option>
+            <option value="AST">AST (UTC-4)</option>
+            <option value="ADT">ADT (UTC-3)</option>
+            <option value="NST">NST (UTC-3:30)</option>
+            <option value="NDT">NDT (UTC-2:30)</option>
+          </optgroup>
+          <optgroup label="South America">
+            <option value="BOT">BOT (UTC-4)</option>
+            <option value="ART">ART (UTC-3)</option>
+            <option value="BRT">BRT (UTC-3)</option>
+            <option value="CLT">CLT (UTC-4)</option>
+            <option value="CLST">CLST (UTC-3)</option>
+            <option value="COT">COT (UTC-5)</option>
+            <option value="ECT">ECT (UTC-5)</option>
+            <option value="PET">PET (UTC-5)</option>
+            <option value="VET">VET (UTC-4)</option>
+          </optgroup>
+          <optgroup label="Europe">
+            <option value="WET">WET (UTC+0)</option>
+            <option value="WEST">WEST (UTC+1)</option>
+            <option value="CET">CET (UTC+1)</option>
+            <option value="CEST">CEST (UTC+2)</option>
+            <option value="EET">EET (UTC+2)</option>
+            <option value="EEST">EEST (UTC+3)</option>
+            <option value="GMT">GMT (UTC+0)</option>
+            <option value="BST">BST (UTC+1)</option>
+            <option value="IRL">IRL (UTC+1)</option>
+            <option value="MSK">MSK (UTC+3)</option>
+            <option value="FET">FET (UTC+3)</option>
+          </optgroup>
+          <optgroup label="Africa">
+            <option value="WAT">WAT (UTC+1)</option>
+            <option value="CAT">CAT (UTC+2)</option>
+            <option value="EAT">EAT (UTC+3)</option>
+            <option value="SAST">SAST (UTC+2)</option>
+            <option value="GET">GET (UTC+4)</option>
+          </optgroup>
+          <optgroup label="Middle East">
+            <option value="TRT">TRT (UTC+3)</option>
+            <option value="AST-ME">AST (UTC+3)</option>
+            <option value="AST+4">AST (UTC+4)</option>
+            <option value="IRST">IRST (UTC+3:30)</option>
+            <option value="IRDT">IRDT (UTC+4:30)</option>
+            <option value="GST">GST (UTC+4)</option>
+            <option value="PKT">PKT (UTC+5)</option>
+            <option value="AMT">AMT (UTC+4)</option>
+          </optgroup>
+          <optgroup label="Asia">
+            <option value="BDT">BDT (UTC+6)</option>
+            <option value="IST">IST (UTC+5:30)</option>
+            <option value="NPT">NPT (UTC+5:45)</option>
+            <option value="MMT">MMT (UTC+6:30)</option>
+            <option value="WIB">WIB (UTC+7)</option>
+            <option value="WITA">WITA (UTC+8)</option>
+            <option value="WIT">WIT (UTC+9)</option>
+            <option value="CST-CN">CST China (UTC+8)</option>
+            <option value="KST">KST (UTC+9)</option>
+            <option value="JST">JST (UTC+9)</option>
+            <option value="PHT">PHT (UTC+8)</option>
+            <option value="SGT">SGT (UTC+8)</option>
+            <option value="HKT">HKT (UTC+8)</option>
+            <option value="ICT">ICT (UTC+7)</option>
+          </optgroup>
+          <optgroup label="Pacific">
+            <option value="HST">HST (UTC-10)</option>
+            <option value="AKST">AKST (UTC-9)</option>
+            <option value="AKDT">AKDT (UTC-8)</option>
+            <option value="SST">SST (UTC-11)</option>
+            <option value="CHAST">CHAST (UTC-12:45)</option>
+            <option value="PHOT">PHOT (UTC+13)</option>
+            <option value="CHUT">CHUT (UTC+10)</option>
+            <option value="CKT">CKT (UTC-10)</option>
+            <option value="NUT">NUT (UTC-11)</option>
+          </optgroup>
+          <optgroup label="Australia / New Zealand">
+            <option value="AWST">AWST (UTC+8)</option>
+            <option value="ACST">ACST (UTC+9:30)</option>
+            <option value="ACDT">ACDT (UTC+10:30)</option>
+            <option value="AEST">AEST (UTC+10)</option>
+            <option value="AEDT">AEDT (UTC+11)</option>
+            <option value="NZST">NZST (UTC+12)</option>
+            <option value="NZDT">NZDT (UTC+13)</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="MHT">MHT (UTC+12)</option>
+            <option value="FJT">FJT (UTC+12)</option>
+            <option value="TOT">TOT (UTC+13)</option>
+          </optgroup>
+        </select>
+      </div>
     </div>
     <div class="cn-divider"></div>
     <div class="cn-sections">
