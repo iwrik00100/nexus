@@ -1286,24 +1286,24 @@ function maximizeTextarea(fieldId) {
   const modal = document.getElementById('cnMaximizeModal');
   const modalTextarea = document.getElementById('cnMaximizeTextarea');
   const title = document.getElementById('cnMaximizeTitle');
-  
+
   // Save the source field ID
   _cnMaximizeSource = fieldId;
-  
+
   // Get the section title
   const section = sourceTextarea.closest('.cn-section');
   const sectionTitle = section.querySelector('.cn-section-title')?.textContent || 'Expanded View';
   title.textContent = sectionTitle;
-  
+
   // Copy content to modal textarea
   modalTextarea.value = sourceTextarea.value;
-  
+
   // Show modal
   modal.classList.add('open');
-  
+
   // Focus on modal textarea
   modalTextarea.focus();
-  
+
   // Sync changes back to source
   modalTextarea.oninput = function() {
     sourceTextarea.value = modalTextarea.value;
@@ -1378,6 +1378,234 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ─── Textarea Toolbar Functions ───────────────────────────────────────────────
+function insertBullet(textareaId) {
+  const textarea = document.getElementById(textareaId);
+  if (!textarea) return;
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+
+  // Insert bullet at cursor position
+  const before = text.substring(0, start);
+  const after = text.substring(end);
+  const insertion = (before.length > 0 && before[before.length - 1] !== '\n') ? '\n• ' : '• ';
+
+  textarea.value = before + insertion + after;
+  textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
+  textarea.focus();
+
+  // If this is the modal textarea, sync back to source
+  if (textareaId === 'cnMaximizeTextarea' && _cnMaximizeSource) {
+    const sourceTextarea = document.getElementById(_cnMaximizeSource);
+    if (sourceTextarea) {
+      sourceTextarea.value = textarea.value;
+      if (_cnMaximizeSource.startsWith('daily-cn')) {
+        updateDailyPreview();
+      } else {
+        updatePreview();
+      }
+    }
+  } else {
+    // Trigger preview update if applicable
+    if (textareaId.startsWith('daily-')) {
+      updateDailyPreview();
+    } else {
+      updatePreview();
+    }
+  }
+}
+
+function insertNumbered(textareaId) {
+  const textarea = document.getElementById(textareaId);
+  if (!textarea) return;
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+
+  // Determine the line before cursor to detect numbering
+  const beforeCursor = text.substring(0, start);
+  const lastNewlineIndex = beforeCursor.lastIndexOf('\n');
+  const currentLine = lastNewlineIndex === -1 ? beforeCursor : beforeCursor.substring(lastNewlineIndex + 1);
+
+  // Check if previous line has a numbered list pattern
+  const numberedMatch = currentLine.match(/^(\d+)\.\s/);
+  let nextNumber = 1;
+  if (numberedMatch) {
+    nextNumber = parseInt(numberedMatch[1]) + 1;
+  }
+
+  const before = text.substring(0, start);
+  const after = text.substring(end);
+  const insertion = (before.length > 0 && before[before.length - 1] !== '\n') ? `\n${nextNumber}. ` : `${nextNumber}. `;
+
+  textarea.value = before + insertion + after;
+  textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
+  textarea.focus();
+
+  // If this is the modal textarea, sync back to source
+  if (textareaId === 'cnMaximizeTextarea' && _cnMaximizeSource) {
+    const sourceTextarea = document.getElementById(_cnMaximizeSource);
+    if (sourceTextarea) {
+      sourceTextarea.value = textarea.value;
+      if (_cnMaximizeSource.startsWith('daily-cn')) {
+        updateDailyPreview();
+      } else {
+        updatePreview();
+      }
+    }
+  } else {
+    // Trigger preview update if applicable
+    if (textareaId.startsWith('daily-')) {
+      updateDailyPreview();
+    } else {
+      updatePreview();
+    }
+  }
+}
+
+function insertDivider(textareaId) {
+  const textarea = document.getElementById(textareaId);
+  if (!textarea) return;
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+
+  const before = text.substring(0, start);
+  const after = text.substring(end);
+  const insertion = '\n────────────────\n';
+
+  textarea.value = before + insertion + after;
+  textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
+  textarea.focus();
+
+  // If this is the modal textarea, sync back to source
+  if (textareaId === 'cnMaximizeTextarea' && _cnMaximizeSource) {
+    const sourceTextarea = document.getElementById(_cnMaximizeSource);
+    if (sourceTextarea) {
+      sourceTextarea.value = textarea.value;
+      if (_cnMaximizeSource.startsWith('daily-cn')) {
+        updateDailyPreview();
+      } else {
+        updatePreview();
+      }
+    }
+  } else {
+    // Trigger preview update if applicable
+    if (textareaId.startsWith('daily-')) {
+      updateDailyPreview();
+    } else {
+      updatePreview();
+    }
+  }
+}
+
+function clearTextarea(textareaId) {
+  const textarea = document.getElementById(textareaId);
+  if (!textarea) return;
+
+  textarea.value = '';
+  textarea.focus();
+
+  // If this is the modal textarea, sync back to source
+  if (textareaId === 'cnMaximizeTextarea' && _cnMaximizeSource) {
+    const sourceTextarea = document.getElementById(_cnMaximizeSource);
+    if (sourceTextarea) {
+      sourceTextarea.value = textarea.value;
+      if (_cnMaximizeSource.startsWith('daily-cn')) {
+        updateDailyPreview();
+      } else {
+        updatePreview();
+      }
+    }
+  } else {
+    // Trigger preview update if applicable
+    if (textareaId.startsWith('daily-')) {
+      updateDailyPreview();
+    } else {
+      updatePreview();
+    }
+  }
+}
+
+// ─── Auto-bullet on Enter ─────────────────────────────────────────────────────
+function handleTextareaEnter(e) {
+  if (e.key !== 'Enter' || e.shiftKey) return;
+
+  const textarea = e.target;
+  const start = textarea.selectionStart;
+  const text = textarea.value;
+
+  // Get the current line
+  const beforeCursor = text.substring(0, start);
+  const lastNewlineIndex = beforeCursor.lastIndexOf('\n');
+  const currentLine = lastNewlineIndex === -1 ? beforeCursor : beforeCursor.substring(lastNewlineIndex + 1);
+
+  // Check if current line starts with bullet or numbered list
+  const bulletMatch = currentLine.match(/^•\s/);
+  const numberedMatch = currentLine.match(/^(\d+)\.\s/);
+
+  if (bulletMatch) {
+    e.preventDefault();
+    // Insert new bullet
+    const insertion = '\n• ';
+    const before = text.substring(0, start);
+    const after = text.substring(start);
+    textarea.value = before + insertion + after;
+    textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
+
+    // Sync if modal
+    if (textarea.id === 'cnMaximizeTextarea' && _cnMaximizeSource) {
+      const sourceTextarea = document.getElementById(_cnMaximizeSource);
+      if (sourceTextarea) {
+        sourceTextarea.value = textarea.value;
+        if (_cnMaximizeSource.startsWith('daily-cn')) {
+          updateDailyPreview();
+        } else {
+          updatePreview();
+        }
+      }
+    } else {
+      if (textarea.id.startsWith('daily-')) {
+        updateDailyPreview();
+      } else {
+        updatePreview();
+      }
+    }
+  } else if (numberedMatch) {
+    e.preventDefault();
+    // Increment number
+    const nextNumber = parseInt(numberedMatch[1]) + 1;
+    const insertion = `\n${nextNumber}. `;
+    const before = text.substring(0, start);
+    const after = text.substring(start);
+    textarea.value = before + insertion + after;
+    textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
+
+    // Sync if modal
+    if (textarea.id === 'cnMaximizeTextarea' && _cnMaximizeSource) {
+      const sourceTextarea = document.getElementById(_cnMaximizeSource);
+      if (sourceTextarea) {
+        sourceTextarea.value = textarea.value;
+        if (_cnMaximizeSource.startsWith('daily-cn')) {
+          updateDailyPreview();
+        } else {
+          updatePreview();
+        }
+      }
+    } else {
+      if (textarea.id.startsWith('daily-')) {
+        updateDailyPreview();
+      } else {
+        updatePreview();
+      }
+    }
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const aiInput = document.getElementById('aiInput');
   if (aiInput) {
@@ -1388,4 +1616,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Add auto-bullet on Enter to all textareas
+  const allTextareas = document.querySelectorAll('.cn-textarea, .cn-maximize-textarea');
+  allTextareas.forEach(textarea => {
+    textarea.addEventListener('keydown', handleTextareaEnter);
+  });
 });
