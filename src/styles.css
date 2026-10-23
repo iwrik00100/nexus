@@ -1291,6 +1291,7 @@ input[type="date"].cn-input::-webkit-calendar-picker-indicator { opacity: 1; cur
 .cn-maximize-title { font-size: 1rem; font-weight: 700; color: var(--text); }
 .cn-maximize-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text2); padding: 4px 12px; border-radius: 4px; transition: var(--transition); }
 .cn-maximize-close:hover { background: var(--accent-dim); color: var(--accent); }
+.cn-maximize-modal .cn-textarea-toolbar { padding: 10px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
 .cn-maximize-textarea { flex: 1; width: 100%; background: var(--bg); border: none; padding: 20px; font-family: var(--mono); font-size: 0.9rem; color: var(--text); line-height: 1.6; resize: none; outline: none; }
 
 .cn-action-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
@@ -1489,6 +1490,11 @@ body.theme-dark .cn-action-col-label { border-bottom-color: #1e2a3e; }
 body.theme-dark ::-webkit-scrollbar-track { background: #050810; }
 body.theme-dark ::-webkit-scrollbar-thumb { background: #1e2a3e; }
 body.theme-dark .q-highlight { background: rgba(0,212,255,0.18); color: #00d4ff; }
+body.theme-dark .cn-maximize-modal { background: #0a0e1a; }
+body.theme-dark .cn-maximize-header { background: #141c2e; border-bottom-color: #1e2a3e; }
+body.theme-dark .cn-maximize-title { color: #dce6f5; }
+body.theme-dark .cn-maximize-textarea { background: #0a0e1a; color: #dce6f5; }
+body.theme-dark .cn-maximize-modal .cn-textarea-toolbar { background: #141c2e; border-bottom-color: #1e2a3e; }
 
 /* ── Cyberpunk Neon Theme (Futuristic) ────────────────────────── */
 body.theme-cyberpunk {
@@ -1768,6 +1774,11 @@ body.theme-cyberpunk .cn-action-col:first-child { border-right-color: #2a2a4a; }
 body.theme-cyberpunk .cn-action-col-label { border-bottom-color: #2a2a4a; }
 body.theme-cyberpunk .q-highlight { background: rgba(0,240,255,0.18); color: #00f0ff; }
 body.theme-cyberpunk .domain-footer { border-top-color: #2a2a4a; color: #606080; }
+body.theme-cyberpunk .cn-maximize-modal { background: #0f0f1a; }
+body.theme-cyberpunk .cn-maximize-header { background: #1a1a2e; border-bottom-color: #2a2a4a; }
+body.theme-cyberpunk .cn-maximize-title { color: #e0e0ff; }
+body.theme-cyberpunk .cn-maximize-textarea { background: #0f0f1a; color: #e0e0ff; }
+body.theme-cyberpunk .cn-maximize-modal .cn-textarea-toolbar { background: #1a1a2e; border-bottom-color: #2a2a4a; }
 
 /* Domain hero */
 body.theme-cyberpunk .domain-hero-title { color: #e0e0ff; }
@@ -1812,6 +1823,70 @@ body.theme-cyberpunk .domain-card:hover .domain-card-label { animation: glitch 0
     animation-play-state: paused;
   }
 }
+
+/* ── Textarea Toolbar ─────────────────────────────────────────── */
+.cn-textarea-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 0;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.cn-toolbar-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--head);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text2);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.cn-toolbar-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface3);
+}
+
+.cn-toolbar-btn:active {
+  transform: scale(0.96);
+}
+
+/* Dark theme toolbar */
+body.theme-dark .cn-textarea-toolbar {
+  border-color: var(--border2);
+}
+
+body.theme-dark .cn-toolbar-btn {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  color: #a0a0a0;
+}
+
+body.theme-dark .cn-toolbar-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255,255,255,0.12);
+}
+
+/* Cyberpunk theme toolbar */
+body.theme-cyberpunk .cn-toolbar-btn {
+  background: #1a1a2e;
+  border-color: #3a3a5a;
+  color: #a0a0c0;
+}
+
+body.theme-cyberpunk .cn-toolbar-btn:hover {
+  border-color: #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 15px rgba(0,240,255,0.4);
+}
+
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
